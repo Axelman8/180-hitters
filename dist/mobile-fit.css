@@ -1,0 +1,39 @@
+/* Mobile uses the available CSS viewport, including unfolded Android screens. */
+body.remote-control[data-mobile-layout]>main{width:100%;max-width:none;align-self:stretch}
+body.remote-control[data-mobile-layout] #game:not([hidden]){height:100%;min-height:min-content}
+body.remote-control[data-mobile-layout] .play-grid{min-width:0;margin:0;gap:0}
+body.remote-control[data-mobile-layout] .scoring{min-width:0;min-height:min-content}
+body.remote-control[data-mobile-layout] .scoring .section-heading,
+body.remote-control[data-mobile-layout] .scoring:has(#total-input:not([hidden])) .section-heading{position:static;inset:auto;max-width:none;min-height:40px;align-self:stretch;pointer-events:auto}
+body.remote-control[data-mobile-layout] .scoring .section-heading h2{display:none!important}
+body.remote-control[data-mobile-layout] .scoring .tabs{position:static!important;width:auto!important;max-width:none;flex-direction:row!important;flex-wrap:wrap}
+body.remote-control[data-mobile-layout] .scoring>#toggle-input{position:static!important;max-width:none!important;align-self:flex-start;min-height:32px;font-size:11px;padding:4px 8px}
+body.remote-control[data-mobile-layout] #total-input .visit-value{min-height:64px;height:clamp(64px,10dvh,100px);padding:4px}
+body.remote-control[data-mobile-layout] #total-input .score-input #entry{font-size:clamp(32px,6dvh,54px)}
+body.remote-control[data-mobile-layout] #total-input .score-input{margin:0}
+body.remote-control[data-mobile-layout] #total-input,
+body.remote-control[data-mobile-layout] #dart-input{min-width:0;flex:1 0 auto}
+body.remote-control[data-mobile-layout] #keypad{min-height:191px;grid-template-rows:repeat(4,minmax(44px,1fr))}
+body.remote-control[data-mobile-layout] #board-keys{grid-auto-rows:minmax(44px,1fr)}
+body.remote-control[data-mobile-layout] #board-keys button{min-width:0;overflow-wrap:anywhere}
+body.remote-control[data-mobile-layout] #total-rule-note,
+body.remote-control[data-mobile-layout] #visit-mode-note,
+body.remote-control[data-mobile-layout] #training-status{font-size:12px;line-height:1.25;margin:0}
+body.remote-control[data-mobile-layout] #players .player-top>strong{overflow-wrap:anywhere}
+body.remote-control[data-mobile-layout] #gotcha-total-options{flex-shrink:0}
+body.remote-control[data-mobile-layout] #gotcha-reset{padding:6px;font-size:13px}
+/* On a foldable/tablet, reserve a side column for the players. */
+@media(min-width:700px) and (max-height:1100px){
+ body.remote-control[data-mobile-layout] #game:not([hidden]){display:grid;grid-template-columns:minmax(180px,.8fr) minmax(360px,1.6fr);grid-template-rows:auto auto 1fr;align-items:start;gap:8px}
+ body.remote-control[data-mobile-layout] #game>.match-heading{grid-column:1;grid-row:1}
+ body.remote-control[data-mobile-layout] #game>#training-status{grid-column:1;grid-row:2}
+ body.remote-control[data-mobile-layout] #players.players{grid-column:1;grid-row:3;grid-template-columns:1fr;gap:8px;align-self:stretch;align-content:start}
+ body.remote-control[data-mobile-layout] #players.players .player{padding:10px}
+ body.remote-control[data-mobile-layout] #players.players .remaining{font-size:clamp(32px,6dvh,56px)}
+ body.remote-control[data-mobile-layout] #game>.play-grid{grid-column:2;grid-row:1/4;align-self:stretch;height:100%}
+ body.remote-control[data-mobile-layout] #turn-label{font-size:clamp(18px,2.5vw,25px)}
+}
+@media(min-width:700px) and (max-height:520px){
+ body.remote-control[data-mobile-layout] #players.players{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.remote-control[data-mobile-layout] #players.players .remaining{font-size:30px}
+}

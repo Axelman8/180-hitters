@@ -5,7 +5,7 @@ import {celebrateScore} from './celebration.js';
 import {showWinner} from './winner.js';
 import {newMatch,applyTurn,nextLeg,validX01Total,checkout,setupShot,possibleTotal,makeDart,previewTurn,previewCricket,previewGotcha,previewBobs27,playerStats} from './engine.js';
 const phoneLayout=matchMedia('(max-width:600px)');
-function mobileLayout(){document.body.classList.toggle('remote-control',new URLSearchParams(location.search).get('remote')==='1'||phoneLayout.matches);}
+function mobileLayout(){document.body.classList.toggle('remote-control',!!window.DartsAndroid||new URLSearchParams(location.search).has('android')||new URLSearchParams(location.search).get('remote')==='1'||phoneLayout.matches);}
 phoneLayout.addEventListener('change',mobileLayout);mobileLayout();
 const $=id=>document.getElementById(id),key='oche.match.v1';
 const androidLocal=window.DartsAndroid?.isLocalMode?.()===true;
