@@ -53,7 +53,7 @@ def disconnect_active(device=None):
 
 
 def relay(connection, device):
-    stream = connection.makefile('rwb', buffering=0)
+    stream = connection.makefile('rb', buffering=65536)
     print(f'Bluetooth-kanaal gereed voor {device}', flush=True)
     try:
         while True:
@@ -89,11 +89,11 @@ def relay(connection, device):
                 result = {'id': request.get('id'), 'status': response.status, 'body': value}
             finally:
                 upstream.close()
-            stream.write((json.dumps(result, separators=(',', ':')) + '\n').encode())
+            connection.sendall((json.dumps(result, separators=(',', ':')) + '\n').encode())
     except Exception as error:
         print(f'Bluetooth-fout voor {device}: {error}', flush=True)
         try:
-            stream.write((json.dumps({'status': 502, 'body': {'error': str(error)}}) + '\n').encode())
+            connection.sendall((json.dumps({'status': 502, 'body': {'error': str(error)}}) + '\n').encode())
         except Exception:
             pass
     finally:

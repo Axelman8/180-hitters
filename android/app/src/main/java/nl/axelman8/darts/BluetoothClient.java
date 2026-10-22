@@ -106,6 +106,9 @@ final class BluetoothClient {
         adapter.cancelDiscovery();
         BluetoothDevice device = adapter.getRemoteDevice(address);
         BluetoothSocket candidate = device.createRfcommSocketToServiceRecord(SERVICE_UUID);
+        ScheduledFuture<?> connectTimeout = watchdog.schedule(() -> {
+            try { candidate.close(); } catch (Exception ignored) {}
+        }, 10, TimeUnit.SECONDS);
         try {
             candidate.connect();
             socket = candidate;
@@ -114,8 +117,9 @@ final class BluetoothClient {
             Log.i("180HittersBluetooth", "Verbonden met " + device.getName());
         } catch (Exception error) {
             try { candidate.close(); } catch (Exception ignored) {}
+            lastFailure = System.currentTimeMillis();
             throw error;
-        }
+        } finally { connectTimeout.cancel(false); }
     }
 
     void closeSocket() {

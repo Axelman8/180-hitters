@@ -38,7 +38,7 @@ export function renderLives(state,actions){
   const card=el('article',undefined,'lives-player'+(i===state.active?' active':'')+(p.lives===0?' eliminated':''));
   card.append(el('h3',p.name),el('strong',p.lives===0?'Uitgeschakeld':livesLabel(state,p),'lives-goal'),el('p',p.lives===0?'Geen pogingen meer':`${p.attempts} ${p.attempts===1?'poging':'pogingen'}`));
   const marks=el('div',undefined,'life-marks');marks.setAttribute('aria-label',`${p.lives} van 10 levens`);
-  for(let i=0;i<10;i++)marks.append(el('i',undefined,i<p.lives?'available':'lost'));
+  for(let i=0;i<10;i++)marks.append(el('i',String(i+1),i<p.lives?'available':'lost'));
   card.append(marks,el('small',`${p.lives} / 10 levens`));cards.append(card);
  });root.append(cards);
  const p=state.players[state.active],focus=el('div',undefined,'lives-focus panel');

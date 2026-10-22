@@ -28,6 +28,9 @@ with tempfile.TemporaryDirectory() as tmp:
      for(let i=0;i<3;i++)s=miss(s);
      check(s.active===0&&s.players[1].lives===9&&s.players[0].livesTarget===19,'Resume saved target');
      check(old.players[0].attempts===3&&old.history.length===0,'Immutable snapshots for undo');
+     s=fresh(1,mode);for(let i=0;i<7;i++)s=hit(s);for(let i=0;i<9;i++)s=miss(s);
+     check(s.players[0].livesTarget===13&&s.players[0].attempts===8,'T13 with eight attempts');
+     s=hit(s);check(s.players[0].livesTarget===12&&s.players[0].attempts===10,'Continue after T13');
      s=fresh(1,mode);for(let i=0;i<11;i++)s=hit(s);
      check(s.players[0].livesTarget===25&&s.phase==='playing','Route ends 10 then Bull');
      let failed=structuredClone(s);while(failed.players[0].livesTarget===25)failed=miss(failed);
@@ -44,6 +47,7 @@ with tempfile.TemporaryDirectory() as tmp:
    phone.get_by_role('button',name='Triples',exact=True).click()
    phone.locator('.wizard-next').click();phone.locator('.wizard-next').click()
    expect(phone.locator('#lives-game')).to_be_visible();expect(screen.locator('#lives-game')).to_be_visible()
+   expect(phone.locator('.life-marks').first.locator('i')).to_have_text([str(i) for i in range(1,11)])
    expect(phone.locator('.lives-current')).to_have_text('T20')
    phone.locator('#lives-hit').click();expect(screen.locator('.lives-current')).to_have_text('T19');expect(screen.locator('.lives-attempts')).to_have_text('5 pogingen over')
    phone.locator('#lives-undo').click();expect(screen.locator('.lives-current')).to_have_text('T20')
