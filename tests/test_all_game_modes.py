@@ -72,6 +72,9 @@ with tempfile.TemporaryDirectory() as tmp:
    assert screen.locator('#players .player-leg-results').count()==0
    overview=screen.locator('#screen-overview').bounding_box();finish=screen.locator('#finish-panel').bounding_box()
    assert abs(overview['width']-finish['width'])<2
+   assert finish['height']<=screen.evaluate('innerHeight')*.3
+   bull=screen.locator('#board-keys').get_by_role('button',name='Bull',exact=True).bounding_box()
+   assert bull['y']+bull['height']<screen.evaluate('innerHeight')
    phone.get_by_role('button',name='Double',exact=True).click()
    phone.locator('#board-keys').get_by_role('button',name='1',exact=True).click()
    phone.locator('#board-keys').get_by_role('button',name='Mis',exact=True).click()
