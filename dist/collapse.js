@@ -29,17 +29,4 @@ toggle.onclick=async()=>{
 };
 render();syncDisplay();setInterval(syncDisplay,750);
 
-const toolbarToggle=document.getElementById('toggle-toolbar');
-let toolbarCollapsed=false;
-try{toolbarCollapsed=localStorage.getItem('axelman8.toolbarCollapsed')==='true';}catch{}
-function renderToolbar(){
- document.body.classList.toggle('toolbar-collapsed',toolbarCollapsed);
- toolbarToggle.textContent=toolbarCollapsed?'Menu uitklappen':'Menu inklappen';
- toolbarToggle.setAttribute('aria-expanded',String(!toolbarCollapsed));
-}
-toolbarToggle.onclick=()=>{
- toolbarCollapsed=!toolbarCollapsed;
- try{localStorage.setItem('axelman8.toolbarCollapsed',String(toolbarCollapsed));}catch{}
- renderToolbar();
-};
-renderToolbar();
+import './menu.js';
