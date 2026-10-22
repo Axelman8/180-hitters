@@ -52,6 +52,13 @@ def disconnect_active(device=None):
         except OSError: pass
 
 
+def send_frame(connection, value):
+    # Bound RFCOMM writes: large writes can stall credit flow on this NUC/phone.
+    packet = (json.dumps(value, separators=(',', ':')) + '\n').encode()
+    for offset in range(0, len(packet), 1024):
+        connection.sendall(packet[offset:offset+1024])
+
+
 def relay(connection, device):
     stream = connection.makefile('rb', buffering=65536)
     print(f'Bluetooth-kanaal gereed voor {device}', flush=True)
@@ -89,11 +96,11 @@ def relay(connection, device):
                 result = {'id': request.get('id'), 'status': response.status, 'body': value}
             finally:
                 upstream.close()
-            connection.sendall((json.dumps(result, separators=(',', ':')) + '\n').encode())
+            send_frame(connection, result)
     except Exception as error:
         print(f'Bluetooth-fout voor {device}: {error}', flush=True)
         try:
-            connection.sendall((json.dumps({'status': 502, 'body': {'error': str(error)}}) + '\n').encode())
+            send_frame(connection, {'status': 502, 'body': {'error': str(error)}})
         except Exception:
             pass
     finally:

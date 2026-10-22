@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 source=Path(__file__).resolve().parents[1]/'bluetooth-bridge.py'
 tree=ast.parse(source.read_text(encoding='utf-8'))
-relay=next(node for node in tree.body if isinstance(node,ast.FunctionDef) and node.name=='relay')
+functions=[node for node in tree.body if isinstance(node,ast.FunctionDef) and node.name in ('relay','send_frame')]
 payload={'match':{'history':[{'target':13,'attempts':8,'label':'Mis'} for _ in range(5000)]}}
 wire=json.dumps({'id':7,'clientToken':'test','method':'GET','path':'/api/state'}).encode()+b'\n'
 
@@ -20,6 +20,7 @@ class ShortStream(io.BytesIO):
 class Connection:
  def makefile(self,*args,**kwargs):return ShortStream(wire)
  def sendall(self,data):
+  assert len(data)<=1024,'Large RFCOMM writes can stall on the real device'
   for offset in range(0,len(data),127):sent.append(data[offset:offset+127])
  def close(self):pass
 
@@ -31,7 +32,7 @@ class Upstream:
 
 sent=[]
 env={'json':json,'TOKEN':'test','http':SimpleNamespace(client=SimpleNamespace(HTTPConnection=Upstream)),'release_active':lambda c:None}
-exec(compile(ast.Module(body=[relay],type_ignores=[]),str(source),'exec'),env)
+exec(compile(ast.Module(body=functions,type_ignores=[]),str(source),'exec'),env)
 env['relay'](Connection(),'test')
 response=b''.join(sent)
 assert response.endswith(b'\n'),'Incomplete frame makes Android readLine wait until timeout'
