@@ -1,112 +1,185 @@
 # 180 Hitters
 
-Zelfstandige Nederlandstalige darts-scoreapp voor Android, touchscreen en Linux-NUC. Ontwikkeld door [Axelman8](https://github.com/axelman8). Geen camera, account, abonnement of internet nodig tijdens het spelen. De app gebruikt Python 3 als lokale webserver en een moderne browser. Geen npm-installatie nodig.
+An offline-first darts scoring app for Android, touchscreen displays, Linux NUCs, and Windows. Developed by [Axelman8](https://github.com/axelman8).
 
-## Op Linux installeren
+180 Hitters runs without a camera, account, subscription, or internet connection during play. A Linux NUC can host the shared match display while Android phones connect over Bluetooth or the local network. The Android app can also run matches independently without a NUC.
 
-Voor een nieuwe Linux-NUC download je `180-Hitters-Linux-x64.tar.gz` van de nieuwste GitHub-release. Pak het uit en voer `sudo bash setup-linux.sh` uit. Dit installeert de app, kioskstart, Bluetooth, de beveiligde NUC-bediening en een `180 Hitters wifi`-noodhotspot. Bestaande locatiegegevens en partijen blijven bij herinstallatie behouden.
+## Downloads
 
-Voor Windows 10/11 download je `180-Hitters-Windows-x64.zip`, pak je het uit en dubbelklik je `install-windows.cmd`. De Windows-versie werkt lokaal en via het eigen LAN; Bluetooth-NUC-bediening en wifi instellen vanuit de telefoon zijn Linux-functies.
+Download the latest packages from [GitHub Releases](https://github.com/Axelman8/180-hitters/releases/latest):
 
-Voor Ubuntu/Debian met een grafische desktop en systemd. De bestaande Autodarts-installatie wordt niet verwijderd. Schakel eventueel de bestaande Autodarts-autostart uit om te voorkomen dat twee kioskvensters openen.
+- `180-Hitters.apk` — signed Android app
+- `180-Hitters-Linux-x64.tar.gz` — complete Ubuntu/Debian NUC installer
+- `180-Hitters-Windows-x64.zip` — Windows 10/11 package
+- `.sha256` files — checksums for verifying each download
 
-1. Pak de volledige map uit op de NUC.
-2. Installeer Python 3 (`sudo apt install python3`) en Chromium of Firefox via de softwarewinkel indien nodig.
-3. Open een terminal in deze map en voer `bash install-linux.sh` uit **als je gewone desktopgebruiker, zonder sudo**.
-4. Open <http://127.0.0.1:8765>. Bij de volgende desktopaanmelding start de browser in kioskmodus.
+The user interface is currently in Dutch. This repository and its technical documentation use English.
 
-Het installatiescript kopieert de app naar `~/.local/share/oche-darts`, registreert een gebruikersservice en voegt browser-autostart toe. Opnieuw uitvoeren werkt de app bij; browsergegevens en de gedeelde partij blijven behouden. Herstart na een update de service met `systemctl --user restart oche-darts`. Configureer automatische desktopaanmelding en schakel schermvergrendeling/slaapstand uit in de Linux-instellingen als je direct na het aanzetten wilt spelen. Gebruik Alt+F4 om kioskmodus te sluiten; F11 schakelt volledig scherm in een gewoon browservenster.
+## Linux NUC installation
 
-Zonder installatie starten: `python3 server.py` (op Windows: `python server.py`). Open daarna <http://127.0.0.1:8765>. Houd de terminal open. De server is ook bereikbaar op het lokale netwerk via poort 8765. Gebruik uitsluitend een vertrouwd netwerk; deelnemers op dat netwerk kunnen de partij bedienen. De knop Mobiel toont de adressen.
+The complete installer targets Ubuntu/Debian with a graphical desktop, systemd, NetworkManager, and BlueZ.
 
-## Spelen
+1. Download and extract `180-Hitters-Linux-x64.tar.gz`.
+2. Open a terminal in the extracted directory.
+3. Run `sudo bash setup-linux.sh`.
+4. Sign in to the graphical desktop if it is not already active.
 
-- X01 met 121, 170, 301, 501, 701 of 901. Straight-, double- of master-in en straight-, double- of master-out. Master betekent dubbel of triple.
-- Cricket (15–20 en bull) en Tactics (10–20 en bull), met Standard, Cut Throat of No Score. Eén tot vier spelers.
-- Wedstrijdvorm: eerste tot 1–10 legs of sets, of vrij spelen. Bij sets kies je hoeveel legs nodig zijn per set; bij vrij spelen kun je na iedere leg doorgaan of afronden. Sets en totale legs worden apart bijgehouden.
-- **Beurttotaal:** beschikbaar bij X01 met straight-in en 25/50-bull. Voer de som van drie pijlen in. Bij een finish geef je het aantal gebruikte pijlen op en bevestig je dat de laatste pijl aan de gekozen uitgooiregel voldeed.
-- **Per pijl:** selecteer Single, Double of Triple en vervolgens 1–20. De vermenigvuldiger gaat na iedere pijl terug naar Single. De knoppen 25, Bull (50) en Mis zijn vaste waarden. Een beurt eindigt direct bij een finish of bust; voeg dan geen extra pijlen toe.
-- Bust geeft nul punten voor de hele beurt en herstelt de score van vóór de beurt. Een bust telt als drie pijlen voor het gemiddelde, ook bij een eerdere bust.
-- Checkoutadvies toont één mogelijke route volgens de uitgooiregel. Binnenbull telt als dubbel. Bij 50/50-bull scoort buitenbull 50 maar blijft het een single: geen double/master-in of double/master-out via de buitenbull. Deze expliciete lokale interpretatie voorkomt dat alleen de puntenwaarde als dubbel geldt.
-- Bij double/master-in tellen pijlen pas vanaf de openingspijl. Een bust herstelt ook de openingsstatus van vóór de beurt. Invoer per pijl is verplicht bij double/master-in en 50/50-bull.
-- Kies de starter handmatig, eventueel na een fysieke bull-off. Vervolgens wisselt de starter per leg door tussen alle spelers. Er is geen automatische afstandsmeting.
-- Gemiddelden, beste beurten en geschiedenis lopen over de hele partij. Herstellen draait de laatste beurt terug, ook over een leggrens. Maximaal 500 beurten herstelgeschiedenis.
-- Een partij wordt in de lokale browseropslag bewaard en na herladen hervat. Gebruik steeds dezelfde browser en hetzelfde profiel/adres; wis geen browsergegevens. Een nieuwe partij vervangt de vorige. Er is nog geen archief van eerdere partijen.
+The installer configures:
 
-## Hardware en grenzen
+- the local Python web server;
+- kiosk-mode browser startup;
+- Bluetooth communication with the Android app;
+- restricted NUC power and network controls;
+- automatic GitHub update checks;
+- the protected `180 Hitters wifi` fallback hotspot.
 
-Ontworpen voor touchscreens vanaf 1024 × 768, met een aangepaste indeling voor smallere schermen. De app is licht en gebruikt geen GPU-versnelling of cameraverwerking; een Intel i5-NUC is ruim voldoende. De concrete NUC, Linux-driver voor het touchscreen en kiosk-autostart moeten nog op het apparaat worden gecontroleerd. Voor spelersnamen verschijnt het schermtoetsenbord alleen als dit in de desktop is ingeschakeld. De scores gebruiken het ingebouwde aanraaktoetsenbord.
+The existing Autodarts installation is not removed. Disable its kiosk autostart if both applications would otherwise open at sign-in.
 
-## Cricket en Tactics
+For a manual per-user installation, run `bash install-linux.sh` without `sudo`. Open <http://127.0.0.1:8765> after installation. Reinstalling or updating preserves the venue profile, player lists, browser profile, current match, and locally supplied winner artwork.
 
-Voer de pijlen in met Single, Double of Triple gevolgd door het doelnummer. Gebruik **Mis** ook voor treffers buiten de doelen van de spelvariant. Buitenbull geeft één treffer, binnenbull twee. Een doel sluit na drie treffers; het bord toont `/`, `×` en `⊗`. Groen betekent gesloten terwijl een ander het doel nog open heeft; oranje betekent gesloten door iedereen.
+## Windows installation
 
-- **Standard:** extra treffers geven jou punten zolang minstens één tegenstander het doel open heeft. Ook overtollige treffers binnen dezelfde pijl tellen. Sluit alle doelen en heb minstens evenveel punten als iedere tegenstander.
-- **Cut Throat:** extra treffers geven punten aan iedere tegenstander die het doel open heeft. Sluit alles met de laagste (of gedeeld laagste) score.
-- **No Score:** sluit alle doelen als eerste; punten spelen geen rol.
+1. Install Python 3 from [python.org](https://www.python.org/) and enable **Add Python to PATH**.
+2. Download and extract `180-Hitters-Windows-x64.zip`.
+3. Double-click `install-windows.cmd`.
+4. Allow Python through Windows Firewall on private networks when prompted.
 
-De beurt eindigt direct bij winst; voer daarna geen extra pijlen in. Het gemiddelde is effectieve marks per drie pijlen: sluitingstreffers plus treffers die daadwerkelijk punten kunnen opleveren. Bij No Score tellen alleen sluitingstreffers. De beste beurt gebruikt dezelfde telling. Een nieuwe leg wist het sluitingsbord en de legpunten; partijstatistieken blijven staan.
+Windows supports standalone play and shared control over the local network. Bluetooth NUC control and phone-driven Wi-Fi provisioning currently require Linux, BlueZ, and NetworkManager.
 
-## Rondelimiet en gelijkspel
+## Android
 
-Kies onbeperkt, 15, 20, 50 of 80 rondes. Elke speler krijgt evenveel beurten voordat de limiet wordt beoordeeld. X01 gebruikt de laagste resterende score; Cricket/Tactics Standard de hoogste punten, Cut Throat de laagste en No Score het grootste aantal sluitingstreffers. Bij een gelijke stand worden volledige extra rondes gespeeld totdat er één leider is, of iemand normaal uitgooit/sluit. Dit is een expliciete lokale beslisregel; exacte gelijkspelregels staan niet uitgewerkt in de geraadpleegde Autodarts-documentatie.
+Install `180-Hitters.apk` from the latest release. Android may ask for one-time permission to install apps from the browser or file manager used to open the APK.
 
-## Overeenkomst met Autodarts
+The Android app supports two modes:
 
-De spelinstellingen zijn zelfstandig geïmplementeerd met de officiële [X01-documentatie](https://docs.autodarts.com/game-modes/x01/) en [Cricket/Tactics-documentatie](https://docs.autodarts.com/game-modes/cricket-tactics/) als functionele referentie (18 oktober 2026). Dit is geen Autodarts-client. De code, accounts en diensten van Autodarts zijn niet gekoppeld.
+- **Connected mode:** control the match running on a Linux NUC over Bluetooth or Wi-Fi.
+- **Standalone mode:** run a complete local match on the phone without a NUC or network.
 
-Niet inbegrepen: Hidden Cricket, bots, andere oefen-/partyspellen, online tegenstanders, matchmaking, competities, cameradetectie, AI-referee en uitgebreide historische statistieken/heatmaps. De huidige partij en herstelgeschiedenis worden lokaal opgeslagen; er is geen archief van afgesloten partijen. Een bestaande X01-partij uit versie 1 wordt automatisch ingelezen.
+The app checks GitHub for newer releases. NUC releases are updated independently by the NUC update service.
 
-## Testen
+## Game modes
 
-De spelregeltests staan in [dist/tests/engine.test.js](dist/tests/engine.test.js). Start de lokale server en voer in de browserconsole uit: `const {runTests} = await import('/tests/engine.test.js'); runTests();`. De suite controleert 53 scenario's, waaronder busts, in/out-regels, sets, sluiting, puntentoekenning, winstvoorwaarden en rondelimieten. Touchinvoer, hervatten en herstellen zijn daarnaast in de browser gecontroleerd. Linux-autostart en de fysieke NUC zijn nog niet getest.
+- X01 with start scores 121, 170, 301, 501, 701, or 901
+- Straight, double, or master in
+- Straight, double, or master out
+- Cricket with Standard, Cut Throat, or No Score scoring
+- Tactics with targets 10–20 and bull
+- 121 nine-dart checkout training for one to four players
+- Gotcha with targets 301, 401, 501, 601, or 701
+- One to four players
+- Legs, sets, or free play
+- Optional round limits and complete-round tie-breaking
 
-## Autostart uitschakelen
+X01 supports turn-total entry and per-dart entry. Double/master-in and 50/50-bull configurations require per-dart input so opening and finishing rules can be validated correctly. Busts restore the state from before the turn and count as three darts for averages.
 
-Voer `systemctl --user disable --now oche-darts.service` uit en verwijder het bestand `~/.config/autostart/oche-darts.desktop`. Bewaar het browserprofiel als je de huidige partij wilt behouden.
+Checkout suggestions use the selected finishing rule. Double-out routes are based on the numerical Winmau PDC Checkout Table, with legal alternatives when the published route does not fit the number of darts or selected bull mode.
 
+## Shared display and mobile control
 
-## Mobiele score-invoer
+All connected devices operate on the match hosted by the NUC. Confirmed turns, undo/redo, new legs, and individual dart input are synchronized. Revision checks prevent an older client state from overwriting a newer match state.
 
-Alle apparaten gebruiken dezelfde partij op de NUC. Bevestigde beurten, ongedaan maken en een nieuwe leg worden gesynchroniseerd. Losse pijlen worden live gedeeld tussen scherm en mobiel, ook bij alle X01 dubbel-in startscores. Je kunt een pijl op het andere apparaat wissen of de beurt daar afmaken. Een beurttotaal dat nog niet bevestigd is blijft op het invoerende apparaat. Gebruik voor elke beurt een apparaat. Gelijktijdige wijzigingen worden gecontroleerd: een verouderde invoer overschrijft geen nieuwere stand.
+When connectivity is lost, input is blocked until the current state can be verified. Match data is written atomically to `match.json`. The first match should be started on the NUC display so it becomes the authoritative shared state.
 
-Bij verbindingsverlies wordt invoer geblokkeerd. Controleer na herstel de stand voordat je een beurt opnieuw invoert. De partij wordt atomair opgeslagen in `match.json` naast de server. Bij de eerste start neemt het NUC-scherm zijn bestaande lokaal opgeslagen partij over. Start de eerste partij op het NUC-scherm voordat je een mobiel gebruikt.
+On the fallback hotspot, open <http://10.42.0.1:8765/?remote=1>. On a venue network, scan the control QR code shown on the NUC display.
 
-Deze NUC krijgt wifi `180 Hitters wifi` met adres http://10.42.0.1:8765. Een telefoon moet verbonden blijven met dit netwerk, ook als hij meldt dat het geen internet heeft. Een eigen hotspot en de bestaande wifi-clientverbinding gebruiken dezelfde adapter en kunnen hier niet tegelijk worden gebruikt. Een netwerkkabel kan worden gebruikt voor beheer/internet naast de hotspot.
+## Bluetooth
 
-## Training: 121 - negen darts
+The Android app communicates with the Linux NUC through a BlueZ RFCOMM service. Bluetooth remains useful when venue Wi-Fi is unavailable or while the NUC changes networks. A newly connected authorized phone takes over the active Bluetooth control channel, closing the previous channel.
 
-Kies Training als aparte spelcategorie. Deze solo-oefening begint op 121, met invoer per pijl en dubbel-uit. Bij uitgooien stijgt de volgende startscore met 1 plus het aantal overgebleven darts van de negen. Uit in vier darts geeft dus +6: 121 wordt 127. Na negen darts zonder finish daalt de volgende startscore met 1, nooit onder 121. Een bust verbruikt de rest van de beurt. Het scherm toont het niveau, beste niveau en resterende darts.
+The app can request the NUC to enable or disable Bluetooth, restart, or shut down. These actions use narrowly scoped root-owned helpers rather than general shell access.
 
-## Training: Gotcha
+## Wi-Fi and fallback hotspot
 
-2-4 spelers, vanaf nul naar precies 301. Elke pijl telt; een gelijkgeraakte tegenstander wordt direct teruggezet op nul. Bij overschrijden van 301 eindigt de beurt en keert alleen de eigen score terug naar het begin van de beurt. Eerdere resets blijven staan. Single-out, bull 25/50, geen rondelimiet. Regels: https://www.flyordie.com/games/help/darts/en/game_rules_301.html en https://docs.autodarts.com/game-modes/party/gotcha/. De bronnen specificeren niet expliciet of een eerdere reset bij een latere bust vervalt; deze app behoudt de reset en benoemt dat in de speluitleg.
+From the connected Android app, open **Wi-Fi / hotspot** and enter the venue SSID and WPA2 password. The Linux NUC then:
 
-Gotcha heeft nu doelscores 301/401/501/601/701 en Straight-, Double- of Master-out. Bij Double/Master-out is een ongeldige finish of 1 resterend een bust. De beurt gaat automatisch door na de laatste pijl of een bust.
+1. creates or updates a NetworkManager profile;
+2. generates a standard Wi-Fi QR payload;
+3. displays that QR code on the main NUC screen;
+4. adds the network to the selectable saved-network list.
 
-## Spelerslijst
+Network switching runs as an independent systemd task. If the selected network cannot be activated, the NUC attempts to restore `180 Hitters wifi`, followed by the previous connection. The match remains stored during network changes.
 
-Via Spelerslijst op scherm en mobiel voeg je namen toe en verwijder je ze. De lijst is gedeeld, alfabetisch gesorteerd en opgeslagen in match-players.json naast match.json. Namen zijn maximaal 24 tekens; hoofdletterverschillen maken geen dubbele naam. Elk spel biedt bij de spelersnamen een keuzelijst; een losse naam typen blijft mogelijk. Verwijderen uit de lijst verandert een lopende partij niet.
+The fallback hotspot and a Wi-Fi client connection normally cannot use the same wireless adapter simultaneously. Ethernet can provide internet or management access while the hotspot is active.
 
-121 ondersteunt 1-4 spelers. Elke speler speelt een volledige poging van maximaal negen darts. Daarna kies je Volgende speler. Niveaus en beste niveaus worden per speler bewaard. De starter kan worden gekozen.
+## Venue profiles
 
-## Voorkeursroutes checkout
+The same build can be reused at home or by different venues. Open **Menu → Venue** on the NUC or in the Android app to configure:
 
-Double-out gebruikt de numerieke routes van de Winmau PDC Checkout Table (https://winmau.com/products/winmau-out-shot-calculator-card-x0968). Deze kaart begint bij 41; onder 41 kiest de app directe dubbels of een single naar D16/D8/D4/D2/D1, zoals 25 = S9 D8. Wanneer de kaartroute niet past binnen het aantal resterende pijlen of de bullinstelling, zoekt de app een geldige alternatieve route. Straight- en Master-out behouden hun eigen finishregels.
+- venue name and city;
+- player-list label and slogan;
+- screensaver availability;
+- logo and background image;
+- optional venue Wi-Fi QR information;
+- fallback hotspot instructions.
 
+The profile is stored in `venue.json` next to `server.py` and is not included in public releases or replaced during updates. Large background images are omitted from Bluetooth synchronization to keep transfers responsive; the logo and text branding still synchronize.
 
-## Wifi / hotspot vanaf de mobiel
+## Player lists
 
-De Android-app kan via Bluetooth of wifi een nieuw WPA2-netwerk op de Linux-NUC opslaan. Vul de SSID en het wachtwoord in bij **Wifi / hotspot**. De NUC maakt direct een standaard wifi-QR op het hoofdscherm en neemt het netwerk op in de keuzelijst. Het wachtwoord wordt niet teruggestuurd naar browsers.
+The NUC maintains the venue player list. The Android app maintains a separate personal/mobile list. Both lists are combined for player selection without overwriting ownership:
 
-Na bevestiging start een onafhankelijke systemd-taak de verbinding; na vier seconden kan de telefoon de wifi-verbinding verliezen, terwijl Bluetooth beschikbaar blijft. Bij mislukken (35 seconden verbindpoging) probeert de NUC `180 Hitters wifi`, en als ook dat mislukt de vorige verbinding. Bij een defecte of uitgeschakelde adapter is herstel niet gegarandeerd.
+- venue players are managed on the NUC;
+- personal players are managed from the Android app;
+- names are synchronized and deduplicated case-insensitively;
+- removing a saved name does not modify an active match.
 
-`setup-linux.sh` regelt dit bij een nieuwe installatie. Handmatig kan het met `sudo bash install-network-control.sh`. De root-eigen helper accepteert alleen begrensde SSID/wachtwoordgegevens of UUIDs uit `/etc/darts-network.json`; de webserver krijgt geen algemene shelltoegang.
+## Winner screen and local artwork
 
-Status en resultaat zijn beschikbaar via `/api/network/control`; omschakelen gebeurt via JSON POST `/api/network/switch` met uitsluitend `uuid`. Bewaar de mobiele pagina als bladwijzer. Op `180 Hitters wifi`: `http://10.42.0.1:8765/?remote=1`; op andere wifi: scan de QR-code op het NUC-scherm. De knop beheert uitsluitend opgeslagen verbindingen, geen nieuwe wachtwoorden.
+The winner screen displays “Game shot and the match”, match statistics, animations, and an optional local photo banner in the upper third of the screen. Third-party venue artwork is intentionally excluded from the public repository when redistribution rights are unclear. Files named `winner-stage*.jpg`, `winner-stage*.jpeg`, and `winner-trophy.jpg` in the installed `dist` directory are preserved by NUC updates.
 
-## Herbruikbaar locatieprofiel
+## Architecture and security
 
-Dezelfde app en APK werken neutraal, thuis en bij verschillende verenigingen. Kies op de NUC of in de Android-app **Menu → Locatie** om de locatienaam, plaats, naam van de clubspelerslijst, slogan, screensaver, logo, achtergrond en optionele clubwifi-QR in te stellen. Zonder profiel gebruikt de app `180 Hitters`, `Clubspelers` en een algemene screensaver.
+- Python 3 standard-library HTTP server; no npm runtime installation
+- browser-based responsive UI
+- Java Android wrapper with an embedded local server
+- root-owned, allow-listed Linux helpers for network and system control
+- control-token checks for privileged Android operations
+- origin checks and strict JSON validation for write requests
+- atomic state and profile writes
+- SHA-256 verification before NUC updates are installed
 
-Het profiel staat als `venue.json` naast `server.py` en wordt niet opgenomen in GitHub-releases of vervangen door updates. Via wifi en Bluetooth leest de Android-app automatisch het profiel van de gekoppelde NUC. In lokale telefoonmodus wordt een afzonderlijk neutraal of persoonlijk profiel op de telefoon bewaard. De 180 Hitters-hotspot blijft centraal via NetworkManager beheerd; naam en wachtwoord in het profiel zijn uitsluitend de bijbehorende gebruikersinstructie.
+Use the shared server only on a trusted local network. Anyone who can access the control page can participate in the active match.
+
+## Development and testing
+
+Run the server directly:
+
+```bash
+python3 server.py
+```
+
+On Windows:
+
+```powershell
+python server.py
+```
+
+Then open <http://127.0.0.1:8765>.
+
+Browser and integration tests are located in `tests/`. Game-engine tests are in `dist/tests/engine.test.js` and currently cover 67 rule scenarios. The automated suite also checks responsive layouts, shared drafts, history navigation, corrections, venue profiles, player-list synchronization, the Android distribution, and the winner screen.
+
+Build the signed Android release locally with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-android.ps1
+```
+
+The signing keystore and passwords are intentionally excluded from version control.
+
+## Autodarts compatibility note
+
+180 Hitters is an independent scoring application. Its game settings use the official [Autodarts X01 documentation](https://docs.autodarts.com/game-modes/x01/) and [Cricket/Tactics documentation](https://docs.autodarts.com/game-modes/cricket-tactics/) as functional references, but it is not an Autodarts client and does not connect to Autodarts accounts or services.
+
+Camera detection, online opponents, matchmaking, leagues, bots, AI refereeing, and long-term match archives are outside the current scope.
+
+## Disable autostart on Linux
+
+```bash
+systemctl --user disable --now oche-darts.service
+```
+
+Remove `~/.config/autostart/oche-darts.desktop` to disable kiosk startup. Keep the browser profile if you want to retain its local state.
+
+## License and third-party assets
+
+Review [IMAGE-SOURCES.txt](IMAGE-SOURCES.txt) for external image references. Third-party photographs without confirmed redistribution rights are not included in public release packages.

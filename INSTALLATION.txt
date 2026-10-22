@@ -1,0 +1,18 @@
+180 HITTERS - INSTALLATION
+==========================
+
+LINUX NUC (Ubuntu/Debian)
+1. Extract the Linux package.
+2. Open a terminal in the extracted directory.
+3. Run: sudo bash setup-linux.sh
+4. Install the Android app using the QR code on the main screen.
+5. Pair the app over Bluetooth and open Wi-Fi / hotspot to add the venue network.
+
+WINDOWS 10/11
+1. Install Python 3 from python.org if it is not already installed.
+2. Extract the Windows package.
+3. Double-click install-windows.cmd.
+4. Allow Python through Windows Firewall for phones on the same private network.
+
+Updates preserve venue profiles, player lists, active matches, and local winner artwork.
+Bluetooth control and phone-driven NUC Wi-Fi setup are available on Linux with BlueZ and NetworkManager.

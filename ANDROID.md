@@ -1,26 +1,25 @@
-# 180 Hitters Android
+# 180 Hitters for Android
 
-De Android-app gebruikt exact dezelfde bestanden uit `dist` als de NUC. Gradle kopieert deze bestanden tijdens elke build; onderhoud daarom nooit een tweede kopie van de webinterface.
+The Android app uses the same files from `dist` as the NUC. Gradle copies these files into the app during every build, so the web interface must never be maintained as a separate Android-specific copy.
 
-## Modi
+## Modes
 
-- **Lokaal:** de ingebouwde Android-server gebruikt `127.0.0.1:8765`. Hiervoor is geen wifi, NUC of internet nodig.
-- **NUC via Bluetooth:** de interface draait lokaal op de telefoon en wisselt score- en spelersgegevens via Bluetooth Classic uit met de NUC. Wifi en internet zijn niet nodig. Koppel de telefoon één keer met apparaat `darten`.
-- **NUC via wifi:** opent de NUC via het ingestelde HTTP-adres. Vanuit deze modus kan Bluetooth op de NUC weer worden aangezet.
-- Bij overschakelen van NUC naar lokaal kan de laatst bevestigde NUC-stand worden overgenomen.
-- De door het locatieprofiel benoemde clubspelerslijst staat centraal op de NUC en kan alleen op het NUC-scherm worden beheerd. Zonder NUC gebruikt de app het neutrale profiel en **Mijn spelers**.
-- **Mijn spelers** wordt in de Android-app bewaard, werkt offline en wordt bij een NUC-verbinding als aparte lijst naar de NUC gesynchroniseerd.
+- **Standalone:** the embedded Android server runs on `127.0.0.1:8765`. No Wi-Fi, NUC, or internet connection is required.
+- **NUC over Bluetooth:** the interface runs locally on the phone and exchanges match and player data with the NUC over Bluetooth Classic. Pair the phone with the NUC once.
+- **NUC over Wi-Fi:** opens the configured NUC HTTP address. This mode can also request the NUC to enable Bluetooth again.
+- When switching from a NUC to standalone mode, the latest confirmed NUC match can be imported.
+- The venue player list is stored centrally on the NUC and can only be edited on the NUC display.
+- **My players** is stored in the Android app, works offline, and synchronizes to the NUC as a separate list.
 
-## Bouwen en aanbieden
+## Build and distribution
 
-1. De draagbare JDK, Gradle en Android SDK staan onder `.tools` en wijzigen de Windows-installatie niet.
-2. Voer `build-android.ps1` uit.
-3. Het resultaat komt in `dist/downloads/180-Hitters.apk`.
-4. Voer daarna op de NUC opnieuw `bash install-linux.sh` uit. De knop **Android-app** toont een QR-code naar de APK op de NUC.
+1. The portable JDK, Gradle, and Android SDK are stored under `.tools` and do not modify the Windows installation.
+2. Run `build-android.ps1`.
+3. The signed result is written to `dist/downloads/180-Hitters.apk`.
+4. GitHub Actions publishes the APK and checksums when a version tag is pushed.
 
-Behoud de ondertekeningssleutel waarmee de eerste definitieve APK wordt gebouwd. Alleen APK's met dezelfde sleutel kunnen als update over de bestaande app worden geïnstalleerd.
-De sleutel staat lokaal in `android/keystore/axelman8-release.jks` en wordt niet door Git meegenomen. Maak hiervan een veilige back-up.
+Keep a secure backup of the signing key used for the first production APK. Android only accepts an update when it is signed with the same key. The local key at `android/keystore/axelman8-release.jks` and its passwords are excluded from Git.
 
-## NUC-installatie
+## NUC integration
 
-`install-linux.sh` installeert ook de Bluetooth-brug. Voer daarnaast één keer `sudo bash install-system-control.sh` uit voor de afgeschermde knoppen Bluetooth aan/uit, herstarten en uitschakelen. Ingrijpende acties vragen in de Android-app altijd om bevestiging.
+`install-linux.sh` installs the Bluetooth bridge. The complete `setup-linux.sh` installer also configures the restricted system and network helpers. Privileged operations such as restart and shutdown always require confirmation in the Android app.
