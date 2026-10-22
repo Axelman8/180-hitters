@@ -22,7 +22,7 @@ function collect(){
  for(const node of [...actions.children]){
   if(node.matches('button,a'))groups[play.has(node.id)?'play':'settings'].append(node);
  }
- for(const id of ['layout-open','android-app-action']){
+ for(const id of ['android-app-action']){
   const node=document.getElementById(id);
   if(node&&!menu.contains(node))groups.settings.append(node);
  }

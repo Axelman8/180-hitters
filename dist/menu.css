@@ -12,3 +12,6 @@ body>header #top-actions{display:none!important}
 #header-menu .menu-panel button{width:100%;position:static!important;min-height:44px;font-size:14px;text-align:left;padding:12px;white-space:normal}
 body.remote-control>header{flex-direction:row;flex-wrap:nowrap;min-height:56px}
 @media(max-width:600px){body>header{padding-left:10px;padding-right:10px;flex-wrap:wrap}body>header .brand{font-size:17px;letter-spacing:1px}#header-menu details{position:static}#header-menu .menu-panel{right:10px;top:calc(100% + 4px)}#header-menu summary{padding:10px 12px}}
+
+#header-menu #settings{color:#ffad66}
+#header-menu #android-update-action{color:#ff7777}

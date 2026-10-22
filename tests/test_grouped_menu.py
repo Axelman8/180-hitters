@@ -15,11 +15,10 @@ with tempfile.TemporaryDirectory() as tmp:
     expect(page.locator('#header-menu details[open]')).to_have_count(0)
     page.locator('summary',has_text='Spelen').click();expect(page.locator('#settings')).to_be_visible()
     page.locator('summary',has_text='Instellingen').click();expect(page.locator('#settings')).to_be_hidden()
-    if query:
-     page.locator('#layout-open').click();expect(page.locator('#layout-dialog')).to_be_visible()
-     expect(page.locator('#header-menu details[open]')).to_have_count(0)
-     page.locator('#layout-close').click()
-    else: page.keyboard.press('Escape')
+    expect(page.locator('#layout-open')).to_have_count(0)
+    page.keyboard.press('Escape')
+    assert page.locator('body').get_attribute('data-mobile-layout')=='adaptive'
+    assert page.locator('#settings').evaluate("e=>getComputedStyle(e).color")=='rgb(255, 173, 102)'
     page.locator('summary',has_text='Spelen').click();page.keyboard.press('Escape')
     expect(page.locator('#header-menu details[open]')).to_have_count(0)
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
@@ -28,6 +27,7 @@ with tempfile.TemporaryDirectory() as tmp:
    native.add_init_script("window.DartsAndroid={chooseMode:()=>window.modeChosen=true,checkForUpdate:()=>window.updateChosen=true}")
    native.goto('http://127.0.0.1:8788/?remote=1')
    native.locator('summary',has_text='Instellingen').click()
+   assert native.locator('#android-update-action').evaluate("e=>getComputedStyle(e).color")=='rgb(255, 119, 119)'
    native.locator('#android-update-action').click()
    assert native.evaluate('window.updateChosen===true')
    expect(native.locator('#header-menu details[open]')).to_have_count(0)
