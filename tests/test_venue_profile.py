@@ -37,7 +37,8 @@ with tempfile.TemporaryDirectory() as tmp:
         assert request(base) == saved
         compact = request(base, extra_headers={'X-Darts-Transport': 'bluetooth'})
         assert compact['venueName'] == 'Testvereniging'
-        assert compact['logoData'] == compact['backgroundData'] == ''
+        assert compact['logoData'] == saved['logoData']
+        assert compact['backgroundData'] == ''
         assert json.loads((Path(tmp) / 'venue.json').read_text(encoding='utf-8')) == saved
         print('PASS: neutraal locatieprofiel wordt gevalideerd en blijvend opgeslagen')
     finally:
