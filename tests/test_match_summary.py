@@ -37,7 +37,9 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator('.summary-leg-table').first.locator('tbody tr').first.locator('td')).to_have_text(['30,00','40'])
             expect(page.locator('#players .player-leg-results').first.locator('thead th')).to_have_text(['Leg','Gemiddelde','Finish'])
             expect(page.locator('.winner-trophy')).to_have_count(0)
-            assert 'winner-stage-pdc.jpg' in page.locator('#result-dialog').evaluate('e=>getComputedStyle(e).backgroundImage')
+            winner_photo = page.locator('#result-dialog').evaluate("e=>({backgroundImage:getComputedStyle(e,'::before').backgroundImage,height:getComputedStyle(e,'::before').height})")
+            assert 'winner-stage-pdc.jpg' in winner_photo['backgroundImage']
+            assert abs(float(winner_photo['height'][:-2]) - page.evaluate('innerHeight') / 3) < 1
             expect(page.locator('.summary-total strong').first).to_have_text('48,00')
             page.set_viewport_size({'width':393,'height':750})
             page.wait_for_timeout(100)
