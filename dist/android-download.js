@@ -48,6 +48,7 @@ if (window.DartsAndroid) {
   document.getElementById('top-actions').append(action, update);
   document.getElementById('mobile-dock').hidden = true;
 } else {
+  document.body.classList.add('browser-shell');
   action.addEventListener('click', () => { dialog.showModal(); void renderDownload(); });
 }
 document.getElementById('android-download-close').addEventListener('click', () => dialog.close());

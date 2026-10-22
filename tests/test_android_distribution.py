@@ -23,6 +23,9 @@ with tempfile.TemporaryDirectory() as tmp:
             errors = []
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.goto('http://127.0.0.1:8791/')
+            expect(page.locator('#mobile-dock > #install-app')).to_have_count(1)
+            expect(page.locator('#install-app-code')).to_have_attribute(
+                'href', 'https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters.apk')
             expect(page.locator('#android-app-action')).to_be_visible()
             page.locator('#android-app-action').click()
             expect(page.locator('#android-download-dialog')).to_be_visible()

@@ -4,6 +4,17 @@ const address = document.getElementById('mobile-address');
 const status = document.getElementById('mobile-qr-status');
 const note = document.getElementById('mobile-network-note');
 let lastUrl = '';
+const installUrl = 'https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters.apk';
+
+function showInstallCode(){
+ const target=document.getElementById('install-app-code');
+ const image=window.qrcode(0,'M');image.addData(installUrl);image.make();
+ target.innerHTML=image.createSvgTag({cellSize:4,margin:16,scalable:true});
+ target.href=installUrl;
+ const svg=target.querySelector('svg');
+ svg.setAttribute('role','img');svg.setAttribute('aria-label','Installeer de nieuwste 180 Hitters Android-app via GitHub');
+}
+showInstallCode();
 
 async function refreshMobileCode() {
   try {
@@ -61,8 +72,8 @@ async function showClubWifi(){
   code.querySelector('svg').setAttribute('aria-label','Verbind met de wifi van VTV de Venhoeve');
   code.querySelector('svg').setAttribute('role','img');
   const text=document.createElement('div'),title=document.createElement('strong'),note=document.createElement('p');
-  title.textContent='1. Verbind met wifi';note.textContent='VTV de Venhoeve';text.append(title,note);group.append(code,text);
-  document.getElementById('mobile-dock').prepend(group);
+  title.textContent='2. Verbind met wifi';note.textContent='VTV de Venhoeve';text.append(title,note);group.append(code,text);
+  const dock=document.getElementById('mobile-dock');dock.insertBefore(group,dock.querySelector('.mobile-dock-copy'));
  }catch{}
 }
 showClubWifi();
