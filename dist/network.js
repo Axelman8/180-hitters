@@ -32,7 +32,7 @@ async function loadNetwork() {
     $('network-status').textContent = data.busy ? 'De NUC schakelt van netwerk. Dit kan ongeveer een minuut duren.' : (data.operation?.message || '');
   } catch (error) {
     $('network-status').textContent = pending
-      ? 'De verbinding is weg tijdens het omschakelen. Verbind je telefoon met het gekozen netwerk. Bij mislukken van wifi probeert de NUC automatisch dartscore.'
+      ? 'De verbinding is weg tijdens het omschakelen. Verbind je telefoon met het gekozen netwerk. Bij mislukken van wifi probeert de NUC automatisch 180 Hitters wifi.'
       : (error.name === 'TimeoutError' || error instanceof TypeError ? 'De NUC is niet bereikbaar. Controleer je wifi-verbinding.' : error.message);
     if (!pending) { info = null; setBusy(true); }
   } finally { polling = false; }
@@ -43,8 +43,8 @@ function choose(target) {
   if (!chosen) return;
   $('network-target').textContent = chosen.name;
   $('network-instructions').textContent = chosen.mode === 'hotspot'
-    ? 'Verbind daarna je telefoon met dartscore. Wachtwoord: Darts180. Open vervolgens http://10.42.0.1:8765/?remote=1.'
-    : `Verbind daarna je telefoon met ${chosen.name}. Scan de QR-code op het NUC-scherm voor het nieuwe adres. Lukt verbinden niet, dan gaat de NUC terug naar dartscore (wachtwoord Darts180).`;
+    ? 'Verbind daarna je telefoon met 180 Hitters wifi. Wachtwoord: Darts180. Open vervolgens http://10.42.0.1:8765/?remote=1.'
+    : `Verbind daarna je telefoon met ${chosen.name}. Scan de QR-code op het NUC-scherm voor het nieuwe adres. Lukt verbinden niet, dan gaat de NUC terug naar 180 Hitters wifi (wachtwoord Darts180).`;
   $('network-confirmation').hidden = false;
   $('network-confirm').disabled = false;
   $('network-back').hidden = false;

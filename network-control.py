@@ -87,7 +87,7 @@ def apply(target, data):
         result = {'phase': 'done', 'target': target, 'message': 'De netwerkverbinding is actief.'}
     elif activate(data['hotspot']):
         result = {'phase': 'fallback', 'target': data['hotspot'],
-                  'message': 'Verbinden is niet gelukt. De NUC zendt weer dartscore uit.'}
+                  'message': 'Verbinden is niet gelukt. De NUC zendt weer 180 Hitters wifi uit.'}
     elif previous and previous != data['hotspot'] and activate(previous):
         result = {'phase': 'error', 'target': previous,
                   'message': 'Omschakelen is mislukt. De vorige verbinding is hersteld.'}

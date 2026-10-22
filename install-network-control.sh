@@ -16,10 +16,10 @@ for uid in read('UUID','connection','show').splitlines():
  if read('connection.type','connection','show','uuid',uid)!='802-11-wireless':continue
  ssid=read('802-11-wireless.ssid','connection','show','uuid',uid)
  mode=read('802-11-wireless.mode','connection','show','uuid',uid)
- if mode=='ap' and ssid!='dartscore':continue
+ if mode=='ap' and ssid!='180 Hitters wifi':continue
  profiles.append({'uuid':uid,'name':ssid,'mode':'hotspot' if mode=='ap' else 'wifi'})
-hotspot=next((p['uuid'] for p in profiles if p['mode']=='hotspot' and p['name']=='dartscore'),None)
-if not hotspot:raise SystemExit('Configureer eerst de beveiligde dartscore-hotspot.')
+hotspot=next((p['uuid'] for p in profiles if p['mode']=='hotspot' and p['name']=='180 Hitters wifi'),None)
+if not hotspot:raise SystemExit('Configureer eerst de beveiligde 180 Hitters wifi-hotspot.')
 path=Path('/etc/darts-network.json')
 path.write_text(json.dumps({'hotspot':hotspot,'profiles':profiles},ensure_ascii=False))
 path.chmod(0o644)
@@ -30,4 +30,4 @@ trap 'rm -f "$TEMP_RULE"' EXIT
 printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/darts-network\n' "$APP_USER" > "$TEMP_RULE"
 visudo -cf "$TEMP_RULE"
 install -o root -g root -m 0440 "$TEMP_RULE" /etc/sudoers.d/darts-network
-echo 'Netwerkkeuze voor opgeslagen wifi en dartscore is ingesteld.'
+echo 'Netwerkkeuze voor opgeslagen wifi en 180 Hitters wifi is ingesteld.'

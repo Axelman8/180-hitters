@@ -94,7 +94,7 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 TIMER
-[[ -f "$HOME/.local/share/oche-darts/.version" ]] || printf '1.3.4\n' > "$HOME/.local/share/oche-darts/.version"
+[[ -f "$HOME/.local/share/oche-darts/.version" ]] || printf '1.3.5\n' > "$HOME/.local/share/oche-darts/.version"
 systemctl --user daemon-reload
 systemctl --user enable --now oche-darts-update.timer
 echo 'Geïnstalleerd. Open http://127.0.0.1:8765 of meld opnieuw aan voor kioskmodus.'

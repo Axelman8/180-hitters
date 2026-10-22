@@ -136,7 +136,7 @@ public final class MainActivity extends Activity {
     private void askNucAddress() {
         EditText input=new EditText(this); input.setSingleLine(true); input.setText(preferences.getString("nuc_url","http://10.42.0.1:8765")); input.setSelectAllOnFocus(true);
         int pad=dp(22); FrameLayout box=new FrameLayout(this); box.setPadding(pad,0,pad,0); box.addView(input,new FrameLayout.LayoutParams(-1,-2));
-        new AlertDialog.Builder(this).setTitle("Adres van de NUC").setMessage("Het standaardadres van de dartscore-hotspot is al ingevuld.")
+        new AlertDialog.Builder(this).setTitle("Adres van de NUC").setMessage("Het standaardadres van de 180 Hitters wifi-hotspot is al ingevuld.")
                 .setView(box).setPositiveButton("Verbinden",(d,w)->{
                     String value=input.getText().toString().trim(); if(!value.startsWith("http://")&&!value.startsWith("https://"))value="http://"+value;
                     while(value.endsWith("/"))value=value.substring(0,value.length()-1);

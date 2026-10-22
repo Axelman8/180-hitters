@@ -44,7 +44,7 @@ async function refreshMobileCode() {
       lastUrl = mobileUrl;
     }
     note.textContent = hotspot
-      ? 'Hotspot actief: verbind met dartscore.'
+      ? 'Hotspot actief: verbind met 180 Hitters wifi.'
       : 'Gebruik hetzelfde wifi-netwerk als de NUC.';
     link.hidden = false;
     address.hidden = false;

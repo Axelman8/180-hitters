@@ -68,7 +68,7 @@ Alle apparaten gebruiken dezelfde partij op de NUC. Bevestigde beurten, ongedaan
 
 Bij verbindingsverlies wordt invoer geblokkeerd. Controleer na herstel de stand voordat je een beurt opnieuw invoert. De partij wordt atomair opgeslagen in `match.json` naast de server. Bij de eerste start neemt het NUC-scherm zijn bestaande lokaal opgeslagen partij over. Start de eerste partij op het NUC-scherm voordat je een mobiel gebruikt.
 
-Deze NUC krijgt wifi `dartscore` met adres http://10.42.0.1:8765. Een telefoon moet verbonden blijven met dit netwerk, ook als hij meldt dat het geen internet heeft. Een eigen hotspot en de bestaande wifi-clientverbinding gebruiken dezelfde adapter en kunnen hier niet tegelijk worden gebruikt. Een netwerkkabel kan worden gebruikt voor beheer/internet naast de hotspot.
+Deze NUC krijgt wifi `180 Hitters wifi` met adres http://10.42.0.1:8765. Een telefoon moet verbonden blijven met dit netwerk, ook als hij meldt dat het geen internet heeft. Een eigen hotspot en de bestaande wifi-clientverbinding gebruiken dezelfde adapter en kunnen hier niet tegelijk worden gebruikt. Een netwerkkabel kan worden gebruikt voor beheer/internet naast de hotspot.
 
 ## Training: 121 - negen darts
 
@@ -93,8 +93,8 @@ Double-out gebruikt de numerieke routes van de Winmau PDC Checkout Table (https:
 
 ## Wifi / hotspot vanaf de mobiel
 
-De knop Wifi / hotspot toont opgeslagen netwerken. Na bevestiging start een onafhankelijke systemd-taak de verbinding; na vier seconden kan de telefoon de verbinding verliezen. Bij mislukken (35 seconden verbindpoging) probeert de NUC dartscore, en als ook dat mislukt de vorige verbinding. Bij een defecte of uitgeschakelde adapter is herstel niet gegarandeerd.
+De knop Wifi / hotspot toont opgeslagen netwerken. Na bevestiging start een onafhankelijke systemd-taak de verbinding; na vier seconden kan de telefoon de verbinding verliezen. Bij mislukken (35 seconden verbindpoging) probeert de NUC `180 Hitters wifi`, en als ook dat mislukt de vorige verbinding. Bij een defecte of uitgeschakelde adapter is herstel niet gegarandeerd.
 
-Eenmalig op de NUC: `sudo bash install-network-control.sh`. Dit neemt de huidige opgeslagen wifi-profielen op in `/etc/darts-network.json` en installeert een root-eigen helper `/usr/local/sbin/darts-network`. Alleen UUIDs uit die lijst kunnen worden geactiveerd; de webserver krijgt geen algemene sudo- of shelltoegang. Voer dit installatiescript opnieuw uit na het toevoegen/verwijderen van wifi-profielen. Het beveiligde dartscore-profiel moet al bestaan.
+Eenmalig op de NUC: `sudo bash install-network-control.sh`. Dit neemt de huidige opgeslagen wifi-profielen op in `/etc/darts-network.json` en installeert een root-eigen helper `/usr/local/sbin/darts-network`. Alleen UUIDs uit die lijst kunnen worden geactiveerd; de webserver krijgt geen algemene sudo- of shelltoegang. Voer dit installatiescript opnieuw uit na het toevoegen/verwijderen van wifi-profielen. Het beveiligde profiel `180 Hitters wifi` moet al bestaan.
 
-Status en resultaat zijn beschikbaar via `/api/network/control`; omschakelen gebeurt via JSON POST `/api/network/switch` met uitsluitend `uuid`. Bewaar de mobiele pagina als bladwijzer. Op dartscore: `http://10.42.0.1:8765/?remote=1`; op andere wifi: scan de QR-code op het NUC-scherm. De knop beheert uitsluitend opgeslagen verbindingen, geen nieuwe wachtwoorden.
+Status en resultaat zijn beschikbaar via `/api/network/control`; omschakelen gebeurt via JSON POST `/api/network/switch` met uitsluitend `uuid`. Bewaar de mobiele pagina als bladwijzer. Op `180 Hitters wifi`: `http://10.42.0.1:8765/?remote=1`; op andere wifi: scan de QR-code op het NUC-scherm. De knop beheert uitsluitend opgeslagen verbindingen, geen nieuwe wachtwoorden.
