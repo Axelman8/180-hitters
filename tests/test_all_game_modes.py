@@ -58,7 +58,22 @@ with tempfile.TemporaryDirectory() as tmp:
    expect(phone.locator('#message')).to_contain_text('A staat op nul')
    assert [x['remaining'] for x in saved()['match']['state']['players']]==[0,20,0]
    assert saved()['match']['state']['active']==1
+   # Bob's 27 is dart-only: one D1 scores +2; a blank D2 round scores -4.
+   s=phone.evaluate("async()=>{const {newMatch}=await import('/engine.js');return newMatch(['A'],27,'double',1,{game:'bobs27'})}")
+   phone.request.post('http://127.0.0.1:8788/api/state',data={'revision':saved()['revision'],'match':{'state':s,'undo':[]}})
+   for page in [phone,screen]:page.reload()
+   expect(phone.locator('#mode-dart')).to_have_class('selected')
+   expect(phone.locator('#training-status')).to_contain_text('Doel D1')
+   phone.get_by_role('button',name='Double',exact=True).click()
+   phone.locator('#board-keys').get_by_role('button',name='1',exact=True).click()
+   phone.locator('#board-keys').get_by_role('button',name='Mis',exact=True).click()
+   phone.locator('#board-keys').get_by_role('button',name='Mis',exact=True).click()
+   expect(screen.locator('#players .remaining')).to_have_text('29')
+   expect(phone.locator('#training-status')).to_contain_text('Doel D2')
+   for _ in range(3):phone.locator('#board-keys').get_by_role('button',name='Mis',exact=True).click()
+   expect(screen.locator('#players .remaining')).to_have_text('25')
+   assert saved()['match']['state']['bobsTarget']==3
    results=phone.evaluate("async()=>{const {runTests}=await import('/tests/engine.test.js');return runTests()}")
-   print('PASS: all games default total, cricket/tactics batch submit and sync, Gotcha immediate reset, sync, undo/redo, reload and single opponent; engine tests:',results['passed'])
+   print("PASS: all games, Bob's 27 scoring and sync, cricket/tactics batch submit, Gotcha reset, undo/redo and reload; engine tests:",results['passed'])
    b.close()
  finally:server.terminate();server.wait()

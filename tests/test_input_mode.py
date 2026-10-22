@@ -109,8 +109,9 @@ def main():
                 # Start a new X01 match through the real setup form.
                 phone.locator('#settings').click()
                 phone.locator('#new-match-confirm').click()
-                phone.locator('#category-match').click()
-                phone.locator('#setup-form button[type="submit"]').click()
+                phone.locator('.wizard-game').filter(has=phone.get_by_text('X01', exact=True)).click()
+                phone.locator('.wizard-next').click()
+                phone.locator('.wizard-next').click()
                 check('dart')
                 phone.reload()
                 check('dart')

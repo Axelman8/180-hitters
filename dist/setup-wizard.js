@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-const games=[['x01','X01','Van je startscore naar nul.','Wedstrijd'],['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd'],['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd'],['121','121','Checkouttraining met negen darts.','Training'],['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training']];
+const games=[['x01','X01','Van je startscore naar nul.','Wedstrijd'],['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd'],['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd'],['121','121','Checkouttraining met negen darts.','Training'],['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training'],['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training']];
 const fields=['start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','count'];
 let step=0,slot=0,venueRoster=[],mobileRoster=[],selected='x01';
 const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';
@@ -10,7 +10,7 @@ function button(text,action,cls){const node=el('button',text,cls);node.type='but
 function change(id,value){$(id).value=String(value);$(id).dispatchEvent(new Event('change',{bubbles:true}));}
 function remember(){try{localStorage.setItem('darts.setup.preferences',JSON.stringify({selected,values:Object.fromEntries(fields.map(id=>[id,$(id).value]))}));}catch{}}
 function chooseGame(id){
- selected=id;const training=['121','gotcha'].includes(id);
+ selected=id;const training=['121','gotcha','bobs27'].includes(id);
  $(training?'category-training':'category-match').click();
  change('game-type',training?'training':id);$('setup-form').hidden=false;
  if(training)change('training-type',id);else change('game-type',id);
@@ -51,8 +51,9 @@ function render(){
   const main=[['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set']];
   for(const [id,title] of main){const group=options(id,title);if(group)content.append(group);}
   if(selected==='121')content.append(el('p','Negen darts om uit te gooien. Je niveau begint bij 121.','wizard-info'));
+  if(selected==='bobs27')content.append(el('p',"Start op 27. Gooi drie pijlen op D1 t/m D20 en daarna bull. Treffer: punten erbij; volledig missen: punten eraf.",'wizard-info'));
  }else{
-  content.append(options('count','Aantal spelers'));slot=Math.min(slot,names().length-1);
+  const count=options('count','Aantal spelers');if(count)content.append(count);slot=Math.min(slot,names().length-1);
   content.append(el('p','Kies een plek en tik daarna op een naam uit de spelerslijst.','wizard-hint'));
   const slots=el('div',undefined,'wizard-slots');
   names().forEach((input,i)=>{const b=button('',()=>{slot=i;render();});b.setAttribute('aria-pressed',String(i===slot));b.append(el('small',`Speler ${i+1}`),el('strong',input.value));slots.append(b);});content.append(slots);
@@ -68,7 +69,7 @@ function render(){
   input.onchange=()=>render();label.append(input);content.append(label);
   const starter=options('starter','Wie begint?');if(starter)content.append(starter);
   const summary=el('div',undefined,'wizard-summary');summary.append(el('strong',games.find(g=>g[0]===selected)?.[1]));
-  const ids=selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:['scoring','match-mode','legs'];
+  const ids=selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:selected==='bobs27'?[]:['scoring','match-mode','legs'];
   summary.append(el('p',ids.filter(id=>!$(id).closest('label').hidden).map(id=>id==='legs'?`Eerste tot ${$(id).value} ${$('match-mode').value==='sets'?'sets':'legs'}`:$(id).selectedOptions[0]?.textContent).join(' · ')),el('p',names().map(i=>i.value).join(' → ')));content.append(summary);
  }
  const actions=el('div',undefined,'wizard-actions');

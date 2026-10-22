@@ -39,6 +39,10 @@ export function setupShot(score,out='double',n=1,bull='25/50'){
  return {label,remaining:score-value,next:route.slice(1)};
 }
 export function newMatch(names,start=501,out='double',legs=3,options={}){
+ if(options.game==='bobs27'){
+  if(names.length!==1)throw Error("Bob's 27 is een solotraining.");
+  start=27;out='double';legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50',starter:0,bobsTarget:1};
+ }
  if(options.game==='gotcha'){if(names.length<2)throw Error('Gotcha heeft minimaal twee spelers nodig.');if(![301,401,501,601,701].includes(start))throw Error('Ongeldige Gotcha-doelscore.');if(!['single','double','master'].includes(out))throw Error('Ongeldige finishregel.');legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50'};}
  if(options.training121){
   if(names.length<1||names.length>4)throw Error('Kies 1 tot 4 spelers.');
@@ -46,7 +50,7 @@ export function newMatch(names,start=501,out='double',legs=3,options={}){
  }
  const config={game:'x01',inMode:'single',scoring:'standard',matchMode:'legs',legsPerSet:3,bull:'25/50',maxRounds:50,starter:0,...options};
  const numbers=config.game==='tactics'?[20,19,18,17,16,15,14,13,12,11,10,25]:[20,19,18,17,16,15,25];
- return {version:2,...config,start,out,target:legs,numbers,players:names.map(name=>({name,...(options.training121?{trainingLevel:121,trainingBest:121}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null};
+ return {version:2,...config,start,out,target:legs,numbers,players:names.map(name=>({name,...(options.training121?{trainingLevel:121,trainingBest:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null};
 }
 function win(s,index,reason='finish'){
  s.winner=index;s.reason=reason;const p=s.players[index];p.legs++;p.setLegs++;
@@ -96,7 +100,16 @@ export function previewCricket(state,hits=[]){
  for(const hit of hits){if(finished)break;const d=makeDart(hit.number,hit.mult);used++;finished=applyCricketDart(s,d).finished;}
  return {players:s.players,finished,used};
 }
+export function previewBobs27(state,hits=[]){
+ const target=state.bobsTarget,value=target===25?50:target*2;
+ const darts=hits.map(d=>makeDart(d.number,d.mult));
+ const targetHits=darts.filter(d=>d.number===target&&d.mult===2).length;
+ const complete=darts.length===3,delta=complete?(targetHits?targetHits*value:-value):targetHits*value;
+ const score=state.players[0].remaining+delta;
+ return {target,value,hits:targetHits,used:darts.length,delta,score,complete,eliminated:complete&&score<=0,finished:complete&&target===25&&score>0};
+}
 export function applyTurn(state,turn){
+ if(state.game==='bobs27')return applyBobs27Turn(state,turn);
  if(state.game==='gotcha')return applyGotchaTurn(state,turn);
  if(state.training121)return applyTrainingTurn(state,turn);
  if(state.phase!=='playing')throw Error('Deze leg is al afgelopen.');
@@ -131,6 +144,21 @@ export function applyTurn(state,turn){
  const credited=bust?0:score;p.points+=credited;p.darts+=bust?3:darts;p.best=Math.max(p.best,credited);if(!bust){p.remaining=remaining;if(score>0)p.opened=true;}
  s.history.push({input:structuredClone(turn),name:p.name,score:credited,bust,remaining:p.remaining,leg:s.leg,darts:bust?3:darts});
  if(!bust&&remaining===0)win(s,s.active);else advance(s);return s;
+}
+function applyBobs27Turn(state,turn){
+ if(state.phase!=='playing')throw Error("Deze Bob's 27-training is afgelopen.");
+ if(!Array.isArray(turn.hits)||turn.hits.length!==3)throw Error('Voer alle drie de pijlen in, of tik Mis.');
+ const result=previewBobs27(state,turn.hits),s=structuredClone(state),p=s.players[0];
+ p.remaining=result.score;p.darts+=3;p.bobsHits=(p.bobsHits||0)+result.hits;
+ if(result.hits)p.bobsHighest=result.target;
+ p.best=Math.max(p.best,result.hits);
+ s.history.push({input:structuredClone(turn),name:p.name,score:result.delta,remaining:p.remaining,leg:1,darts:3,
+  target:result.target,hits:result.hits,labels:turn.hits.map(d=>makeDart(d.number,d.mult).label).join(' / ')});
+ s.turns++;s.round++;
+ if(result.eliminated){s.phase='won';s.winner=null;s.reason='bobs-eliminated';}
+ else if(result.finished){s.phase='won';s.winner=0;s.reason='bobs-complete';}
+ else s.bobsTarget=result.target===20?25:result.target+1;
+ return s;
 }
 export function previewGotcha(state,hits=[]){
  const players=structuredClone(state.players),p=players[state.active],resets=[];let bust=false,finished=false,used=0,score=0;

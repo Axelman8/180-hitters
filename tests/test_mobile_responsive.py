@@ -12,8 +12,8 @@ with tempfile.TemporaryDirectory() as tmp:
             browser=p.chromium.launch()
             page=browser.new_page(viewport={'width':393,'height':750},is_mobile=True,has_touch=True)
             page.goto('http://127.0.0.1:8788/?remote=1')
-            for game in ['x01','tactics','cricket','gotcha','training']:
-                state=page.evaluate("async game=>{const {newMatch}=await import('/engine.js');return newMatch(['Ed','Frank','Sean','Remon'],301,'double',3,game==='training'?{training121:true}:{game});}",game)
+            for game in ['x01','tactics','cricket','gotcha','bobs27','training']:
+                state=page.evaluate("async game=>{const {newMatch}=await import('/engine.js');return newMatch(game==='bobs27'?['Ed']:['Ed','Frank','Sean','Remon'],301,'double',3,game==='training'?{training121:true}:{game});}",game)
                 rev=page.request.get('http://127.0.0.1:8788/api/state').json()['revision']
                 assert page.request.post('http://127.0.0.1:8788/api/state',data={'revision':rev,'match':{'state':state,'undo':[]}}).ok
                 page.reload()
@@ -59,7 +59,7 @@ with tempfile.TemporaryDirectory() as tmp:
             before=screen.evaluate(metrics)
             screen.locator('link[href="mobile-shell.css"]').evaluate('el=>el.disabled=true')
             assert screen.evaluate(metrics)==before
-            print('PASS: five games, eight viewport sizes, stable typography, flexible grids, retained input, touch sizes, preferences, NUC unchanged')
+            print("PASS: six games including Bob's 27, eight viewport sizes, stable typography, flexible grids, retained input, touch sizes, preferences, NUC unchanged")
             browser.close()
     finally:
         server.terminate()
