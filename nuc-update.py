@@ -58,9 +58,13 @@ def install(bundle, version):
         old_dist = ROOT / 'dist.previous'
         shutil.rmtree(next_dist, ignore_errors=True)
         shutil.copytree(extracted / 'dist', next_dist)
-        # Legacy venue wifi remains in dist; the current venue.json lives next
-        # to the server and is therefore never replaced by an application update.
-        for name in ('club-wifi.json',):
+        # Venue-owned data and licensed/local winner artwork are not distributed
+        # through GitHub and must survive an atomic application update.
+        preserved = ['club-wifi.json']
+        preserved.extend(path.name for path in (ROOT / 'dist').glob('winner-stage*.jpg'))
+        preserved.extend(path.name for path in (ROOT / 'dist').glob('winner-stage*.jpeg'))
+        preserved.append('winner-trophy.jpg')
+        for name in dict.fromkeys(preserved):
             local = ROOT / 'dist' / name
             if local.is_file(): shutil.copy2(local, next_dist / name)
         shutil.rmtree(old_dist, ignore_errors=True)
