@@ -88,3 +88,7 @@ body.screen-fit.input-collapsed[data-game="bobs27"] #game:not([hidden]){grid-tem
  body.screen-fit.cricket-game #cricket-panel{grid-row:1;grid-column:1}
  body.screen-fit.cricket-game .scoring{grid-row:1;grid-column:2}
 }
+
+/* Reclaim the turn announcement space; active player remains highlighted. */
+.match-heading:has(#turn-label[hidden]){min-height:0}
+body.remote-control #game>.match-heading:has(#turn-label[hidden]){display:none!important}

@@ -268,6 +268,7 @@ function render(){
  if(state.game==='gotcha')$('match-label').textContent=`TRAINING / GOTCHA / PRECIES ${state.start} / ${namesOfRules[state.out]}-OUT`;
  if(state.game==='bobs27')$('match-label').textContent="TRAINING / BOB'S 27 / D1 T/M D20 + BULL";
  if(state.training121)$('match-label').textContent='TRAINING / 121 / NEGEN DARTS / DUBBEL-UIT';
+ $('turn-label').hidden=state.phase==='playing'&&state.game!=='bobs27';
  $('turn-label').textContent=state.phase==='playing'?(state.game==='bobs27'?`${current.name}: richt op ${state.bobsTarget===25?'Bull':'D'+state.bobsTarget}`:`${current.name} is aan de beurt`):(state.training121||state.game==='bobs27')?'Training afgerond':'Leg afgelopen';
  const legSummary=matchSummary(state);
  $('players').replaceChildren(...state.players.map((p,i)=>{
