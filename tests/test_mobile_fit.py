@@ -7,14 +7,18 @@ with tempfile.TemporaryDirectory() as tmp:
  try:
   time.sleep(1)
   with sync_playwright() as p:
-   b=p.chromium.launch();page=b.new_page();page.goto('http://127.0.0.1:8788/?android=1')
+   b=p.chromium.launch();page=b.new_page();page.on('pageerror',lambda e:print('JS ERROR:',str(e),flush=True));page.goto('http://127.0.0.1:8788/?android=1')
    for game in ['x01','cricket','tactics','121','gotcha','bobs27']:
     for count in ([2,4] if game=='gotcha' else [1,4]):
      state=page.evaluate("async ({game,count})=>{const {newMatch}=await import('/engine.js');return newMatch(['Remon','Frank','Ed','Leen'].slice(0,count),501,'double',3,{game:game==='121'?'x01':game,training121:game==='121'})}",{'game':game,'count':count})
      revision=page.request.get('http://127.0.0.1:8788/api/state').json()['revision']
      assert page.request.post('http://127.0.0.1:8788/api/state',data={'revision':revision,'match':{'state':state,'undo':[]}}).ok
      page.request.post('http://127.0.0.1:8788/api/display',data={'inputCollapsed':True})
+     page.evaluate("localStorage.removeItem('oche.match.v1')")
      page.reload();expect(page.locator('#game')).to_be_visible()
+     expect(page.locator('body')).to_have_attribute('data-game','x01' if game=='121' else game)
+     expect(page.locator('#players .player')).to_have_count(count)
+     page.wait_for_timeout(900)
      for w,h in [(393,852),(768,900),(852,700),(320,740),(1080,850),(393,852)]:
       page.set_viewport_size({'width':w,'height':h});page.wait_for_timeout(80)
       assert page.locator('body').evaluate("e=>e.classList.contains('remote-control')")
