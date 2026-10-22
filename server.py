@@ -12,6 +12,42 @@ import subprocess
 import time
 import uuid
 
+CONTROL_TOKEN = 'd7c87006c31f4da2a4348eeb05b59c8b'
+DEFAULT_VENUE = {
+    'venueName': '180 Hitters', 'city': '', 'playerListName': 'Clubspelers',
+    'slogan': 'Samen aan de oche.', 'screensaverEnabled': True,
+    'logoData': '', 'backgroundData': '', 'clubWifiName': '', 'clubWifiQr': '',
+    'hotspotName': '180 Hitters wifi', 'hotspotPassword': ''
+}
+
+
+def clean_venue(value):
+    """Return a complete, bounded venue profile or reject unsafe input."""
+    if not isinstance(value, dict) or set(value) != set(DEFAULT_VENUE):
+        raise ValueError('Ongeldig locatieprofiel.')
+    limits = {'venueName': 60, 'city': 60, 'playerListName': 40, 'slogan': 100,
+              'clubWifiName': 80, 'clubWifiQr': 500,
+              'hotspotName': 80, 'hotspotPassword': 100}
+    result = {}
+    for key, fallback in DEFAULT_VENUE.items():
+        incoming = value[key]
+        if isinstance(fallback, bool):
+            if type(incoming) is not bool: raise ValueError('Ongeldig locatieprofiel.')
+            result[key] = incoming
+        elif key in ('logoData', 'backgroundData'):
+            if not isinstance(incoming, str) or len(incoming) > 2_500_000 or (incoming and not incoming.startswith(('data:image/png;base64,', 'data:image/jpeg;base64,', 'data:image/webp;base64,'))):
+                raise ValueError('Gebruik een PNG-, JPG- of WebP-afbeelding van maximaal 1,8 MB.')
+            result[key] = incoming
+        else:
+            if not isinstance(incoming, str) or len(incoming.strip()) > limits[key]:
+                raise ValueError('Ongeldig locatieprofiel.')
+            result[key] = incoming.strip()
+    if not result['venueName'] or not result['playerListName'] or not result['hotspotName']:
+        raise ValueError('Naam, spelerslijst en hotspotnaam zijn verplicht.')
+    if result['clubWifiQr'] and not result['clubWifiQr'].startswith('WIFI:'):
+        raise ValueError('De clubwifi-QR moet met WIFI: beginnen.')
+    return result
+
 
 def network_control(action, target=None):
     helper = '/usr/local/sbin/darts-network'
@@ -98,6 +134,11 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     mobile_roster = json.loads(mobile_roster_path.read_text(encoding='utf-8')) if mobile_roster_path.exists() else []
     display_path = path.with_name(path.stem + '-display.json')
     display = json.loads(display_path.read_text(encoding='utf-8')) if display_path.exists() else {'inputCollapsed': False}
+    venue_path = path.with_name('venue.json')
+    try:
+        venue = clean_venue({**DEFAULT_VENUE, **json.loads(venue_path.read_text(encoding='utf-8'))}) if venue_path.exists() else dict(DEFAULT_VENUE)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        venue = dict(DEFAULT_VENUE)
     lock = Lock()
     current = {'revision': 0, 'match': None}
     draft = {'value': None, 'time': 0}
@@ -158,6 +199,9 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             elif route == '/api/display':
                 with lock:
                     self.reply(200, display)
+            elif route == '/api/venue':
+                with lock:
+                    self.reply(200, venue)
             elif route == '/api/setup':
                 with lock:
                     self.reply(200, {**shared_setup, 'revision': current['revision']})
@@ -189,7 +233,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
 
         def do_POST(self):
             nonlocal last_kiosk
-            if self.path not in ('/api/setup', '/api/display', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -201,6 +245,16 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 < length <= 10000000:
                     return self.reply(413, {'error': 'Partij te groot'})
                 incoming = json.loads(self.rfile.read(length))
+                if self.path == '/api/venue':
+                    if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                        return self.reply(403, {'error': 'Locatie-instellingen kunnen alleen op de NUC of in de Android-app worden gewijzigd.'})
+                    updated = clean_venue(incoming)
+                    with lock:
+                        temporary = venue_path.with_suffix('.tmp')
+                        temporary.write_text(json.dumps(updated, ensure_ascii=False), encoding='utf-8')
+                        temporary.replace(venue_path)
+                        venue.clear(); venue.update(updated)
+                        return self.reply(200, venue)
                 if self.path == '/api/update/check':
                     if self.headers.get('X-Darts-Control') != 'd7c87006c31f4da2a4348eeb05b59c8b':
                         return self.reply(403, {'error': 'Alleen beschikbaar vanuit de Android-app.'})
@@ -273,7 +327,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         return self.reply(200, {'message': message})
                 if self.path == '/api/players':
                     if self.client_address[0] not in ('127.0.0.1', '::1'):
-                        return self.reply(403, {'error': 'De Venhoeve-lijst kan alleen op de NUC worden gewijzigd.'})
+                        return self.reply(403, {'error': f"De {venue['playerListName']}-lijst kan alleen op de NUC worden gewijzigd."})
                     name = incoming['name']
                     action = incoming['action']
                     if not isinstance(name, str) or not 1 <= len(name.strip()) <= 24 or action not in ('add', 'remove'):

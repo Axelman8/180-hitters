@@ -2,6 +2,7 @@ const $=id=>document.getElementById(id);
 const android=window.DartsAndroid&&typeof window.DartsAndroid.getMobilePlayers==='function';
 const nucScreen=!android&&['127.0.0.1','localhost','::1'].includes(location.hostname);
 let venuePlayers=[],mobilePlayers=[],saving=false;
+const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';
 const sorted=values=>[...new Set((values||[]).map(v=>String(v).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'nl',{sensitivity:'base'}));
 function nativePlayers(){try{return sorted(JSON.parse(window.DartsAndroid.getMobilePlayers()));}catch{return [];}}
 function storeNative(values){if(android)window.DartsAndroid.saveMobilePlayers(JSON.stringify(sorted(values)));}
@@ -21,7 +22,7 @@ function choices(){
   if(!select){select=document.createElement('select');select.setAttribute('aria-label',label.firstChild.textContent+' kiezen uit spelerslijst');label.insertBefore(select,input);select.onchange=()=>{if(select.value){input.value=select.value;input.dispatchEvent(new Event('input',{bubbles:true}));}};}
   const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=venuePlayers.length||mobilePlayers.length?'Kies een speler of typ een naam':'Spelerslijsten leeg - typ een naam';
   const groups=[];
-  for(const [title,values] of [['De Venhoeve',venuePlayers],['Mijn spelers',mobilePlayers]])if(values.length){const group=document.createElement('optgroup');group.label=title;group.append(...values.map(name=>{const option=document.createElement('option');option.value=name;option.textContent=name;return option;}));groups.push(group);}
+  for(const [title,values] of [[venueLabel(),venuePlayers],['Mijn spelers',mobilePlayers]])if(values.length){const group=document.createElement('optgroup');group.label=title;group.append(...values.map(name=>{const option=document.createElement('option');option.value=name;option.textContent=name;return option;}));groups.push(group);}
   select.replaceChildren(placeholder,...groups);select.value=[...venuePlayers,...mobilePlayers].includes(input.value)?input.value:'';
  }
 }
@@ -30,11 +31,12 @@ function roster(target,values,editable,empty){
  if(!values.length){const li=document.createElement('li');li.className='roster-empty';li.textContent=empty;target.append(li);}
 }
 function renderLists(){
- roster($('roster-list'),venuePlayers,nucScreen,'Nog geen Venhoeve-spelers opgeslagen.');
+ const title=$('roster-list').closest('.roster-group').querySelector('h3');title.firstChild.textContent=venueLabel()+' ';
+ roster($('roster-list'),venuePlayers,nucScreen,`Nog geen spelers in ${venueLabel()} opgeslagen.`);
  roster($('mobile-roster-list'),mobilePlayers,android,'Nog geen persoonlijke spelers opgeslagen.');
  $('players-form').hidden=!(android||nucScreen);
- $('players-form-label').textContent=android?'Speler toevoegen aan Mijn spelers':'Speler toevoegen aan De Venhoeve';
- $('players-dialog-note').textContent=android?'De Venhoeve wordt vanaf de NUC bijgewerkt. Mijn spelers blijft op deze telefoon en synchroniseert naar de NUC.':nucScreen?'Beheer hier de Venhoeve-lijst. Mijn spelers is een alleen-lezen kopie van de Android-app.':'De spelerslijsten zijn hier alleen beschikbaar om te kiezen.';
+ $('players-form-label').textContent=android?'Speler toevoegen aan Mijn spelers':`Speler toevoegen aan ${venueLabel()}`;
+ $('players-dialog-note').textContent=android?`${venueLabel()} wordt vanaf de NUC bijgewerkt. Mijn spelers blijft op deze telefoon en synchroniseert naar de NUC.`:nucScreen?`Beheer hier ${venueLabel()}. Mijn spelers is een alleen-lezen kopie van de Android-app.`:'De spelerslijsten zijn hier alleen beschikbaar om te kiezen.';
 }
 async function refresh(){
  try{
@@ -45,7 +47,7 @@ async function refresh(){
    const personal=nativePlayers();
    response=await fetch('/api/mobile-players',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({players:personal}),signal:AbortSignal.timeout(5000)});
    if(response.ok)data=await response.json();
-   else{lists(data);$('players-message').textContent='De Venhoeve-lijst is bijgewerkt. Mijn spelers blijft op de telefoon en synchroniseert zodra de NUC-software is bijgewerkt.';return;}
+   else{lists(data);$('players-message').textContent=`${venueLabel()} is bijgewerkt. Mijn spelers blijft op de telefoon en synchroniseert zodra de NUC-software is bijgewerkt.`;return;}
   }
   lists(data);$('players-message').textContent='';
  }catch{$('players-message').textContent=android?'Persoonlijke spelers staan veilig op de telefoon; synchroniseren met de NUC lukt nu niet.':'Spelerslijsten niet bereikbaar. Controleer de verbinding.';renderLists();}
@@ -66,4 +68,5 @@ $('players-close').onclick=()=>$('players-dialog').close();
 $('players-form').onsubmit=e=>{e.preventDefault();const name=$('player-name').value.trim();if(name)save('add',name);};
 for(const id of ['category-match','category-training'])$(id).addEventListener('click',refresh);
 new MutationObserver(choices).observe($('names'),{childList:true});
+document.addEventListener('venue-profile-ready',()=>{choices();renderLists();});
 refresh();

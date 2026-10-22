@@ -42,9 +42,10 @@ function choose(target) {
   chosen = info?.profiles.find(p => p.uuid === target);
   if (!chosen) return;
   $('network-target').textContent = chosen.name;
+  const profile=window.venueProfile||{},hotspot=profile.hotspotName||'180 Hitters wifi',password=profile.hotspotPassword?` Wachtwoord: ${profile.hotspotPassword}.`:'';
   $('network-instructions').textContent = chosen.mode === 'hotspot'
-    ? 'Verbind daarna je telefoon met 180 Hitters wifi. Wachtwoord: Darts180. Open vervolgens http://10.42.0.1:8765/?remote=1.'
-    : `Verbind daarna je telefoon met ${chosen.name}. Scan de QR-code op het NUC-scherm voor het nieuwe adres. Lukt verbinden niet, dan gaat de NUC terug naar 180 Hitters wifi (wachtwoord Darts180).`;
+    ? `Verbind daarna je telefoon met ${chosen.name}.${password} Open vervolgens http://10.42.0.1:8765/?remote=1.`
+    : `Verbind daarna je telefoon met ${chosen.name}. Scan de QR-code op het NUC-scherm voor het nieuwe adres. Lukt verbinden niet, dan gaat de NUC terug naar ${hotspot}.${password}`;
   $('network-confirmation').hidden = false;
   $('network-confirm').disabled = false;
   $('network-back').hidden = false;

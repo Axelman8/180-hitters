@@ -63,17 +63,18 @@ window.addEventListener('online', refreshMobileCode);
 
 async function showClubWifi(){
  try{
-  const response=await fetch('/club-wifi.json');if(!response.ok)return;
-  const {qr}=await response.json();if(typeof qr!=='string'||!qr.startsWith('WIFI:'))return;
+  const profile=await window.venueReady,qr=profile.clubWifiQr;if(typeof qr!=='string'||!qr.startsWith('WIFI:'))return;
   const group=document.createElement('section');group.id='club-wifi';
   const code=document.createElement('div');code.id='club-wifi-code';
   const image=window.qrcode(0,'M');image.addData(qr);image.make();
   code.innerHTML=image.createSvgTag({cellSize:4,margin:16,scalable:true});
-  code.querySelector('svg').setAttribute('aria-label','Verbind met de wifi van VTV de Venhoeve');
+  code.querySelector('svg').setAttribute('aria-label','Verbind met '+profile.clubWifiName);
   code.querySelector('svg').setAttribute('role','img');
   const text=document.createElement('div'),title=document.createElement('strong'),note=document.createElement('p');
-  title.textContent='2. Verbind met wifi';note.textContent='VTV de Venhoeve';text.append(title,note);group.append(code,text);
+  title.textContent='2. Verbind met wifi';note.textContent=profile.clubWifiName;text.append(title,note);group.append(code,text);
   const dock=document.getElementById('mobile-dock');dock.insertBefore(group,dock.querySelector('.mobile-dock-copy'));
  }catch{}
 }
 showClubWifi();
+function showHotspot(profile){const target=document.getElementById('mobile-wifi'),name=document.createElement('b');name.textContent=profile.hotspotName;target.replaceChildren('Wifi: ',name);if(profile.hotspotPassword){const password=document.createElement('b');password.textContent=profile.hotspotPassword;target.append(document.createElement('br'),'Wachtwoord: ',password);}}
+document.addEventListener('venue-profile-ready',event=>showHotspot(event.detail));showHotspot(window.venueProfile||{hotspotName:'180 Hitters wifi',hotspotPassword:''});

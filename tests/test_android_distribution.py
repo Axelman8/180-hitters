@@ -43,6 +43,12 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(android.locator('#top-actions > #android-app-action')).to_have_count(1)
             expect(android.locator('#top-actions > #android-update-action')).to_have_count(1)
             expect(android.locator('#connection-status')).to_have_text('Lokaal op deze telefoon')
+            expect(android.locator('#venue-open')).to_be_visible()
+            android.locator('#venue-open').click()
+            expect(android.locator('#venue-dialog')).to_be_visible()
+            expect(android.locator('#venue-form [name="venueName"]')).to_have_value('180 Hitters')
+            android.locator('#venue-close').click()
+            assert android.get_by_text('De Venhoeve', exact=True).count() == 0
             android.locator('#android-app-action').click()
             assert android.evaluate('window.modeChooserOpened===true')
             assert android.evaluate('document.documentElement.scrollWidth<=innerWidth')

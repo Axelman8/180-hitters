@@ -1,0 +1,10 @@
+#venue-dialog{width:min(720px,calc(100vw - 24px));max-height:92dvh;overflow:auto}
+#venue-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#venue-form>label,#venue-form fieldset{display:flex;flex-direction:column;gap:5px;margin:0}
+#venue-form fieldset{grid-column:1/-1;padding:12px;border:1px solid var(--line);border-radius:12px}
+#venue-form fieldset label{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+#venue-form .venue-check{grid-column:1/-1;flex-direction:row;align-items:center}
+#venue-form .venue-check input{width:auto}
+#venue-message,.venue-actions{grid-column:1/-1}
+.venue-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+@media(max-width:620px){#venue-form{grid-template-columns:1fr}.venue-actions button{flex:1 1 100%}}

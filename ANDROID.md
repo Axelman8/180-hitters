@@ -8,7 +8,7 @@ De Android-app gebruikt exact dezelfde bestanden uit `dist` als de NUC. Gradle k
 - **NUC via Bluetooth:** de interface draait lokaal op de telefoon en wisselt score- en spelersgegevens via Bluetooth Classic uit met de NUC. Wifi en internet zijn niet nodig. Koppel de telefoon één keer met apparaat `darten`.
 - **NUC via wifi:** opent de NUC via het ingestelde HTTP-adres. Vanuit deze modus kan Bluetooth op de NUC weer worden aangezet.
 - Bij overschakelen van NUC naar lokaal kan de laatst bevestigde NUC-stand worden overgenomen.
-- **De Venhoeve** is de centrale spelerslijst van de NUC en kan alleen op het NUC-scherm worden beheerd.
+- De door het locatieprofiel benoemde clubspelerslijst staat centraal op de NUC en kan alleen op het NUC-scherm worden beheerd. Zonder NUC gebruikt de app het neutrale profiel en **Mijn spelers**.
 - **Mijn spelers** wordt in de Android-app bewaard, werkt offline en wordt bij een NUC-verbinding als aparte lijst naar de NUC gesynchroniseerd.
 
 ## Bouwen en aanbieden

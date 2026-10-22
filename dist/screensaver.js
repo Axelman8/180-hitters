@@ -1,35 +1,17 @@
 import {clearEffect} from './celebration.js';
-const saver=document.createElement('dialog');saver.id='club-saver';saver.setAttribute('aria-label','Screensaver VTV de Venhoeve Rotterdam');
+const saver=document.createElement('dialog');saver.id='club-saver';
 saver.innerHTML=`
- <img class="club-photo" src="club-background.jpg" alt="Het clubgebouw van VTV de Venhoeve">
+ <img class="club-photo" hidden alt="">
  <div class="club-shade"></div>
  <button type="button" class="club-back">← Terug</button>
- <div class="club-center">
-  <svg class="club-patch" viewBox="0 0 600 600" role="img" aria-labelledby="club-patch-title">
-   <title id="club-patch-title">Dartvereniging VTV de Venhoeve Rotterdam</title>
-   <defs>
-    <linearGradient id="club-gold" x2="1" y2="1"><stop stop-color="#f8e4a0"/><stop offset=".5" stop-color="#ccaa58"/><stop offset="1" stop-color="#f8e4a0"/></linearGradient>
-    <radialGradient id="club-green"><stop stop-color="#254e43"/><stop offset="1" stop-color="#0a211f"/></radialGradient>
-    <clipPath id="club-logo-clip"><circle cx="300" cy="300" r="187"/></clipPath>
-    <path id="club-top-arc" d="M 85,305 A 215,215 0 0,1 515,305"/>
-    <path id="club-bottom-arc" d="M 85,316 A 215,215 0 0,0 515,316"/>
-   </defs>
-   <circle cx="300" cy="300" r="280" fill="url(#club-green)" stroke="url(#club-gold)" stroke-width="9"/>
-   <circle cx="300" cy="300" r="263" fill="none" stroke="#f0d890" stroke-width="2" stroke-dasharray="3 7"/>
-   <image href="club-logo.png" x="110" y="110" width="380" height="380" opacity=".24" clip-path="url(#club-logo-clip)"/>
-   <circle cx="300" cy="300" r="190" fill="none" stroke="#c4a762" stroke-width="2"/>
-   <text fill="#f7e2a2" font-size="27" font-weight="700" letter-spacing="4"><textPath href="#club-top-arc" startOffset="50%" text-anchor="middle">DARTVERENIGING</textPath></text>
-   <text fill="#f7e2a2" font-size="32" font-weight="750" letter-spacing="6"><textPath href="#club-bottom-arc" startOffset="50%" text-anchor="middle">ROTTERDAM</textPath></text>
-
-   <path d="M210 396H390" stroke="#d5bc79" stroke-width="2"/>
-  </svg>
- </div>
+ <div class="club-center"><div class="club-patch"><img class="club-logo" src="avatar.jpg" alt=""><h1>180 Hitters</h1><h2 hidden></h2></div></div>
  <div class="club-actions"><p>Samen aan de oche.</p><button type="button" class="primary club-new">Nieuwe wedstrijd →</button></div>`;
 document.body.append(saver);
 
-let busy=false,polling=false,sequence=0,setupTarget=null,phoneSetup=false;
+let busy=false,polling=false,sequence=0,setupTarget=null,enabled=true;
 const setup=document.getElementById('setup');
 function show(active){
+ if(!enabled)active=false;
  if(document.body.classList.contains('remote-control')&&!setup.hidden)active=false;
  if(active){clearEffect();if(!saver.open)saver.showModal();}
  else if(saver.open)saver.close();
@@ -50,17 +32,18 @@ async function syncSaver(){
 }
 saver.addEventListener('cancel',event=>{event.preventDefault();void setSaver(false);});
 saver.querySelector('.club-back').onclick=()=>setSaver(false);
-saver.querySelector('.club-new').onclick=async()=>{
- if(!await setSaver(false))return;
- document.getElementById('result-dialog').close();document.getElementById('settings').click();
-};
-const menu=document.createElement('button');menu.id='open-club-saver';menu.type='button';menu.textContent='Screensaver';menu.onclick=()=>setSaver(true);
-document.getElementById('top-actions').append(menu);
-const winner=document.createElement('button');winner.id='winner-club-saver';winner.type='button';winner.className='club-saver-tile';
-winner.innerHTML='<strong>Screensaver</strong><span>VTV de Venhoeve ? Rotterdam</span>';winner.onclick=()=>setSaver(true);
-document.getElementById('continue').after(winner);
-// Setup is mirrored separately; it must not activate the screensaver.
-new MutationObserver(()=>{
- if(document.body.classList.contains('remote-control')&&!setup.hidden)void setSaver(false);
-}).observe(setup,{attributes:true,attributeFilter:['hidden']});
+saver.querySelector('.club-new').onclick=async()=>{if(!await setSaver(false))return;document.getElementById('result-dialog').close();document.getElementById('settings').click();};
+const menu=document.createElement('button');menu.id='open-club-saver';menu.type='button';menu.textContent='Screensaver';menu.onclick=()=>setSaver(true);document.getElementById('top-actions').append(menu);
+const winner=document.createElement('button');winner.id='winner-club-saver';winner.type='button';winner.className='club-saver-tile';winner.innerHTML='<strong>Screensaver</strong><span>180 Hitters</span>';winner.onclick=()=>setSaver(true);document.getElementById('continue').after(winner);
+function applyVenue(profile){
+ const name=profile.venueName||'180 Hitters',city=profile.city||'';
+ saver.setAttribute('aria-label','Screensaver '+name+(city?' '+city:''));
+ const logo=saver.querySelector('.club-logo'),photo=saver.querySelector('.club-photo');logo.src=profile.logoData||'avatar.jpg';logo.alt='Logo van '+name;
+ photo.hidden=!profile.backgroundData;photo.src=profile.backgroundData||'';photo.alt=profile.backgroundData?'Achtergrond van '+name:'';
+ saver.querySelector('h1').textContent=name;saver.querySelector('h2').textContent=city;saver.querySelector('h2').hidden=!city;
+ saver.querySelector('.club-actions p').textContent=profile.slogan||'Samen aan de oche.';winner.querySelector('span').textContent=[name,city].filter(Boolean).join(' · ');
+ enabled=profile.screensaverEnabled!==false;menu.hidden=winner.hidden=!enabled;if(!enabled)show(false);
+}
+document.addEventListener('venue-profile-ready',event=>applyVenue(event.detail));applyVenue(window.venueProfile||{});
+new MutationObserver(()=>{if(document.body.classList.contains('remote-control')&&!setup.hidden)void setSaver(false);}).observe(setup,{attributes:true,attributeFilter:['hidden']});
 syncSaver();setInterval(syncSaver,750);

@@ -58,8 +58,8 @@ def install(bundle, version):
         old_dist = ROOT / 'dist.previous'
         shutil.rmtree(next_dist, ignore_errors=True)
         shutil.copytree(extracted / 'dist', next_dist)
-        # Venue-specific settings are deliberately not published to GitHub.
-        # Keep them when the generic application bundle is replaced.
+        # Legacy venue wifi remains in dist; the current venue.json lives next
+        # to the server and is therefore never replaced by an application update.
         for name in ('club-wifi.json',):
             local = ROOT / 'dist' / name
             if local.is_file(): shutil.copy2(local, next_dist / name)

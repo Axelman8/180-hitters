@@ -98,3 +98,9 @@ De knop Wifi / hotspot toont opgeslagen netwerken. Na bevestiging start een onaf
 Eenmalig op de NUC: `sudo bash install-network-control.sh`. Dit neemt de huidige opgeslagen wifi-profielen op in `/etc/darts-network.json` en installeert een root-eigen helper `/usr/local/sbin/darts-network`. Alleen UUIDs uit die lijst kunnen worden geactiveerd; de webserver krijgt geen algemene sudo- of shelltoegang. Voer dit installatiescript opnieuw uit na het toevoegen/verwijderen van wifi-profielen. Het beveiligde profiel `180 Hitters wifi` moet al bestaan.
 
 Status en resultaat zijn beschikbaar via `/api/network/control`; omschakelen gebeurt via JSON POST `/api/network/switch` met uitsluitend `uuid`. Bewaar de mobiele pagina als bladwijzer. Op `180 Hitters wifi`: `http://10.42.0.1:8765/?remote=1`; op andere wifi: scan de QR-code op het NUC-scherm. De knop beheert uitsluitend opgeslagen verbindingen, geen nieuwe wachtwoorden.
+
+## Herbruikbaar locatieprofiel
+
+Dezelfde app en APK werken neutraal, thuis en bij verschillende verenigingen. Kies op de NUC of in de Android-app **Menu → Locatie** om de locatienaam, plaats, naam van de clubspelerslijst, slogan, screensaver, logo, achtergrond en optionele clubwifi-QR in te stellen. Zonder profiel gebruikt de app `180 Hitters`, `Clubspelers` en een algemene screensaver.
+
+Het profiel staat als `venue.json` naast `server.py` en wordt niet opgenomen in GitHub-releases of vervangen door updates. Via wifi en Bluetooth leest de Android-app automatisch het profiel van de gekoppelde NUC. In lokale telefoonmodus wordt een afzonderlijk neutraal of persoonlijk profiel op de telefoon bewaard. De 180 Hitters-hotspot blijft centraal via NetworkManager beheerd; naam en wachtwoord in het profiel zijn uitsluitend de bijbehorende gebruikersinstructie.

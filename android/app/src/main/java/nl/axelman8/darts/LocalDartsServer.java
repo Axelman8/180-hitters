@@ -27,9 +27,11 @@ final class LocalDartsServer extends NanoHTTPD {
     private final File stateFile;
     private final File playersFile;
     private final File displayFile;
+    private final File venueFile;
     private JSONObject state;
     private JSONArray players;
     private JSONObject display;
+    private JSONObject venue;
     private JSONObject setup = new JSONObject();
     private JSONObject draft;
     private long draftTime;
@@ -41,9 +43,11 @@ final class LocalDartsServer extends NanoHTTPD {
         stateFile = new File(context.getFilesDir(), "local-match.json");
         playersFile = new File(context.getFilesDir(), "local-players.json");
         displayFile = new File(context.getFilesDir(), "local-display.json");
+        venueFile = new File(context.getFilesDir(), "local-venue.json");
         state = readObject(stateFile, new JSONObject().put("revision", 0).put("match", JSONObject.NULL));
         players = readArray(playersFile, new JSONArray());
         display = readObject(displayFile, new JSONObject().put("inputCollapsed", false));
+        venue = readObject(venueFile, defaultVenue());
         setup.put("version", 0).put("value", JSONObject.NULL);
         start(SOCKET_READ_TIMEOUT, false);
     }
@@ -99,6 +103,7 @@ final class LocalDartsServer extends NanoHTTPD {
             }
             case "/api/players": return playerLists();
             case "/api/display": return json(Response.Status.OK, display);
+            case "/api/venue": return json(Response.Status.OK, venue);
             case "/api/setup": return json(Response.Status.OK, new JSONObject(setup.toString()).put("revision", state.getInt("revision")));
             case "/api/network": return json(Response.Status.OK, new JSONObject().put("urls", new JSONArray()));
             case "/api/network/control": return json(Response.Status.SERVICE_UNAVAILABLE, new JSONObject().put("error", "Alleen beschikbaar op de NUC"));
@@ -162,6 +167,11 @@ final class LocalDartsServer extends NanoHTTPD {
                 if (incoming.has("screensaverActive")) display.put("screensaverActive", incoming.getBoolean("screensaverActive"));
                 writeAtomic(displayFile, display.toString()); return json(Response.Status.OK, display);
             }
+            case "/api/venue": {
+                venue = cleanVenue(incoming);
+                writeAtomic(venueFile, venue.toString());
+                return json(Response.Status.OK, venue);
+            }
             case "/api/setup": {
                 if (incoming.getInt("revision") != state.getInt("revision")) return json(Response.Status.CONFLICT, new JSONObject().put("revision", state.getInt("revision")));
                 setup.put("version", setup.optInt("version") + 1).put("value", incoming.opt("value"));
@@ -202,6 +212,23 @@ final class LocalDartsServer extends NanoHTTPD {
     private static Response json(Response.Status status, JSONObject value) {
         Response response = newFixedLengthResponse(status, "application/json; charset=utf-8", value.toString());
         response.addHeader("Cache-Control", "no-store"); return response;
+    }
+    private static JSONObject defaultVenue() throws JSONException {
+        return new JSONObject().put("venueName", "180 Hitters").put("city", "")
+                .put("playerListName", "Clubspelers").put("slogan", "Samen aan de oche.")
+                .put("screensaverEnabled", true).put("logoData", "").put("backgroundData", "")
+                .put("clubWifiName", "").put("clubWifiQr", "")
+                .put("hotspotName", "180 Hitters wifi").put("hotspotPassword", "");
+    }
+    private static JSONObject cleanVenue(JSONObject input) throws JSONException {
+        JSONObject result=new JSONObject();
+        String[] strings={"venueName","city","playerListName","slogan","logoData","backgroundData","clubWifiName","clubWifiQr","hotspotName","hotspotPassword"};
+        for(String key:strings){if(!input.has(key)||!(input.get(key) instanceof String))throw new JSONException("Ongeldig locatieprofiel");result.put(key,input.getString(key).trim());}
+        if(!input.has("screensaverEnabled"))throw new JSONException("Ongeldig locatieprofiel");
+        result.put("screensaverEnabled",input.getBoolean("screensaverEnabled"));
+        if(result.getString("venueName").isEmpty()||result.getString("playerListName").isEmpty()||result.getString("hotspotName").isEmpty())throw new JSONException("Ongeldig locatieprofiel");
+        if(result.getString("venueName").length()>60||result.getString("city").length()>60||result.getString("playerListName").length()>40||result.getString("slogan").length()>100||result.getString("clubWifiQr").length()>500||result.getString("logoData").length()>2500000||result.getString("backgroundData").length()>2500000)throw new JSONException("Locatieprofiel te groot");
+        return result;
     }
     private Response playerLists() throws JSONException {
         return json(Response.Status.OK, new JSONObject().put("players", players)

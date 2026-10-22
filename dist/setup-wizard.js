@@ -2,6 +2,7 @@ const $=id=>document.getElementById(id);
 const games=[['x01','X01','Van je startscore naar nul.','Wedstrijd'],['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd'],['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd'],['121','121','Checkouttraining met negen darts.','Training'],['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training']];
 const fields=['start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','count'];
 let step=0,slot=0,venueRoster=[],mobileRoster=[],selected='x01';
+const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';
 let applying=false,sendTimer,sendBusy=false,pendingSetup=undefined,seenVersion=-1,mirroring=false,localSetupOwner=false;
 const root=document.createElement('section');root.id='setup-wizard';$('setup').append(root);
 function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;}
@@ -55,11 +56,11 @@ function render(){
   content.append(el('p','Kies een plek en tik daarna op een naam uit de spelerslijst.','wizard-hint'));
   const slots=el('div',undefined,'wizard-slots');
   names().forEach((input,i)=>{const b=button('',()=>{slot=i;render();});b.setAttribute('aria-pressed',String(i===slot));b.append(el('small',`Speler ${i+1}`),el('strong',input.value));slots.append(b);});content.append(slots);
-  for(const [title,list,source] of [['De Venhoeve',venueRoster,'venue'],['Mijn spelers',mobileRoster,'mobile']]){
+  for(const [title,list,source] of [[venueLabel(),venueRoster,'venue'],['Mijn spelers',mobileRoster,'mobile']]){
    const group=el('section',undefined,'wizard-roster-group');group.dataset.source=source;group.append(el('h3',title));
    const rosterTiles=el('div',undefined,'wizard-roster');
    for(const name of list){const b=button(name,()=>assign(name));b.disabled=names().some((input,i)=>i!==slot&&input.value===name);rosterTiles.append(b);}
-   if(!list.length)rosterTiles.append(el('p',source==='venue'?'Geen Venhoeve-spelers beschikbaar.':'Nog geen persoonlijke spelers.','wizard-roster-empty'));
+   if(!list.length)rosterTiles.append(el('p',source==='venue'?`Geen spelers in ${venueLabel()} beschikbaar.`:'Nog geen persoonlijke spelers.','wizard-roster-empty'));
    group.append(rosterTiles);content.append(group);
   }
   const label=el('label',`Naam speler ${slot+1}`,'wizard-custom'),input=el('input');input.value=names()[slot]?.value||'';input.maxLength=24;input.autocomplete='off';
@@ -84,6 +85,7 @@ function render(){
 function applyRosters(data){const sort=list=>(list||[]).slice().sort((a,b)=>a.localeCompare(b,'nl',{sensitivity:'base'}));venueRoster=sort(data.venuePlayers??data.players??[]);mobileRoster=sort(data.mobilePlayers??[]);if(step===2)render();}
 async function refreshRoster(){try{const r=await fetch('/api/players',{cache:'no-store'});if(r.ok)applyRosters(await r.json());}catch{}}
 document.addEventListener('players-lists-updated',event=>applyRosters(event.detail));
+document.addEventListener('venue-profile-ready',()=>{if(step===2)render();});
 new MutationObserver(()=>{if(applying)return;if(!$('setup').hidden){step=0;render();refreshRoster();}else{localSetupOwner=false;queueSetup();}}).observe($('setup'),{attributes:true,attributeFilter:['hidden']});
 try{const saved=JSON.parse(localStorage.getItem('darts.setup.preferences'));if(saved){for(const id of fields)if(saved.values?.[id]&&[...$(id).options].some(o=>o.value===saved.values[id]))change(id,saved.values[id]);if(games.some(g=>g[0]===saved.selected))chooseGame(saved.selected);}}catch{}
 render();refreshRoster();
