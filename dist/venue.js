@@ -1,4 +1,4 @@
-const defaults={venueName:'180 Hitters',city:'',playerListName:'Clubspelers',slogan:'Samen aan de oche.',screensaverEnabled:true,logoData:'',backgroundData:'',clubWifiName:'',clubWifiQr:'',hotspotName:'180 Hitters wifi',hotspotPassword:''};
+const defaults={venueName:'180 Hitters',city:'',playerListName:'Clubspelers',slogan:'Samen aan de oche.',screensaverEnabled:false,logoData:'',backgroundData:'',clubWifiName:'',clubWifiQr:'',hotspotName:'180 Hitters wifi',hotspotPassword:''};
 window.venueProfile={...defaults};
 
 function publish(value){
@@ -21,7 +21,6 @@ if(android||local){
   <label>Plaats<input name="city" maxlength="60"></label>
   <label>Naam clubspelerslijst<input name="playerListName" maxlength="40" required></label>
   <label>Slogan<input name="slogan" maxlength="100"></label>
-  <label class="venue-check"><input name="screensaverEnabled" type="checkbox"> Screensaver gebruiken</label>
   <label>Logo (PNG, JPG of WebP)<input name="logoFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
   <button name="removeLogo" type="button">Logo verwijderen</button>
   <label>Achtergrond (PNG, JPG of WebP)<input name="backgroundFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
@@ -40,7 +39,7 @@ if(android||local){
  document.body.append(dialog);
  const form=dialog.querySelector('form'),message=dialog.querySelector('#venue-message');
  let working={...defaults};
- const fill=profile=>{working={...defaults,...profile};for(const key of ['venueName','city','playerListName','slogan','clubWifiName','clubWifiQr','hotspotName','hotspotPassword'])form.elements[key].value=working[key];form.elements.screensaverEnabled.checked=working.screensaverEnabled;};
+ const fill=profile=>{working={...defaults,...profile};for(const key of ['venueName','city','playerListName','slogan','clubWifiName','clubWifiQr','hotspotName','hotspotPassword'])form.elements[key].value=working[key];};
  const image=async input=>{
   const file=input.files[0];if(!file)return null;
   if(file.size>1800000||!['image/png','image/jpeg','image/webp'].includes(file.type))throw Error('Gebruik een PNG-, JPG- of WebP-afbeelding van maximaal 1,8 MB.');
@@ -55,7 +54,7 @@ if(android||local){
   try{
    const logo=await image(form.elements.logoFile),background=await image(form.elements.backgroundFile);
    const value={...working};for(const key of ['venueName','city','playerListName','slogan','clubWifiName','clubWifiQr','hotspotName','hotspotPassword'])value[key]=form.elements[key].value.trim();
-   value.screensaverEnabled=form.elements.screensaverEnabled.checked;if(logo)value.logoData=logo;if(background)value.backgroundData=background;
+   value.screensaverEnabled=false;if(logo)value.logoData=logo;if(background)value.backgroundData=background;
    const headers={'Content-Type':'application/json'};if(android)headers['X-Darts-Control']=window.DartsAndroid.getControlToken();
    const response=await fetch('/api/venue',{method:'POST',headers,body:JSON.stringify(value),signal:AbortSignal.timeout(20000)});const data=await response.json();if(!response.ok)throw Error(data.error||'Opslaan is mislukt.');
    publish(data);fill(data);form.elements.logoFile.value='';form.elements.backgroundFile.value='';message.textContent='Locatieprofiel opgeslagen.';

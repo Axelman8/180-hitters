@@ -70,7 +70,7 @@ function receive(data){
  if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
  revision=data.revision;confirmed=data.match;sharedDraft=null;
  restore(data.match);cache();
- for(const d of document.querySelectorAll('dialog[open]'))if(!['players-dialog','network-dialog','layout-dialog','club-saver'].includes(d.id))d.close();
+ for(const d of document.querySelectorAll('dialog[open]'))if(!['players-dialog','network-dialog','layout-dialog'].includes(d.id))d.close();
  resetInput();restoreTurnInput();render();
 }
 async function persist(keepModeOverride=false,restoredTurn=null){
