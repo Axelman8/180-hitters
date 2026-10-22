@@ -181,6 +181,9 @@ body.remote-control #kiosk-status:not(:empty){display:block;margin:0;padding:10p
 body.remote-control #network-open{display:block;min-height:44px;font-size:14px;padding:8px 12px}
 #network-dialog{max-height:90dvh;overflow:auto}
 #network-dialog>label{margin-top:20px}
+#network-add-section{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:12px}
+#network-add-section label{display:block;margin:10px 0}
+#network-add-section input{width:100%;margin-top:5px}
 #network-dialog select{margin:8px 0}
 #network-confirmation{margin-top:18px;padding-top:12px;border-top:1px solid var(--line)}
 #network-confirmation h3{font-size:19px}

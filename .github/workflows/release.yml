@@ -50,12 +50,21 @@ jobs:
       - name: Releasebestanden samenstellen
         shell: bash
         run: |
-          mkdir -p dist/downloads release-payload
+          mkdir -p dist/downloads release-payload linux-package windows-package
           cp android/app/build/outputs/apk/release/app-release.apk dist/downloads/180-Hitters.apk
           sha256sum dist/downloads/180-Hitters.apk > 180-Hitters.apk.sha256
           cp -a dist server.py bluetooth-bridge.py nuc-update.py release-payload/
+          printf '%s\n' "${GITHUB_REF_NAME#v}" > release-payload/.version
           tar -C release-payload -czf 180-hitters-nuc.tar.gz .
           sha256sum 180-hitters-nuc.tar.gz > 180-hitters-nuc.tar.gz.sha256
+          cp -a dist server.py bluetooth-bridge.py nuc-update.py network-control.py system-control.py install-linux.sh install-network-control.sh install-system-control.sh setup-linux.sh INSTALLATIE.txt linux-package/
+          printf '%s\n' "${GITHUB_REF_NAME#v}" > linux-package/.version
+          tar -C linux-package -czf 180-Hitters-Linux-x64.tar.gz .
+          sha256sum 180-Hitters-Linux-x64.tar.gz > 180-Hitters-Linux-x64.tar.gz.sha256
+          cp -a dist server.py install-windows.ps1 install-windows.cmd uninstall-windows.ps1 INSTALLATIE.txt windows-package/
+          printf '%s\n' "${GITHUB_REF_NAME#v}" > windows-package/.version
+          (cd windows-package && zip -qr ../180-Hitters-Windows-x64.zip .)
+          sha256sum 180-Hitters-Windows-x64.zip > 180-Hitters-Windows-x64.zip.sha256
 
       - name: GitHub-release publiceren
         env:
@@ -66,6 +75,10 @@ jobs:
           180-Hitters.apk.sha256
           180-hitters-nuc.tar.gz
           180-hitters-nuc.tar.gz.sha256
+          180-Hitters-Linux-x64.tar.gz
+          180-Hitters-Linux-x64.tar.gz.sha256
+          180-Hitters-Windows-x64.zip
+          180-Hitters-Windows-x64.zip.sha256
           --title "180 Hitters ${GITHUB_REF_NAME}"
           --generate-notes
 

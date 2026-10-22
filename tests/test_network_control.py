@@ -63,6 +63,19 @@ class NetworkTests(unittest.TestCase):
         with patch.object(network, 'run', side_effect=network.subprocess.TimeoutExpired('nmcli', 42)):
             self.assertFalse(network.activate(WIFI))
 
+    def test_add_wifi_rejects_short_password(self):
+        with self.assertRaises(ValueError):
+            network.add_wifi({'ssid': 'Club', 'password': 'kort'}, DATA)
+
+    def test_add_wifi_stores_profile_without_returning_password(self):
+        with TemporaryDirectory() as folder, patch.object(network, 'CONFIG', Path(folder) / 'network.json'), patch.object(network, 'run') as run:
+            run.return_value.returncode = 0
+            result = network.add_wifi({'ssid': 'Club Wifi', 'password': 'veilig123'}, DATA)
+            self.assertEqual(result['name'], 'Club Wifi')
+            self.assertNotIn('password', result)
+            saved = network.config()
+            self.assertTrue(any(p.get('name') == 'Club Wifi' for p in saved['profiles']))
+
 
 if __name__ == '__main__':
     unittest.main()

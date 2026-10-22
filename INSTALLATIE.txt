@@ -1,0 +1,18 @@
+180 HITTERS - INSTALLATIE
+=========================
+
+LINUX NUC (Ubuntu/Debian)
+1. Pak het Linux-pakket uit.
+2. Open een terminal in de uitgepakte map.
+3. Voer uit: sudo bash setup-linux.sh
+4. Installeer de Android-app via de QR op het hoofdscherm.
+5. Koppel de app via Bluetooth en open Wifi / hotspot om het eigen netwerk toe te voegen.
+
+WINDOWS 10/11
+1. Installeer Python 3 vanaf python.org als dat nog niet aanwezig is.
+2. Pak het Windows-pakket uit.
+3. Dubbelklik install-windows.cmd.
+4. Sta Python toe in Windows Firewall voor gebruik door telefoons op hetzelfde privénetwerk.
+
+Updates vervangen locatieprofielen, spelerslijsten en partijen niet.
+De Bluetooth-bediening en het instellen van NUC-wifi via de telefoon zijn beschikbaar op Linux met BlueZ/NetworkManager.

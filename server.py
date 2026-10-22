@@ -49,7 +49,7 @@ def clean_venue(value):
     return result
 
 
-def network_control(action, target=None):
+def network_control(action, target=None, payload=None):
     helper = '/usr/local/sbin/darts-network'
     if os.name != 'posix' or not Path(helper).is_file():
         raise RuntimeError('Netwerkkeuze is nog niet ingesteld op deze NUC.')
@@ -58,7 +58,8 @@ def network_control(action, target=None):
         if not isinstance(target, str) or str(uuid.UUID(target)) != target:
             raise ValueError('Kies een opgeslagen wifi-netwerk.')
         args.append(target)
-    result = subprocess.run(args, capture_output=True, text=True, timeout=12)
+    result = subprocess.run(args, input=json.dumps(payload) if payload is not None else None,
+                            capture_output=True, text=True, timeout=20)
     try:
         response = json.loads(result.stdout)
     except ValueError:
@@ -66,6 +67,13 @@ def network_control(action, target=None):
     if result.returncode or 'error' in response:
         raise RuntimeError(response.get('error', 'Netwerkbeheer is tijdelijk niet beschikbaar.'))
     return response
+
+
+def wifi_qr(ssid, password):
+    """Build the standard ZXing Wi-Fi QR payload used by Android and iOS."""
+    def escape(value):
+        return ''.join('\\' + char if char in '\\;,:' else char for char in value)
+    return f'WIFI:T:WPA;S:{escape(ssid)};P:{escape(password)};H:false;;'
 
 
 def system_control(action):
@@ -238,7 +246,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
 
         def do_POST(self):
             nonlocal last_kiosk
-            if self.path not in ('/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -317,6 +325,25 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         message = str(error) if isinstance(error, RuntimeError) else 'Omschakelen kon niet worden gestart.'
                         return self.reply(503, {'error': message})
                     return self.reply(202, result)
+                if self.path == '/api/network/add':
+                    if self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                        return self.reply(403, {'error': 'Voeg een netwerk toe vanuit de Android-app.'})
+                    if not isinstance(incoming, dict) or set(incoming) != {'ssid', 'password'}:
+                        return self.reply(400, {'error': 'Vul een netwerknaam en wachtwoord in.'})
+                    try:
+                        result = network_control('add-wifi', payload=incoming)
+                        with lock:
+                            updated = {**venue, 'clubWifiName': result['name'],
+                                       'clubWifiQr': wifi_qr(result['name'], incoming['password'])}
+                            temporary = venue_path.with_suffix('.tmp')
+                            temporary.write_text(json.dumps(updated, ensure_ascii=False), encoding='utf-8')
+                            temporary.replace(venue_path)
+                            venue.clear(); venue.update(updated)
+                    except ValueError as error:
+                        return self.reply(400, {'error': str(error)})
+                    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+                        return self.reply(503, {'error': str(error)})
+                    return self.reply(201, result)
                 if self.path == '/api/kiosk/open':
                     if incoming != {}:
                         return self.reply(400, {'error': 'Ongeldig startverzoek'})

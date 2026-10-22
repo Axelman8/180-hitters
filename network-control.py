@@ -112,6 +112,40 @@ def request_switch(target, data):
     return queued
 
 
+def add_wifi(incoming, data):
+    if not isinstance(incoming, dict) or set(incoming) != {'ssid', 'password'}:
+        raise ValueError('Vul een netwerknaam en wachtwoord in.')
+    ssid, password = incoming['ssid'], incoming['password']
+    if not isinstance(ssid, str) or not ssid.strip() or len(ssid.encode('utf-8')) > 32 or '\n' in ssid or '\r' in ssid:
+        raise ValueError('De netwerknaam moet 1 tot 32 bytes lang zijn.')
+    ssid = ssid.strip()
+    if not isinstance(password, str) or not 8 <= len(password) <= 63 or '\n' in password or '\r' in password:
+        raise ValueError('Een wifi-wachtwoord moet 8 tot 63 tekens lang zijn.')
+    existing = next((p for p in data['profiles'] if p.get('mode') == 'wifi' and p.get('name') == ssid), None)
+    if existing:
+        uid = existing['uuid']
+    else:
+        uid = str(uuid.uuid4())
+        result = run(['/usr/bin/nmcli', 'connection', 'add', 'type', 'wifi', 'ifname', '*',
+                      'con-name', '180 Hitters - ' + ssid, 'uuid', uid, 'ssid', ssid])
+        if result.returncode:
+            raise RuntimeError('Het wifi-profiel kon niet worden gemaakt.')
+    result = run(['/usr/bin/nmcli', 'connection', 'modify', 'uuid', uid,
+                  'connection.autoconnect', 'yes', 'wifi-sec.key-mgmt', 'wpa-psk',
+                  'wifi-sec.psk', password, 'ipv4.method', 'auto', 'ipv6.method', 'auto'])
+    if result.returncode:
+        if not existing:
+            run(['/usr/bin/nmcli', 'connection', 'delete', 'uuid', uid])
+        raise RuntimeError('Het wifi-profiel kon niet veilig worden opgeslagen.')
+    profile = {'uuid': uid, 'name': ssid, 'mode': 'wifi'}
+    profiles = [p for p in data['profiles'] if p['uuid'] != uid] + [profile]
+    temporary = CONFIG.with_suffix('.tmp')
+    temporary.write_text(json.dumps({**data, 'profiles': profiles}, ensure_ascii=False))
+    temporary.chmod(0o644)
+    temporary.replace(CONFIG)
+    return {**profile, 'message': f'{ssid} is opgeslagen. De wifi-QR staat nu op het hoofdscherm.'}
+
+
 def main():
     args = sys.argv[1:]
     if os.geteuid() != 0:
@@ -119,6 +153,14 @@ def main():
     if args == ['status']:
         return status()
     data = config()
+    if args == ['add-wifi']:
+        try:
+            incoming = json.loads(sys.stdin.read(4096))
+        except (ValueError, UnicodeError):
+            raise ValueError('Ongeldige netwerkgegevens.')
+        with LOCK.open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            return add_wifi(incoming, data)
     if len(args) != 2 or args[0] not in ('switch', 'apply') or args[1] not in {p['uuid'] for p in data['profiles']}:
         raise ValueError('Kies een opgeslagen wifi-netwerk.')
     if args[0] == 'apply':

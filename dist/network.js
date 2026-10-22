@@ -2,6 +2,7 @@ const $ = id => document.getElementById(id);
 import './nuc-control.js';
 const dialog = $('network-dialog');
 let info = null, chosen = null, pending = false, polling = false;
+const controlToken = (() => { try { return window.DartsAndroid?.getControlToken?.() || ''; } catch { return ''; } })();
 
 function setBusy(busy) {
   $('network-hotspot').disabled = busy || !info;
@@ -17,6 +18,7 @@ async function loadNetwork() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Netwerkkeuze niet beschikbaar.');
     info = data;
+    $('network-add-section').hidden = !controlToken;
     const active = data.profiles.filter(p => p.active).map(p => p.name).join(', ');
     $('network-current').textContent = 'Huidige verbinding: ' + (active || 'geen opgeslagen wifi actief');
     const selected = $('network-select').value;
@@ -65,6 +67,19 @@ $('network-hotspot').onclick = () => choose(info.hotspot);
 $('network-wifi').onclick = () => choose($('network-select').value);
 $('network-back').onclick = () => { $('network-confirmation').hidden = true; chosen = null; setBusy(pending || info?.busy); };
 $('network-refresh').onclick = loadNetwork;
+$('network-add-form').onsubmit = async event => {
+  event.preventDefault();
+  const ssid = $('network-ssid').value.trim(), password = $('network-password').value;
+  $('network-status').textContent = 'Netwerk veilig opslaan…';
+  try {
+    const response = await fetch('/api/network/add', {method:'POST', headers:{'Content-Type':'application/json','X-Darts-Control':controlToken}, body:JSON.stringify({ssid,password}), signal:AbortSignal.timeout(25000)});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Netwerk opslaan is niet gelukt.');
+    $('network-password').value = '';
+    $('network-status').textContent = data.message;
+    await loadNetwork();
+  } catch (error) { $('network-status').textContent = error.name === 'TimeoutError' ? 'De NUC reageerde niet op tijd.' : error.message; }
+};
 $('network-confirm').onclick = async () => {
   if (!chosen || pending) return;
   pending = true;

@@ -6,6 +6,19 @@ APP_USER="${SUDO_USER:-autodarts}"
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 command -v nmcli >/dev/null
 command -v visudo >/dev/null
+HOTSPOT_EXISTS=false
+while IFS= read -r PROFILE_UUID; do
+  [[ "$(nmcli -g connection.type connection show uuid "$PROFILE_UUID")" == '802-11-wireless' ]] || continue
+  [[ "$(nmcli -g 802-11-wireless.ssid connection show uuid "$PROFILE_UUID")" == '180 Hitters wifi' ]] || continue
+  [[ "$(nmcli -g 802-11-wireless.mode connection show uuid "$PROFILE_UUID")" == 'ap' ]] || continue
+  HOTSPOT_EXISTS=true
+  break
+done < <(nmcli -t -f UUID connection show)
+if [[ "$HOTSPOT_EXISTS" != true ]]; then
+  nmcli connection add type wifi ifname '*' con-name '180 Hitters wifi' ssid '180 Hitters wifi'
+  nmcli connection modify '180 Hitters wifi' 802-11-wireless.mode ap 802-11-wireless.band bg \
+    ipv4.method shared ipv6.method disabled wifi-sec.key-mgmt wpa-psk wifi-sec.psk 'Darts180' connection.autoconnect no
+fi
 python3 - <<'PY'
 import json,subprocess
 from pathlib import Path
@@ -30,4 +43,4 @@ trap 'rm -f "$TEMP_RULE"' EXIT
 printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/darts-network\n' "$APP_USER" > "$TEMP_RULE"
 visudo -cf "$TEMP_RULE"
 install -o root -g root -m 0440 "$TEMP_RULE" /etc/sudoers.d/darts-network
-echo 'Netwerkkeuze voor opgeslagen wifi en 180 Hitters wifi is ingesteld.'
+echo 'Netwerkkeuze, nieuw wifi toevoegen en de 180 Hitters-noodhotspot zijn ingesteld.'

@@ -13,6 +13,7 @@ cp -r "$APP_DIR/dist" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/server.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/bluetooth-bridge.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/nuc-update.py" "$HOME/.local/share/oche-darts/"
+[[ ! -f "$APP_DIR/.version" ]] || cp "$APP_DIR/.version" "$HOME/.local/share/oche-darts/.version"
 cat > "$HOME/.config/systemd/user/oche-darts.service" <<'SERVICE'
 [Unit]
 Description=180 Hitters lokale server
@@ -94,7 +95,7 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 TIMER
-[[ -f "$HOME/.local/share/oche-darts/.version" ]] || printf '1.4.2\n' > "$HOME/.local/share/oche-darts/.version"
+[[ -f "$HOME/.local/share/oche-darts/.version" ]] || printf '1.5.0\n' > "$HOME/.local/share/oche-darts/.version"
 systemctl --user daemon-reload
 systemctl --user enable --now oche-darts-update.timer
 echo 'Geïnstalleerd. Open http://127.0.0.1:8765 of meld opnieuw aan voor kioskmodus.'

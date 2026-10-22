@@ -4,6 +4,10 @@ Zelfstandige Nederlandstalige darts-scoreapp voor Android, touchscreen en Linux-
 
 ## Op Linux installeren
 
+Voor een nieuwe Linux-NUC download je `180-Hitters-Linux-x64.tar.gz` van de nieuwste GitHub-release. Pak het uit en voer `sudo bash setup-linux.sh` uit. Dit installeert de app, kioskstart, Bluetooth, de beveiligde NUC-bediening en een `180 Hitters wifi`-noodhotspot. Bestaande locatiegegevens en partijen blijven bij herinstallatie behouden.
+
+Voor Windows 10/11 download je `180-Hitters-Windows-x64.zip`, pak je het uit en dubbelklik je `install-windows.cmd`. De Windows-versie werkt lokaal en via het eigen LAN; Bluetooth-NUC-bediening en wifi instellen vanuit de telefoon zijn Linux-functies.
+
 Voor Ubuntu/Debian met een grafische desktop en systemd. De bestaande Autodarts-installatie wordt niet verwijderd. Schakel eventueel de bestaande Autodarts-autostart uit om te voorkomen dat twee kioskvensters openen.
 
 1. Pak de volledige map uit op de NUC.
@@ -93,9 +97,11 @@ Double-out gebruikt de numerieke routes van de Winmau PDC Checkout Table (https:
 
 ## Wifi / hotspot vanaf de mobiel
 
-De knop Wifi / hotspot toont opgeslagen netwerken. Na bevestiging start een onafhankelijke systemd-taak de verbinding; na vier seconden kan de telefoon de verbinding verliezen. Bij mislukken (35 seconden verbindpoging) probeert de NUC `180 Hitters wifi`, en als ook dat mislukt de vorige verbinding. Bij een defecte of uitgeschakelde adapter is herstel niet gegarandeerd.
+De Android-app kan via Bluetooth of wifi een nieuw WPA2-netwerk op de Linux-NUC opslaan. Vul de SSID en het wachtwoord in bij **Wifi / hotspot**. De NUC maakt direct een standaard wifi-QR op het hoofdscherm en neemt het netwerk op in de keuzelijst. Het wachtwoord wordt niet teruggestuurd naar browsers.
 
-Eenmalig op de NUC: `sudo bash install-network-control.sh`. Dit neemt de huidige opgeslagen wifi-profielen op in `/etc/darts-network.json` en installeert een root-eigen helper `/usr/local/sbin/darts-network`. Alleen UUIDs uit die lijst kunnen worden geactiveerd; de webserver krijgt geen algemene sudo- of shelltoegang. Voer dit installatiescript opnieuw uit na het toevoegen/verwijderen van wifi-profielen. Het beveiligde profiel `180 Hitters wifi` moet al bestaan.
+Na bevestiging start een onafhankelijke systemd-taak de verbinding; na vier seconden kan de telefoon de wifi-verbinding verliezen, terwijl Bluetooth beschikbaar blijft. Bij mislukken (35 seconden verbindpoging) probeert de NUC `180 Hitters wifi`, en als ook dat mislukt de vorige verbinding. Bij een defecte of uitgeschakelde adapter is herstel niet gegarandeerd.
+
+`setup-linux.sh` regelt dit bij een nieuwe installatie. Handmatig kan het met `sudo bash install-network-control.sh`. De root-eigen helper accepteert alleen begrensde SSID/wachtwoordgegevens of UUIDs uit `/etc/darts-network.json`; de webserver krijgt geen algemene shelltoegang.
 
 Status en resultaat zijn beschikbaar via `/api/network/control`; omschakelen gebeurt via JSON POST `/api/network/switch` met uitsluitend `uuid`. Bewaar de mobiele pagina als bladwijzer. Op `180 Hitters wifi`: `http://10.42.0.1:8765/?remote=1`; op andere wifi: scan de QR-code op het NUC-scherm. De knop beheert uitsluitend opgeslagen verbindingen, geen nieuwe wachtwoorden.
 
