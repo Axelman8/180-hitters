@@ -35,6 +35,8 @@ with tempfile.TemporaryDirectory() as tmp:
             };""")
             android.goto('http://127.0.0.1:8791/?android=1')
             expect(android.locator('#android-app-action')).to_have_text('Verbindingsmodus')
+            expect(android.locator('#top-actions > #android-app-action')).to_have_count(1)
+            expect(android.locator('#top-actions > #android-update-action')).to_have_count(1)
             expect(android.locator('#connection-status')).to_have_text('Lokaal op deze telefoon')
             android.locator('#android-app-action').click()
             assert android.evaluate('window.modeChooserOpened===true')

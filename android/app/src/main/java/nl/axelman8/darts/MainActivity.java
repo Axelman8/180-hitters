@@ -13,14 +13,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.Gravity;
-import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Toast;
@@ -47,13 +44,8 @@ public final class MainActivity extends Activity {
         try { localServer = new LocalDartsServer(this, bluetooth); }
         catch (Exception error) { Toast.makeText(this, "Lokale dartserver kon niet starten.", Toast.LENGTH_LONG).show(); }
 
-        FrameLayout root = new FrameLayout(this);
         web = new WebView(this);
-        root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        Button switcher = new Button(this); switcher.setText("Modus"); switcher.setTextSize(12); switcher.setAlpha(.88f);
-        FrameLayout.LayoutParams button = new FrameLayout.LayoutParams(dp(82), dp(44), Gravity.TOP|Gravity.END); button.setMargins(0,dp(8),dp(8),0);
-        root.addView(switcher, button); switcher.setOnClickListener(v -> showModeChooser());
-        setContentView(root);
+        setContentView(web);
 
         WebSettings settings = web.getSettings(); settings.setJavaScriptEnabled(true); settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true); settings.setMediaPlaybackRequiresUserGesture(false); settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
@@ -68,7 +60,6 @@ public final class MainActivity extends Activity {
         web.setDownloadListener((url,userAgent,contentDisposition,mimetype,length)->{
             try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); } catch(ActivityNotFoundException ignored) {}
         });
-        switcher.bringToFront();
         if(hasBluetoothPermission() && !preferences.getBoolean("bluetooth_default_done",false)) {
             for(BluetoothDevice device:bluetooth.pairedDevices()) {
                 if("darten".equalsIgnoreCase(device.getName())) {

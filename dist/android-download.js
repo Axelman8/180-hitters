@@ -46,7 +46,7 @@ if (window.DartsAndroid) {
   const update = document.createElement('button');
   update.id = 'android-update-action'; update.type = 'button'; update.textContent = 'Update';
   update.addEventListener('click', () => window.DartsAndroid.checkForUpdate());
-  action.after(update);
+  document.getElementById('top-actions').append(action, update);
   document.getElementById('mobile-dock').hidden = true;
 } else {
   action.addEventListener('click', () => { dialog.showModal(); void renderDownload(); });
