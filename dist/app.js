@@ -274,25 +274,25 @@ function render(){
   const card=document.createElement('article');card.className='player'+(state.active===i?' active':'');
   card.innerHTML='<div class="player-top"><strong></strong><span class="badge"></span><div class="match-score"></div></div><div class="remaining"></div><div class="stats player-statistics"></div>';
   card.querySelector('strong').textContent=p.name;card.querySelector('.badge').textContent=state.active===i?'● AAN DE BEURT':'';
-  const matchScores=state.game==='bobs27'?[[state.bobsTarget===25?'BULL':'D'+state.bobsTarget,'DOEL'],[p.bobsHits||0,'RAAK']]:state.training121?[[p.trainingLevel||state.start,'NIVEAU'],[p.trainingBest||state.trainingBest,'BESTE']]:state.matchMode==='sets'?[[p.sets,'SETS'],[p.setLegs,'LEGS (SET)']]:[[p.legs,'LEGS']];
+  const matchScores=state.game==='bobs27'?[]:state.training121?[[p.trainingLevel||state.start,'NIVEAU'],[p.trainingBest||state.trainingBest,'BESTE']]:state.matchMode==='sets'?[[p.sets,'SETS'],[p.setLegs,'LEGS (SET)']]:[[p.legs,'LEGS']];
   card.querySelector('.match-score').replaceChildren(...matchScores.map(([value,label])=>{
    const item=document.createElement('span'),number=document.createElement('b'),caption=document.createElement('small');
    number.textContent=value;caption.textContent=label;item.append(number,caption);item.setAttribute('aria-label',`${value} ${label.toLowerCase()}`);return item;
   }));
   card.querySelector('.remaining').textContent=cricket()?p.cricketPoints:p.remaining;
   const stats=playerStats(state,i),average=v=>v===null?'-':v.toFixed(1);
-  const items=state.game==='bobs27'?[
-   [p.darts,'DARTS'],[p.bobsHits||0,'DUBBELS'],[p.darts?((p.bobsHits||0)/p.darts*100).toFixed(1)+'%':'-','RAAK'],[p.bobsHighest?(p.bobsHighest===25?'BULL':'D'+p.bobsHighest):'-','HOOGSTE DOEL']
-  ]:[
+  const items=state.game==='bobs27'?[]:[
    [stats.legDarts,state.training121?'DARTS POGING':'DARTS LEG'],[stats.gameDarts,'DARTS SPEL'],
    [average(stats.legAverage),cricket()?'LEG MPR':state.training121?'POGING GEM.':'LEG GEM.'],
    [average(stats.gameAverage),cricket()?'SPEL MPR':'SPEL GEM.'],
    [!cricket()&&!p.opened?'NOG IN':p.best,cricket()?'BESTE MARKS':'BESTE BEURT']
   ];
   card.querySelector('.stats').replaceChildren(...items.map(([value,label])=>{const cell=document.createElement('span'),b=document.createElement('b'),small=document.createElement('small');b.textContent=value;small.textContent=label;cell.append(b,small);return cell;}));
-  const legs=document.createElement('div');legs.className='player-leg-results';
-  legs.append(renderLegTable(legSummary.rows[i].perLeg,legSummary.marks));
-  card.append(legs);return card;
+  if(state.game!=='bobs27'){
+   const legs=document.createElement('div');legs.className='player-leg-results';
+   legs.append(renderLegTable(legSummary.rows[i].perLeg,legSummary.marks));card.append(legs);
+  }
+  return card;
  }));
  $('cricket-panel').hidden=!cricket();$('finish-panel').hidden=cricket();
  if(cricket())renderBoard();else renderCheckout();

@@ -64,6 +64,14 @@ with tempfile.TemporaryDirectory() as tmp:
    for page in [phone,screen]:page.reload()
    expect(phone.locator('#mode-dart')).to_have_class('selected')
    expect(phone.locator('#training-status')).to_contain_text('Doel D1')
+   expect(screen.locator('#screen-overview .screen-visit')).to_be_hidden()
+   expect(screen.locator('#screen-player-history')).to_be_hidden()
+   expect(screen.locator('#checkout b')).to_have_text(['D1','0 raak'])
+   assert screen.locator('#players .match-score').inner_text()==''
+   assert screen.locator('#players .player-statistics').inner_text()==''
+   assert screen.locator('#players .player-leg-results').count()==0
+   overview=screen.locator('#screen-overview').bounding_box();finish=screen.locator('#finish-panel').bounding_box()
+   assert abs(overview['width']-finish['width'])<2
    phone.get_by_role('button',name='Double',exact=True).click()
    phone.locator('#board-keys').get_by_role('button',name='1',exact=True).click()
    phone.locator('#board-keys').get_by_role('button',name='Mis',exact=True).click()
