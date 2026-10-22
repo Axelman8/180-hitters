@@ -1,0 +1,71 @@
+name: Publiceer 180 Hitters
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Broncode ophalen
+        uses: actions/checkout@v4
+
+      - name: Java 17 instellen
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle instellen
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Android-ondertekening instellen
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          mkdir -p android/keystore
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/keystore/axelman8-release.jks
+          {
+            echo 'storeFile=keystore/axelman8-release.jks'
+            printf 'storePassword=%s\n' "$STORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+          } > android/keystore.properties
+
+      - name: Android-app bouwen
+        working-directory: android
+        run: gradle --no-daemon :app:assembleRelease
+
+      - name: Releasebestanden samenstellen
+        shell: bash
+        run: |
+          mkdir -p dist/downloads release-payload
+          cp android/app/build/outputs/apk/release/app-release.apk dist/downloads/180-Hitters.apk
+          sha256sum dist/downloads/180-Hitters.apk > 180-Hitters.apk.sha256
+          cp -a dist server.py bluetooth-bridge.py nuc-update.py release-payload/
+          tar -C release-payload -czf 180-hitters-nuc.tar.gz .
+          sha256sum 180-hitters-nuc.tar.gz > 180-hitters-nuc.tar.gz.sha256
+
+      - name: GitHub-release publiceren
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          dist/downloads/180-Hitters.apk
+          180-Hitters.apk.sha256
+          180-hitters-nuc.tar.gz
+          180-hitters-nuc.tar.gz.sha256
+          --title "180 Hitters ${GITHUB_REF_NAME}"
+          --generate-notes
+

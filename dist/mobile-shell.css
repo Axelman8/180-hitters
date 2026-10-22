@@ -1,0 +1,128 @@
+/* Mobile app shell. Never changes the shared NUC display. */
+body.remote-control #toggle-history{display:block;flex-shrink:0;min-height:44px;font-size:14px;padding:6px 10px}
+body.remote-control:not(.history-open) #turn-controls{display:none}
+body.remote-control #turn-controls{flex-shrink:0}
+body.remote-control[data-mobile-layout] #players .match-score{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin:4px 0}
+body.remote-control[data-mobile-layout] #players .match-score > span{display:flex;align-items:baseline;gap:4px;min-width:0;padding:2px 5px;border-radius:5px}
+body.remote-control[data-mobile-layout] #players .match-score b{font-size:16px;line-height:1.1}
+body.remote-control[data-mobile-layout] #players .match-score small{font-size:10px;line-height:1.1}
+body.remote-control[data-mobile-layout]{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+body.remote-control[data-mobile-layout] > header{flex-shrink:0;gap:6px;padding:6px 10px;padding-top:max(env(safe-area-inset-top),6px)}
+body.remote-control[data-mobile-layout] header button{font-size:13px!important;min-height:44px!important;padding:6px 10px!important}
+body.remote-control[data-mobile-layout] > #connection-status{flex-shrink:0;font-size:10px;line-height:1.2;margin:0;padding:3px 10px}
+body.remote-control[data-mobile-layout] > main{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;margin:0 auto;padding:6px;padding-bottom:max(env(safe-area-inset-bottom),6px)}
+body.remote-control[data-mobile-layout] #game{min-height:100%;display:flex;flex-direction:column;gap:6px}
+body.remote-control[data-mobile-layout] #game .match-heading{flex-shrink:0}
+body.remote-control[data-mobile-layout] #turn-label{font-size:20px;margin:0}
+body.remote-control[data-mobile-layout] #players.players{flex-shrink:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0}
+body.remote-control[data-mobile-layout] #players.players .player{padding:5px 7px;border-radius:10px}
+body.remote-control[data-mobile-layout] #players .player-top > strong{font-size:18px;line-height:1.1}
+body.remote-control[data-mobile-layout] #players .badge{display:none}
+body.remote-control[data-mobile-layout] #players.players .remaining{font-size:34px;line-height:1.05}
+body.remote-control[data-mobile-layout] .play-grid{flex:1;display:flex;flex-direction:column;min-height:min-content}
+body.remote-control[data-mobile-layout] .scoring{flex:1;display:flex;flex-direction:column;gap:5px;padding:8px;border-radius:12px}
+body.remote-control[data-mobile-layout] #toggle-input{float:none;align-self:flex-end;margin:0;min-height:40px;font-size:12px;padding:5px 8px}
+body.remote-control[data-mobile-layout] .scoring .section-heading{min-height:0;justify-content:flex-end}
+body.remote-control[data-mobile-layout] .scoring .section-heading h2{display:none}
+body.remote-control[data-mobile-layout] .tabs{padding:2px}
+body.remote-control[data-mobile-layout] .tabs button{font-size:13px;min-height:40px;padding:6px 10px}
+body.remote-control[data-mobile-layout] #dart-input{flex:1;display:flex;flex-direction:column;gap:5px;margin:0;min-height:min-content}
+body.remote-control[data-mobile-layout] #dart-slots{margin:0;gap:5px}
+body.remote-control[data-mobile-layout] #dart-slots span{padding:6px;font-size:22px}
+body.remote-control[data-mobile-layout] #multipliers{margin:0;gap:5px}
+body.remote-control[data-mobile-layout] #multipliers button{min-height:44px;font-size:17px;padding:5px}
+body.remote-control[data-mobile-layout] #board-keys{flex:1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(44px,1fr);gap:5px;margin:0}
+body.remote-control[data-mobile-layout].cricket-game #board-keys{grid-template-columns:repeat(4,minmax(0,1fr))}
+body.remote-control[data-mobile-layout] #board-keys button{min-height:44px;font-size:22px;padding:4px}
+body.remote-control[data-mobile-layout] #remove-dart{min-height:40px;font-size:13px;padding:5px}
+body.remote-control[data-mobile-layout] #total-input{flex:1;display:flex;flex-direction:column;gap:5px;min-height:min-content}
+body.remote-control[data-mobile-layout] .score-input{margin:0;padding:5px 10px;gap:10px}
+body.remote-control[data-mobile-layout] .score-input span{font-size:10px}
+body.remote-control[data-mobile-layout] #entry{font-size:32px}
+body.remote-control[data-mobile-layout] #quick{gap:5px;margin:0}
+body.remote-control[data-mobile-layout] #quick button{min-height:44px;font-size:17px;padding:4px}
+body.remote-control[data-mobile-layout] #keypad{flex:1;grid-auto-rows:minmax(44px,1fr);gap:5px}
+body.remote-control[data-mobile-layout] #keypad button{min-height:44px;font-size:25px;padding:4px}
+body.remote-control[data-mobile-layout] #submit{flex-shrink:0;min-height:46px;font-size:18px;padding:6px}
+body.remote-control[data-mobile-layout] #message{font-size:13px;line-height:1.25;margin:0;min-height:0}
+body.remote-control[data-mobile-layout] #message:empty{display:none}
+body.remote-control[data-mobile-layout] #history-position{font-size:11px;margin:0}
+body.remote-control[data-mobile-layout] .bottom-actions{flex-shrink:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:0}
+body.remote-control[data-mobile-layout] .bottom-actions button{min-width:0;min-height:44px;font-size:12px;padding:5px}
+body.remote-control[data-mobile-layout] dialog{font-size:16px;width:calc(100% - 24px);max-width:500px;max-height:85dvh;padding:18px;overflow:auto}
+body.remote-control[data-mobile-layout] .layout-options strong{font-size:20px}
+body.remote-control[data-mobile-layout] .layout-options span{font-size:14px}
+body.remote-control[data-mobile-layout="compact"] #players.players .remaining{font-size:28px}
+body.remote-control[data-mobile-layout="large"] #board-keys{grid-template-columns:repeat(4,minmax(0,1fr))}
+body.remote-control[data-mobile-layout="large"] #board-keys button,body.remote-control[data-mobile-layout="large"] #keypad button{min-height:58px;font-size:26px}
+@media(orientation:landscape) and (min-width:700px){body.remote-control[data-mobile-layout] #players.players{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+body.remote-control[data-mobile-layout] #dart-input,body.remote-control[data-mobile-layout] #total-input{align-items:stretch}
+@media(min-width:370px){
+ body.remote-control[data-mobile-layout] .scoring{position:relative}
+ body.remote-control[data-mobile-layout] #toggle-input{position:absolute;top:8px;left:8px;max-width:47%}
+ body.remote-control[data-mobile-layout] .scoring .section-heading{min-height:44px;align-self:flex-end;max-width:52%}
+ body.remote-control[data-mobile-layout] .tabs button{font-size:12px;padding:5px 7px}
+}
+
+/* Wider devices add columns; typography does not grow with viewport width. */
+@media(min-width:600px){
+ body.remote-control[data-mobile-layout] #players.players{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+ body.remote-control[data-mobile-layout] #players.players .player{padding:5px 8px}
+ body.remote-control[data-mobile-layout] #game{gap:6px}
+}
+
+#keypad #confirm-total{font-size:clamp(16px,2.3vw,28px);padding:6px;font-weight:800}
+body.remote-control[data-mobile-layout] #keypad #confirm-total{font-size:clamp(14px,4vw,22px);padding:4px}
+
+/* The visit value aligns exactly with the middle keypad column. */
+body #total-input{--visit-key-gap:10px}
+body #total-input #keypad{column-gap:var(--visit-key-gap)}
+body #total-input .score-input{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--visit-key-gap);padding:0;margin:10px 0;background:none;border:0;border-radius:0;align-items:center;flex-shrink:0}
+body #total-input .visit-value{grid-column:2;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;min-height:clamp(100px,11dvh,180px);padding:10px 4px;border:2px solid #80d5d4;border-radius:16px;background:linear-gradient(145deg,#244c54,#102630);box-shadow:0 0 20px #67d8dc18,inset 0 1px 0 #ffffff18}
+body #total-input .visit-value>span{font-size:clamp(11px,1.4vw,16px);letter-spacing:.08em;color:#b6e4e8;text-align:center}
+body #total-input .score-input #entry{display:block;flex:none;margin:0;width:100%;text-align:center;font-size:clamp(44px,6vw,80px);line-height:1.05;font-weight:850;color:#d6fa79;font-variant-numeric:tabular-nums}
+body #total-input #backspace{grid-column:3;justify-self:start;min-height:44px;max-width:100%;padding:8px 12px}
+body.remote-control[data-mobile-layout] #total-input{--visit-key-gap:5px}
+body.remote-control[data-mobile-layout] #total-input .score-input{margin:2px 0}
+body.remote-control[data-mobile-layout] #total-input .visit-value{min-height:clamp(80px,12dvh,120px);border-radius:12px;padding:8px 3px}
+body.remote-control[data-mobile-layout] #total-input .score-input #entry{font-size:clamp(38px,10vw,60px)}
+
+/* Keep the entry heading and visit display at the top of the panel. */
+body:not(.remote-control) .scoring:has(#total-input:not([hidden])){position:relative}
+body:not(.remote-control) .scoring:has(#total-input:not([hidden])) > .section-heading{position:absolute;inset:24px 24px auto;align-items:flex-start;pointer-events:none}
+body:not(.remote-control) .scoring:has(#total-input:not([hidden])) .section-heading h2{max-width:30%;text-align:left}
+body:not(.remote-control) .scoring:has(#total-input:not([hidden])) .tabs{position:absolute;right:0;top:54px;max-width:32%;pointer-events:auto;flex-wrap:wrap}
+body:not(.remote-control) .scoring:has(#total-input:not([hidden])) > #toggle-input{position:absolute;top:24px;right:24px;max-width:30%;margin:0;z-index:1}
+body:not(.remote-control) #total-input .score-input{margin-top:0;align-items:end}
+body:not(.remote-control) #total-input .visit-value{min-height:190px}
+body:not(.remote-control) #total-input #backspace{justify-self:end}
+body:not(.remote-control) .scoring:has(#total-input:not([hidden])){padding:24px}
+body.remote-control[data-mobile-layout] .scoring:has(#total-input:not([hidden])){position:relative}
+body.remote-control[data-mobile-layout] .scoring:has(#total-input:not([hidden])) .section-heading{position:absolute;inset:8px 8px auto;max-width:none;min-height:0;align-self:stretch;pointer-events:none}
+body.remote-control[data-mobile-layout] .scoring:has(#total-input:not([hidden])) .section-heading h2{display:block;position:absolute;left:0;top:0;max-width:30%;font-size:15px;text-align:left}
+body.remote-control[data-mobile-layout] .scoring:has(#total-input:not([hidden])) .tabs{position:absolute;left:0;top:42px;width:31%;flex-direction:column;pointer-events:auto}
+body.remote-control[data-mobile-layout] .scoring:has(#total-input:not([hidden])) > #toggle-input{position:absolute;top:8px;right:8px;left:auto;max-width:31%;margin:0;z-index:1}
+body.remote-control[data-mobile-layout] #total-input .score-input{margin-top:0;align-items:end}
+body.remote-control[data-mobile-layout] #total-input .visit-value{min-height:145px}
+body.remote-control[data-mobile-layout] #total-input #backspace{justify-self:end}
+
+body #keypad #keypad-bust{background:#c94f2e;border-color:#f58c63;color:#fff;font-size:clamp(14px,2vw,24px);line-height:1.2;padding:6px;font-weight:800}
+body #keypad #keypad-bust:hover:not(:disabled){background:#e2653e}
+body #keypad #keypad-bust:focus-visible{outline-color:#ffad85}
+body.remote-control[data-mobile-layout] #keypad #keypad-bust{font-size:clamp(13px,3.5vw,18px)}
+
+/* Tactics: a single tile grid, including the two turn actions. */
+body[data-game="tactics"] #board-keys{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+body[data-game="tactics"] #board-keys button{border-radius:12px;min-height:58px}
+body[data-game="tactics"] #remove-dart,body[data-game="tactics"] #submit{display:none!important}
+body[data-game="tactics"] #board-keys #tactics-remove{background:#c94f2e;border-color:#f58c63;color:#fff;font-size:clamp(13px,1.8vw,22px);line-height:1.25;padding:6px}
+body[data-game="tactics"] #board-keys #tactics-confirm{background:#c8f56a;border-color:#c8f56a;color:#182416;font-size:clamp(13px,1.8vw,22px);line-height:1.25;padding:6px}
+body[data-game="tactics"] #board-keys #tactics-remove:hover:not(:disabled){background:#e2653e}
+body[data-game="tactics"] #board-keys #tactics-confirm:hover:not(:disabled){background:#d9ff92}
+body.remote-control[data-game="tactics"][data-mobile-layout] #board-keys{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+body.remote-control[data-game="tactics"][data-mobile-layout] #board-keys button{min-height:54px}
+body.remote-control[data-game="tactics"][data-mobile-layout] #board-keys #tactics-remove,
+body.remote-control[data-game="tactics"][data-mobile-layout] #board-keys #tactics-confirm{font-size:13px}
+
+body[data-game="tactics"] #board-keys button{min-width:0;overflow-wrap:anywhere}

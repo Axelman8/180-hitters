@@ -1,0 +1,57 @@
+#setup-wizard{display:block}
+body #setup{padding:0;border:0;background:transparent;margin:0;max-width:720px;width:100%}
+body #setup>:not(#setup-wizard){display:none!important}
+body #setup-wizard{display:block;padding:10px 8px 0}
+#setup-wizard h1{font-size:27px;letter-spacing:-.6px;margin:20px 0 10px}
+.wizard-steps{display:flex;gap:5px}
+.wizard-steps button{flex:1;min-height:44px;padding:7px 4px;font-size:13px;border-radius:9px;background:transparent}
+.wizard-steps button[aria-current=step]{background:#263e36;border-color:#c8f56a;color:#c8f56a}
+.wizard-hint{color:#a9bdc7;font-size:14px;line-height:1.5;margin:8px 0 18px}
+.wizard-content h2{font-size:17px;color:#83d9ef;margin:20px 0 10px}
+.wizard-games{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.wizard-game{text-align:left;display:flex;flex-direction:column;gap:10px;min-height:146px;padding:16px;background:linear-gradient(145deg,#203c49,#152832);border:1px solid #385564}
+.wizard-game strong{font-size:28px;color:#eef4f4}
+.wizard-game span{font-size:13px;line-height:1.45;font-weight:400;color:#b8cbd5}
+.wizard-game small{margin-top:auto;color:#c8f56a}
+#setup-wizard button[aria-pressed=true]{border:2px solid #c8f56a;background:#2b4438;color:#deff9e}
+.wizard-option{border:0;padding:0;margin:0 0 24px;min-width:0}
+.wizard-option legend{font-size:17px;font-weight:750;color:#eef4f4;margin-bottom:10px}
+.wizard-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.wizard-options button{min-height:58px;padding:8px 5px;font-size:14px}
+.wizard-more{background:#14252e;border:1px solid #344c59;border-radius:12px;padding:14px;margin:10px 0}
+.wizard-more summary{cursor:pointer;font-weight:700;min-height:30px}
+.wizard-more .wizard-option{margin-top:20px}
+.wizard-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.wizard-slots button{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px;min-width:0}
+.wizard-slots small{color:#a9bdc7;font-size:12px}.wizard-slots strong{font-size:20px;overflow-wrap:anywhere}
+.wizard-roster{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.wizard-roster button{min-height:46px;padding:8px 14px;font-size:15px;border-radius:24px}
+.wizard-roster-group{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0}.wizard-roster-group h3{margin:0;color:var(--accent);font-size:15px}.wizard-roster-group .wizard-roster{margin:10px 0 0}.wizard-roster-empty{color:var(--muted);margin:6px 0;font-size:13px}
+.wizard-custom{margin:16px 0 24px;color:#a9bdc7;font-size:14px}
+.wizard-custom input{font-size:18px}
+.wizard-summary,.wizard-info{background:#1c332c;border:1px solid #3d5a47;border-radius:14px;padding:16px;line-height:1.5;margin:20px 0}
+.wizard-summary p{font-size:14px;margin:6px 0;color:#c4d6cb}
+.wizard-actions{position:sticky;bottom:0;z-index:5;display:flex;gap:8px;background:#0c151bf5;border-top:1px solid #34444d;padding:12px 0 max(12px,env(safe-area-inset-bottom));margin-top:18px}
+.wizard-actions button{font-size:16px;min-height:54px}.wizard-next{flex:1}.wizard-back{padding:10px;background:transparent}
+@media(min-width:600px){.wizard-games{grid-template-columns:repeat(3,minmax(0,1fr))}.wizard-options{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
+
+.wizard-option[data-field=count] .wizard-options{grid-template-columns:repeat(4,minmax(0,1fr))}
+.wizard-content{padding-bottom:8px}
+
+body:not(.remote-control) #setup{max-width:1100px;margin:0 auto}
+body:not(.remote-control) #setup-wizard{padding:18px}
+body:not(.remote-control) #setup-wizard h1{font-size:clamp(30px,3.5vw,46px);margin:26px 0 18px}
+body:not(.remote-control) .wizard-steps button{min-height:58px;font-size:20px}
+body:not(.remote-control) .wizard-game{min-height:190px;padding:24px}
+body:not(.remote-control) .wizard-game strong{font-size:38px}
+body:not(.remote-control) .wizard-game span{font-size:18px}
+body:not(.remote-control) .wizard-game small{font-size:17px}
+body:not(.remote-control) .wizard-option legend,body:not(.remote-control) .wizard-content h2{font-size:24px}
+body:not(.remote-control) .wizard-options button{min-height:70px;font-size:20px}
+body:not(.remote-control) .wizard-hint{font-size:18px}
+body:not(.remote-control) .wizard-slots button{min-height:90px;padding:18px}
+body:not(.remote-control) .wizard-slots strong{font-size:28px}
+body:not(.remote-control) .wizard-slots small{font-size:16px}
+body:not(.remote-control) .wizard-roster button{min-height:58px;font-size:20px}
+body:not(.remote-control) .wizard-actions button{min-height:68px;font-size:23px}
+body:not(.remote-control) .wizard-summary p{font-size:18px}

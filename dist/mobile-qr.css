@@ -1,0 +1,31 @@
+/* A separate bottom row keeps the code visible without covering score controls. */
+body:not(.remote-control){height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+body:not(.remote-control)>header,body:not(.remote-control)>#connection-status{flex-shrink:0}
+body:not(.remote-control)>main{flex:1;min-height:0;width:100%;overflow-y:auto;overscroll-behavior:contain}
+body:not(.remote-control)>footer{display:none}
+#mobile-dock{flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;gap:20px;padding:8px 20px;background:#101c23;border-top:1px solid var(--line)}
+.mobile-dock-copy{max-width:440px;min-width:0;text-align:right}
+.mobile-dock-copy strong{font-size:20px;color:var(--accent)}
+.mobile-dock-copy p{font-size:14px;line-height:1.45;margin:7px 0;color:#c5d4db}
+#mobile-address{font-size:13px;color:#c5d4db;overflow-wrap:anywhere}
+#mobile-qr-link{display:block;width:160px;height:160px;flex:0 0 160px;background:#fff;border-radius:4px;overflow:hidden}
+#mobile-qr-link svg{display:block;width:100%;height:100%}
+body.remote-control #mobile-dock{display:none}
+@media(min-height:1500px){#mobile-qr-link{width:192px;height:192px;flex-basis:192px}.mobile-dock-copy strong{font-size:24px}.mobile-dock-copy p{font-size:18px}}
+
+.mobile-dock-copy #mobile-wifi{font-size:20px;line-height:1.35;color:#fff;margin:6px 0}
+.mobile-dock-copy #mobile-wifi b{font-weight:800}
+@media(min-height:1500px){.mobile-dock-copy #mobile-wifi{font-size:24px}}
+
+/* Two compact scan steps: network on the left, score entry on the right. */
+#mobile-dock{gap:12px;padding:8px 16px}
+#club-wifi{display:flex;align-items:center;gap:12px;margin-right:auto;min-width:0}
+#club-wifi-code,#mobile-qr-link{width:140px;height:140px;flex:0 0 140px;background:white;border-radius:4px;overflow:hidden}
+#club-wifi-code svg{width:100%;height:100%;display:block}
+#club-wifi strong,.mobile-dock-copy strong{font-size:17px;color:var(--accent)}
+#club-wifi p,.mobile-dock-copy p{font-size:13px;line-height:1.25;margin:5px 0}
+#club-wifi>div:last-child{max-width:180px}
+.mobile-dock-copy{max-width:300px}
+.mobile-dock-copy #mobile-wifi{font-size:14px;line-height:1.25;margin:5px 0}
+#mobile-address{font-size:10px;overflow-wrap:anywhere}
+@media(max-width:850px){#club-wifi{gap:6px}#club-wifi>div:last-child{max-width:110px}.mobile-dock-copy{max-width:210px}#club-wifi strong,.mobile-dock-copy strong{font-size:14px}}

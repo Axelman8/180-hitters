@@ -1,0 +1,82 @@
+/* Quiet scoreboard layout; the phone retains its scoring controls. */
+#screen-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px}
+#screen-overview .screen-visit{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-width:0}
+#screen-visit-score{font-size:clamp(64px,10vw,140px);line-height:1.05;color:#d6fa79;font-variant-numeric:tabular-nums}
+#screen-visit-darts{font-size:24px;color:#83d9ef;margin-top:8px}
+body:not(.remote-control) #screen-overview #finish-panel{margin:0!important;min-width:0;min-height:200px;flex:none!important;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px!important;gap:8px!important}
+body:not(.remote-control) #screen-overview #finish-panel .eyebrow{margin:0;font-size:16px}
+body:not(.remote-control) #screen-overview #checkout-title{font-size:clamp(20px,2.8vw,34px)!important;margin:0}
+body:not(.remote-control) #screen-overview #checkout{margin:0!important;gap:8px!important;justify-content:center}
+body:not(.remote-control) #screen-overview #checkout b{font-size:clamp(26px,4.5vw,60px)!important;padding:10px!important}
+body:not(.remote-control) #screen-overview #checkout-note{display:none}
+#screen-player-history,#screen-input-shortcut{display:none}
+body:not(.remote-control):not(.cricket-game) .scoring .visit-value{visibility:hidden}
+body:not(.remote-control):not(.cricket-game) .scoring #total-input .score-input{min-height:44px;height:44px;overflow:hidden}
+body:not(.remote-control):not(.cricket-game) .scoring #total-input #backspace{align-self:start}
+body:not(.remote-control):not(.cricket-game) .scoring:has(#total-input:not([hidden])){padding-top:140px!important}
+body.input-collapsed:not(.remote-control):not(.cricket-game) #game:not([hidden]){height:auto!important;min-height:0!important;display:block!important}
+body.input-collapsed:not(.remote-control):not(.cricket-game) .scoring,
+body.input-collapsed:not(.remote-control) .history{display:none!important}
+body.input-collapsed:not(.remote-control) #screen-player-history{display:grid;grid-template-columns:repeat(var(--history-players),minmax(0,1fr));gap:16px;margin-top:18px}
+#screen-player-history article{text-align:center;min-width:0}
+#screen-player-history h3{color:#83d9ef;font-size:clamp(22px,3vw,36px);margin:0 0 12px;overflow-wrap:anywhere}
+#screen-player-history ol{list-style:none;padding:0;margin:0}
+#screen-player-history li{padding:10px 0;border-top:1px solid #2a3b44;font-size:clamp(24px,3.6vw,44px);font-weight:750}
+body.input-collapsed:not(.remote-control):not(.cricket-game) #screen-input-shortcut{display:block;font-size:14px}
+
+body.remote-control #screen-overview,body.remote-control #screen-player-history,body.remote-control #screen-input-shortcut{display:none!important}
+
+body:not(.remote-control) #screen-overview{margin-top:18px}
+
+#screen-player-history li:has(strong){display:flex;align-items:center;justify-content:space-between;gap:8px}
+#screen-player-history li small{font-size:clamp(13px,1.7vw,22px);font-weight:500;color:#93a9b2;text-align:left}
+#screen-player-history li strong{font-size:inherit}
+
+#screen-player-history li:has(strong){display:grid;grid-template-columns:2.5ch 4ch;justify-content:center;column-gap:16px}
+#screen-player-history li small{text-align:right;font-variant-numeric:tabular-nums}
+#screen-player-history li strong{text-align:right;font-variant-numeric:tabular-nums}
+
+body.input-collapsed:not(.remote-control) #screen-player-history{display:block}
+#screen-player-history table{width:100%;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}
+#screen-player-history th,#screen-player-history td{text-align:center;padding:12px 8px}
+#screen-player-history thead th{color:#83d9ef;font-size:clamp(22px,3vw,36px);overflow-wrap:anywhere}
+#screen-player-history thead th:first-child{width:48px}
+#screen-player-history tbody th{font-size:clamp(14px,1.7vw,22px);color:#93a9b2;font-weight:500;text-align:left}
+#screen-player-history tbody td{font-size:clamp(24px,3.6vw,44px);font-weight:750}
+#screen-player-history tbody tr{border-top:1px solid #2a3b44}
+#screen-player-history tbody td+td{border-left:1px solid #40545f}
+
+#screen-history-title{text-align:center;font-size:clamp(22px,2.8vw,32px);margin:0 0 6px}
+#screen-history-leg{text-align:center;color:#c8f56a;font-size:clamp(18px,2.3vw,26px);font-weight:650;margin:0 0 18px}
+
+/* Compact, equally sized panels with headings anchored at the top. */
+body:not(.remote-control) #screen-overview > .screen-visit,
+body:not(.remote-control) #screen-overview > #finish-panel{
+ height:clamp(180px,12dvh,300px);min-height:0!important;
+ padding:14px 18px!important;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;
+ align-items:center;justify-items:center;align-content:stretch!important;justify-content:stretch!important;gap:6px!important;
+}
+body:not(.remote-control) #screen-overview > .panel > .eyebrow{align-self:start;margin:0;font-size:16px;line-height:1.2}
+body:not(.remote-control) #screen-overview #screen-visit-score{align-self:center;font-size:clamp(54px,7dvh,110px);line-height:1}
+body:not(.remote-control) #screen-overview #screen-visit-darts{margin:0;font-size:22px;line-height:1.2}
+body:not(.remote-control) #screen-overview #screen-visit-darts:empty{display:none}
+body:not(.remote-control) #screen-overview #checkout-title{align-self:center;font-size:clamp(20px,2.8vw,32px)!important}
+body:not(.remote-control) #screen-overview #checkout{align-self:center}
+body:not(.remote-control) #screen-overview #checkout b{font-size:clamp(26px,3.6vw,48px)!important;padding:8px!important}
+
+.player-leg-results{display:none}
+body:not(.remote-control) #players .player-statistics{display:none!important}
+body:not(.remote-control) #players .player-leg-results{display:grid;gap:7px;margin-top:14px;font-size:clamp(13px,1.5vw,20px)}
+.player-leg-results>div{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.player-leg-results span{color:#b3c3cb}
+.player-leg-results b{color:#fff;font-variant-numeric:tabular-nums}
+#match-summary .summary-legs{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+#match-summary .summary-legs strong+small{margin-top:10px}
+
+.leg-results-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;text-align:center}
+.leg-results-table th,.leg-results-table td{padding:5px 3px;border-bottom:1px solid #ffffff18}
+.leg-results-table thead th{font-weight:500;font-size:clamp(10px,1.25vw,17px);color:#b3c3cb}
+.leg-results-table tbody th{font-weight:500;color:#b3c3cb}
+.leg-results-table tbody td{font-weight:750;color:#fff}
+#match-summary .leg-results-table{margin-top:12px;font-size:clamp(16px,2vw,24px)}
+#match-summary .leg-results-table thead th{font-size:clamp(13px,1.6vw,20px)}
