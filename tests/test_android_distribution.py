@@ -27,6 +27,8 @@ with tempfile.TemporaryDirectory() as tmp:
             page.locator('#android-app-action').click()
             expect(page.locator('#android-download-dialog')).to_be_visible()
             expect(page.locator('#android-download-title')).to_have_text('180 Hitters voor Android')
+            expect(page.locator('#android-download-link')).to_have_attribute(
+                'href', 'https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters.apk')
             assert not errors, errors
 
             android = browser.new_page(viewport={'width': 980, 'height': 2050}, is_mobile=True, has_touch=True)

@@ -4,6 +4,8 @@ const link = document.getElementById('android-download-link');
 const code = document.getElementById('android-download-code');
 const address = document.getElementById('android-download-address');
 const status = document.getElementById('android-download-status');
+const local = document.getElementById('android-download-local');
+const githubApk = 'https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters.apk';
 
 function preferredBase(urls) {
   const lan = urls.filter(value => {
@@ -18,26 +20,23 @@ function preferredBase(urls) {
 }
 
 async function renderDownload() {
-  link.hidden = true;
-  status.hidden = false;
-  status.textContent = 'Downloadadres bepalen...';
+  const image = window.qrcode(0, 'M');
+  image.addData(githubApk); image.make();
+  code.innerHTML = image.createSvgTag({cellSize: 5, margin: 18, scalable: true});
+  code.querySelector('svg')?.setAttribute('aria-label', 'QR-code voor de nieuwste 180 Hitters Android-app op GitHub');
+  link.href = githubApk;
+  address.textContent = 'Nieuwste versie via GitHub';
+  link.hidden = false;
+  status.hidden = true;
+  local.hidden = true;
   try {
     const response = await fetch('/api/network', {cache: 'no-store', signal: AbortSignal.timeout(5000)});
     if (!response.ok) throw new Error();
     const base = preferredBase((await response.json()).urls || []);
     if (!base) throw new Error();
-    const apk = new URL('/downloads/180-Hitters.apk', base).href;
-    const image = window.qrcode(0, 'M');
-    image.addData(apk); image.make();
-    code.innerHTML = image.createSvgTag({cellSize: 5, margin: 18, scalable: true});
-    code.querySelector('svg')?.setAttribute('aria-label', 'QR-code voor de 180 Hitters Android-app');
-    link.href = apk;
-    address.textContent = apk;
-    link.hidden = false;
-    status.hidden = true;
-  } catch {
-    status.textContent = 'De download is nog niet beschikbaar of de NUC heeft geen netwerkadres.';
-  }
+    local.href = new URL('/downloads/180-Hitters.apk', base).href;
+    local.hidden = false;
+  } catch {}
 }
 
 if (window.DartsAndroid) {
