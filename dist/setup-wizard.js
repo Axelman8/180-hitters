@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id);
-const games=[['x01','X01','Van je startscore naar nul.','Wedstrijd'],['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd'],['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd'],['121','121','Checkouttraining met negen darts.','Training'],['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training'],['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training']];
-const fields=['start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','count'];
+const games=[['x01','X01','Van je startscore naar nul.','Wedstrijd'],['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd'],['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd'],['121','121','Checkouttraining met negen darts.','Training'],['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training'],['tenlives','10 levens','20 t/m 10 en Bull. Bewaar je levens.','Training'],['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training']];
+const fields=['lives-mode','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','count'];
 let step=0,slot=0,venueRoster=[],mobileRoster=[],selected='x01';
 const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';
 let applying=false,sendTimer,sendBusy=false,pendingSetup=undefined,seenVersion=-1,mirroring=false,localSetupOwner=false;
@@ -10,7 +10,7 @@ function button(text,action,cls){const node=el('button',text,cls);node.type='but
 function change(id,value){$(id).value=String(value);$(id).dispatchEvent(new Event('change',{bubbles:true}));}
 function remember(){try{localStorage.setItem('darts.setup.preferences',JSON.stringify({selected,values:Object.fromEntries(fields.map(id=>[id,$(id).value]))}));}catch{}}
 function chooseGame(id){
- selected=id;const training=['121','gotcha','bobs27'].includes(id);
+ selected=id;const training=['121','gotcha','bobs27','tenlives'].includes(id);
  $(training?'category-training':'category-match').click();
  change('game-type',training?'training':id);$('setup-form').hidden=false;
  if(training)change('training-type',id);else change('game-type',id);
@@ -21,7 +21,7 @@ function options(id,title){
  const select=$(id);if(select.closest('label').hidden)return null;
  const group=el('fieldset',undefined,'wizard-option');group.dataset.field=id;group.append(el('legend',title));
  const tiles=el('div',undefined,'wizard-options');
- const friendly={single:id==='in-mode'?'Direct beginnen':'Direct uit',double:id==='in-mode'?'Dubbel-in':'Dubbel-uit',master:id==='in-mode'?'Master-in':'Master-uit',legs:'Legs',sets:'Sets',off:'Vrij spelen',standard:'Hoogste score','cut-throat':'Laagste score','no-score':'Alleen sluiten'};
+ const friendly=id==='lives-mode'?{}:{single:id==='in-mode'?'Direct beginnen':'Direct uit',double:id==='in-mode'?'Dubbel-in':'Dubbel-uit',master:id==='in-mode'?'Master-in':'Master-uit',legs:'Legs',sets:'Sets',off:'Vrij spelen',standard:'Hoogste score','cut-throat':'Laagste score','no-score':'Alleen sluiten'};
  for(const option of select.options){if(option.hidden)continue;
   const tile=button(friendly[option.value]||option.textContent,()=>{change(id,option.value);remember();render();});
   tile.disabled=option.disabled;tile.setAttribute('aria-pressed',String(select.value===option.value));tiles.append(tile);
@@ -48,8 +48,9 @@ function render(){
   }
  }else if(step===1){
   content.append(el('p',games.find(g=>g[0]===selected)?.[1]+' · tik op een tegel om te kiezen','wizard-hint'));
-  const main=[['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set']];
+  const main=[['lives-mode','Doubles of Triples'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set']];
   for(const [id,title] of main){const group=options(id,title);if(group)content.append(group);}
+  if(selected==='tenlives')content.append(el('p','Iedereen begint met 10 levens en 3 pogingen op 20. Raak: resterende pijlen + 3 naar het volgende doel. Pogingen op: ??n doel terug; alleen op 20 kost dit een leven. Dan wisselt de speler. Bull (50) wint.','wizard-info'));
   if(selected==='121')content.append(el('p','Negen darts om uit te gooien. Je niveau begint bij 121.','wizard-info'));
   if(selected==='bobs27')content.append(el('p',"Start op 27. Gooi drie pijlen op D1 t/m D20 en daarna bull. Treffer: punten erbij; volledig missen: punten eraf.",'wizard-info'));
  }else{
@@ -69,7 +70,7 @@ function render(){
   input.onchange=()=>render();label.append(input);content.append(label);
   const starter=options('starter','Wie begint?');if(starter)content.append(starter);
   const summary=el('div',undefined,'wizard-summary');summary.append(el('strong',games.find(g=>g[0]===selected)?.[1]));
-  const ids=selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:selected==='bobs27'?[]:['scoring','match-mode','legs'];
+  const ids=selected==='tenlives'?['lives-mode']:selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:selected==='bobs27'?[]:['scoring','match-mode','legs'];
   summary.append(el('p',ids.filter(id=>!$(id).closest('label').hidden).map(id=>id==='legs'?`Eerste tot ${$(id).value} ${$('match-mode').value==='sets'?'sets':'legs'}`:$(id).selectedOptions[0]?.textContent).join(' · ')),el('p',names().map(i=>i.value).join(' → ')));content.append(summary);
  }
  const actions=el('div',undefined,'wizard-actions');

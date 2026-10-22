@@ -1,3 +1,4 @@
+import {renderLives} from './ten-lives.js';
 import {matchSummary,renderLegTable} from './match-summary.js';
 import {renderScreenOverview} from './screen-overview.js';
 import {replayTurns} from './replay.js';
@@ -22,7 +23,8 @@ $('toggle-history').onclick=()=>{historyOpen=!historyOpen;try{localStorage.setIt
 renderHistoryMenu();
 let state=null,undo=[],future=[],pendingTurns=[],pendingReason='',editingPending=false,historyNavigation=false,entry='',dartList=[],multiplier=1,mode='total',preferredMode='total',modeOverride=null,editTurn=null,gotchaRule='end',resetTargetsOpen=false;
 const cricket=()=>state&&['cricket','tactics'].includes(state.game);
-const totalAllowed=()=>!!state&&state.game!=='bobs27';
+const totalAllowed=()=>!!state&&!['bobs27','tenlives'].includes(state.game);
+function renderLivesGame(){renderLives(state,{dart:hit=>commit({trainingHit:hit}),undo:()=>$('undo').click(),redo:()=>goForward(),canUndo:undo.length>0,canRedo:future.length>0,toggle:()=>$('toggle-input').click()});}
 
 const namesOfRules={single:'Straight',double:'Double',master:'Master'};
 const scoringNames={standard:'Standard','cut-throat':'Cut Throat','no-score':'No Score'};
@@ -119,6 +121,7 @@ function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
 function resetInput(){resetTargetsOpen=false;document.querySelectorAll('#gotcha-targets input').forEach(el=>el.checked=false);entry='';dartList=[];multiplier=1;message();renderInput();}
 function renderInput(){
+ if(state?.game==='tenlives'){renderLivesGame();return;}
  $('training-status').hidden=!state?.training121&&state?.game!=='bobs27';
  if(state?.training121){
   const live=previewTurn(state,dartList),used=state.trainingDarts+(live.bust?3:dartList.length);
@@ -261,6 +264,12 @@ function renderBoard(){
 function render(){
  document.body.dataset.game=state?.game||'';
  if(!state){showSetup();return;}
+ if(state.game==='tenlives'){
+  mode='dart';
+  $('setup').hidden=true;$('game').hidden=false;document.body.classList.remove('cricket-game');document.body.classList.add('training-game');
+  $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
+  renderLivesGame();if(state.phase!=='playing')showResult();return;
+ }
  $('setup').hidden=true;$('game').hidden=false;document.body.classList.toggle('cricket-game',cricket());document.body.classList.toggle('training-game',!!state.training121||state.game==='bobs27');setMode(modeOverride||preferredMode);buildKeys();
  const current=state.players[state.active],format=state.matchMode==='off'?'VRIJ SPELEN':`EERSTE TOT ${state.target} ${state.matchMode==='sets'?'SETS':'LEGS'}`;
  $('match-label').textContent=cricket()?`${state.game.toUpperCase()} / ${scoringNames[state.scoring]} / ${format}`:`${state.start} / ${namesOfRules[state.inMode]}-IN / ${namesOfRules[state.out]}-OUT / ${format}`;
@@ -454,6 +463,12 @@ for(const b of document.querySelectorAll('[data-darts]'))b.onclick=()=>{$('finis
 $('finish-cancel').onclick=()=>$('finish-dialog').close();
 function showResult(){
  showWinner(state);
+ if(state.game==='tenlives'){
+  $('result-title').textContent=state.winner===null?'Training afgelopen':state.players[state.winner].name+' wint!';
+  $('result-text').textContent=(state.winner===null?'Alle spelers zijn hun levens kwijt. ':'Bull geraakt! ')+state.players.map(p=>`${p.name}: ${p.lives} levens, ${p.darts} pijlen`).join(' ? ');
+  $('continue').textContent='Nieuwe training';$('finish-match').hidden=true;
+  if(!$('result-dialog').open)$('result-dialog').showModal();return;
+ }
  if(state.game==='bobs27'){
   const complete=['bobs-complete','bobs-tie'].includes(state.reason),scores=state.players.map(p=>`${p.name}: ${p.remaining} (${p.bobsHits||0} raak)`).join(' · ');
   $('result-title').textContent=state.reason==='bobs-tie'?'Gelijkspel!':state.winner!==null?`${state.players[state.winner].name} wint!`:complete?"Bob's 27 voltooid!":'Training afgelopen';
@@ -484,9 +499,10 @@ function settings(){
  document.querySelectorAll('[data-x01]').forEach(el=>el.hidden=!x);
  $('game-type').closest('label').hidden=training;
  $('scoring-label').hidden=x||training;
+ $('lives-mode-label').hidden=!(training&&$('training-type').value==='tenlives');
  $('gotcha-target-label').hidden=!gotcha;$('gotcha-out-label').hidden=!gotcha;
  $('training-label').hidden=!training;$('training-help').hidden=!training;
- $('training-help').textContent=gotcha?'Gotcha: 2 tot 4 spelers beginnen op 0. Tel per pijl op naar de gekozen doelscore. Kies Straight-out, Double-out of Master-out. Gelijk aan een tegenstander? Die gaat naar 0. Te hoog, een ongeldige finish of 1 punt over bij Double/Master-out is bust: je eigen score gaat terug naar het begin van de beurt; eerdere Gotcha-treffers blijven staan.':bobs?"Bob's 27: 1 tot 4 spelers. Iedereen gooit drie pijlen op D1 t/m D20 en daarna Bull. Iedere treffer telt de dubbelwaarde erbij. Geen treffer trekt die waarde af. Bij 0 of lager valt die speler af.":'121: 1 tot 4 spelers, elk met een eigen niveau. Per speler een poging van maximaal negen darts, daarna de volgende speler. Dubbel-uit. Gelukt: +1 plus overgebleven darts. Niet gelukt: -1, minimaal 121. Een bust verbruikt de rest van je beurt.';
+ $('training-help').textContent=training&&$('training-type').value==='tenlives'?'10 levens: Doubles of Triples van 20 t/m 10, daarna Bull (50). Raak: resterende pogingen plus 3. Mis je alle pogingen, dan ??n doel terug of op 20 ??n leven kwijt; daarna de volgende speler.':gotcha?'Gotcha: 2 tot 4 spelers beginnen op 0. Tel per pijl op naar de gekozen doelscore. Kies Straight-out, Double-out of Master-out. Gelijk aan een tegenstander? Die gaat naar 0. Te hoog, een ongeldige finish of 1 punt over bij Double/Master-out is bust: je eigen score gaat terug naar het begin van de beurt; eerdere Gotcha-treffers blijven staan.':bobs?"Bob's 27: 1 tot 4 spelers. Iedereen gooit drie pijlen op D1 t/m D20 en daarna Bull. Iedere treffer telt de dubbelwaarde erbij. Geen treffer trekt die waarde af. Bij 0 of lager valt die speler af.":'121: 1 tot 4 spelers, elk met een eigen niveau. Per speler een poging van maximaal negen darts, daarna de volgende speler. Dubbel-uit. Gelukt: +1 plus overgebleven darts. Niet gelukt: -1, minimaal 121. Een bust verbruikt de rest van je beurt.';
  $('count').querySelector('option[value="1"], option:first-child').disabled=gotcha;
  for(const id of ['match-mode','max-rounds','count','starter'])$(id).closest('label').hidden=training&&!['count','starter'].includes(id);
  document.querySelector('.setup-help:not(#training-help)').hidden=training;
@@ -503,7 +519,7 @@ $('new-match-confirm').onclick=()=>{$('new-match-dialog').close();showSetup();};
 $('setup-form').onsubmit=async e=>{
  e.preventDefault();const players=[...$('names').querySelectorAll('input')].map(i=>i.value.trim()).filter(Boolean);if(players.length!==Number($('count').value))return;
  const gotcha=$('game-type').value==='training'&&$('training-type').value==='gotcha',bobs=$('game-type').value==='training'&&$('training-type').value==='bobs27';
- state=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',game:$('game-type').value==='training'?(gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
+ state=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
  undo=[];future=[];pendingTurns=[];pendingReason='';editingPending=false;historyNavigation=false;mode=totalAllowed()?preferredMode:'dart';if(!await persist())return;resetInput();render();
 };
 document.addEventListener('show-shared-setup',()=>{for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();});

@@ -1,0 +1,34 @@
+#lives-game{display:none}
+body[data-game="tenlives"] #game> :not(#lives-game){display:none!important}
+body[data-game="tenlives"] #game:not([hidden]){display:block!important;height:var(--stage-height,100%)!important;min-height:0!important}
+body[data-game="tenlives"] #lives-game{display:flex!important;flex-direction:column;gap:12px;min-height:100%;width:100%}
+.lives-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lives-heading span,.lives-hint,.lives-last{color:var(--muted)}
+.lives-players{display:grid;grid-template-columns:repeat(var(--count),minmax(0,1fr));gap:10px}
+.lives-player{border:1px solid var(--line);border-radius:16px;padding:14px;background:#142129;text-align:center;min-width:0}
+.lives-player.active{border-color:var(--accent);background:linear-gradient(125deg,#253c32,#182a2b)}
+.lives-player.eliminated{opacity:.5}
+.lives-player h3{color:#83d9ef;margin:0 0 8px;overflow-wrap:anywhere;font-size:clamp(18px,2.5vw,32px)}
+.lives-goal{font-size:clamp(22px,3vw,42px);overflow-wrap:anywhere}
+.lives-player p{margin:8px 0}.lives-player small{color:var(--muted)}
+.life-marks{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin:10px 0}
+.life-marks i{height:26px;border-radius:3px;background:var(--accent)}
+.life-marks i.lost{background:#20313b;border:1px solid #40545f}
+.lives-focus{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;min-height:220px}
+.lives-name{color:#83d9ef;font-size:clamp(24px,4vw,48px);font-weight:750;margin:0;overflow-wrap:anywhere}
+.lives-current{color:var(--accent);font-size:clamp(56px,10vmin,150px);line-height:1.1}
+.lives-attempts{font-size:clamp(24px,4vmin,48px);margin:0}
+.lives-route{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}.lives-route span{border:1px solid var(--line);padding:5px 8px;border-radius:6px}.lives-route .current{background:var(--accent);color:#182416;font-weight:800}
+.lives-controls{padding:14px}.lives-entry,.lives-history-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lives-entry button{min-height:80px;font-size:clamp(20px,3vw,32px)}
+.lives-miss{background:#89472d;color:white}.lives-undo{background:#b45432;color:white}
+.lives-hint,.lives-last{font-size:14px;margin:10px 0;line-height:1.4}.lives-last{min-height:20px}
+#lives-toggle{margin-top:8px;min-height:44px;font-size:13px}
+body.input-collapsed:not(.remote-control) .lives-entry,body.input-collapsed:not(.remote-control) .lives-hint{display:none}
+body.remote-control .lives-players{grid-template-columns:repeat(min(2,var(--count)),minmax(0,1fr))}
+body.remote-control .lives-player{padding:8px}.remote-control .lives-player p{margin:4px 0}
+body.remote-control .lives-focus{min-height:180px;padding:12px}
+body.remote-control .lives-current{font-size:64px}
+@media(min-width:700px) and (max-height:1100px){body.remote-control[data-game="tenlives"] #lives-game{display:grid!important;grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr auto}.lives-heading{grid-column:1/-1}body.remote-control .lives-players{grid-column:1;grid-row:2}body.remote-control .lives-focus{grid-column:2;grid-row:2/4}body.remote-control .lives-controls{grid-column:1;grid-row:3}body.remote-control .lives-last{grid-column:1/-1}}
+
+body.screen-fit.input-collapsed:not(.remote-control):not(.cricket-game)[data-game="tenlives"] #game:not([hidden]){display:block!important}
