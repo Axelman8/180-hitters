@@ -22,6 +22,16 @@ body.remote-control[data-mobile-layout] #training-status{font-size:12px;line-hei
 body.remote-control[data-mobile-layout] #players .player-top>strong{overflow-wrap:anywhere}
 body.remote-control[data-mobile-layout] #gotcha-total-options{flex-shrink:0}
 body.remote-control[data-mobile-layout] #gotcha-reset{padding:6px;font-size:13px}
+/* The phone is also a complete local scoreboard, not only a remote keypad. */
+body.remote-control[data-mobile-layout].cricket-game .play-grid>aside{display:contents}
+body.remote-control[data-mobile-layout].cricket-game #cricket-panel:not([hidden]){display:block;order:-1;padding:10px;margin-bottom:8px;min-width:0}
+body.remote-control[data-mobile-layout].cricket-game #cricket-board{overflow-x:auto}
+body.remote-control[data-mobile-layout].cricket-game .marks-table{width:100%;table-layout:fixed}
+body.remote-control[data-mobile-layout].cricket-game .marks-table th{font-size:12px;padding:4px;overflow-wrap:anywhere}
+body.remote-control[data-mobile-layout].cricket-game .marks-table th:first-child{width:40px}
+body.remote-control[data-mobile-layout].cricket-game .marks-table td{height:28px;font-size:22px;padding:2px}
+body.remote-control[data-mobile-layout].cricket-game #cricket-live{font-size:12px;margin:4px 0}
+body.remote-control[data-mobile-layout].cricket-game #cricket-note{display:none}
 /* On a foldable/tablet, reserve a side column for the players. */
 @media(min-width:700px) and (max-height:1100px){
  body.remote-control[data-mobile-layout] #game:not([hidden]){display:grid;grid-template-columns:minmax(180px,.8fr) minmax(360px,1.6fr);grid-template-rows:auto auto 1fr;align-items:start;gap:8px}
@@ -32,6 +42,13 @@ body.remote-control[data-mobile-layout] #gotcha-reset{padding:6px;font-size:13px
  body.remote-control[data-mobile-layout] #players.players .remaining{font-size:clamp(32px,6dvh,56px)}
  body.remote-control[data-mobile-layout] #game>.play-grid{grid-column:2;grid-row:1/4;align-self:stretch;height:100%}
  body.remote-control[data-mobile-layout] #turn-label{font-size:clamp(18px,2.5vw,25px)}
+ body.remote-control[data-mobile-layout].cricket-game #game:not([hidden]){grid-template-rows:auto auto auto 1fr}
+ body.remote-control[data-mobile-layout].cricket-game #game>.play-grid{display:contents}
+ body.remote-control[data-mobile-layout].cricket-game .scoring{grid-column:2;grid-row:1/5;align-self:stretch}
+ body.remote-control[data-mobile-layout].cricket-game #cricket-panel:not([hidden]){grid-column:1;grid-row:4;margin:0;align-self:start}
+ body.remote-control[data-mobile-layout].cricket-game #players.players{grid-template-columns:repeat(2,minmax(0,1fr));align-self:start}
+ body.remote-control[data-mobile-layout].cricket-game #players.players .player{padding:5px}
+ body.remote-control[data-mobile-layout].cricket-game #players.players .remaining{font-size:30px}
 }
 @media(min-width:700px) and (max-height:520px){
  body.remote-control[data-mobile-layout] #players.players{grid-template-columns:repeat(2,minmax(0,1fr))}
