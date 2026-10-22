@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory() as tmp:
             page=browser.new_page(viewport={'width':393,'height':750},is_mobile=True,has_touch=True)
             page.goto('http://127.0.0.1:8788/?remote=1')
             for game in ['x01','tactics','cricket','gotcha','bobs27','training']:
-                state=page.evaluate("async game=>{const {newMatch}=await import('/engine.js');return newMatch(game==='bobs27'?['Ed']:['Ed','Frank','Sean','Remon'],301,'double',3,game==='training'?{training121:true}:{game});}",game)
+                state=page.evaluate("async game=>{const {newMatch}=await import('/engine.js');return newMatch(['Ed','Frank','Sean','Remon'],301,'double',3,game==='training'?{training121:true}:{game});}",game)
                 rev=page.request.get('http://127.0.0.1:8788/api/state').json()['revision']
                 assert page.request.post('http://127.0.0.1:8788/api/state',data={'revision':rev,'match':{'state':state,'undo':[]}}).ok
                 page.reload()

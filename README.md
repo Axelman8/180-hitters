@@ -66,7 +66,7 @@ The app checks GitHub for newer releases. NUC releases are updated independently
 - Tactics with targets 10–20 and bull
 - 121 nine-dart checkout training for one to four players
 - Gotcha with targets 301, 401, 501, 601, or 701
-- Bob's 27 solo doubles training, from D1 through D20 and bull
+- Bob's 27 doubles training for one to four players, from D1 through D20 and bull
 - One to four players
 - Legs, sets, or free play
 - Optional round limits and complete-round tie-breaking

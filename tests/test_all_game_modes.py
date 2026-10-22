@@ -59,9 +59,13 @@ with tempfile.TemporaryDirectory() as tmp:
    assert [x['remaining'] for x in saved()['match']['state']['players']]==[0,20,0]
    assert saved()['match']['state']['active']==1
    # Bob's 27 is dart-only: one D1 scores +2; a blank D2 round scores -4.
+   phone.wait_for_timeout(800)
    s=phone.evaluate("async()=>{const {newMatch}=await import('/engine.js');return newMatch(['A'],27,'double',1,{game:'bobs27'})}")
-   phone.request.post('http://127.0.0.1:8788/api/state',data={'revision':saved()['revision'],'match':{'state':s,'undo':[]}})
-   for page in [phone,screen]:page.reload()
+   for _ in range(5):
+    response=phone.request.post('http://127.0.0.1:8788/api/state',data={'revision':saved()['revision'],'match':{'state':s,'undo':[]}})
+    if response.ok:break
+   assert response.ok
+   for page in [phone,screen]:page.evaluate("localStorage.removeItem('oche.match.v1')");page.reload()
    expect(phone.locator('#mode-dart')).to_have_class('selected')
    expect(phone.locator('#training-status')).to_contain_text('Doel D1')
    expect(screen.locator('#screen-overview .screen-visit')).to_be_hidden()

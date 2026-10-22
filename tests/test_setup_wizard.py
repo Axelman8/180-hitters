@@ -26,19 +26,18 @@ with tempfile.TemporaryDirectory() as tmp:
     page.set_viewport_size({'width':393,'height':750})
     if game=='X01':page.screenshot(path=str(root.parent/'darts-wizard-settings.png'),full_page=True)
     page.get_by_role('button',name='Kies spelers').click()
-    if game!="Bob's 27":page.get_by_role('group',name='Aantal spelers',exact=True).get_by_role('button',name='2',exact=True).click()
+    page.get_by_role('group',name='Aantal spelers',exact=True).get_by_role('button',name='2',exact=True).click()
     page.locator('.wizard-slots button').first.click()
     page.locator('.wizard-roster').get_by_role('button',name='Ed',exact=True).click()
-    if game!="Bob's 27":
-     page.locator('.wizard-roster').get_by_role('button',name='Frank',exact=True).click()
-     page.get_by_role('group',name='Wie begint?',exact=True).get_by_role('button',name='Frank',exact=True).click()
+    page.locator('.wizard-roster').get_by_role('button',name='Frank',exact=True).click()
+    page.get_by_role('group',name='Wie begint?',exact=True).get_by_role('button',name='Frank',exact=True).click()
     page.get_by_role('button',name='← Terug',exact=True).click()
     page.get_by_role('button',name='Kies spelers').click()
-    expect(page.locator('.wizard-slots strong')).to_have_text(['Ed'] if game=="Bob's 27" else ['Ed','Frank'])
+    expect(page.locator('.wizard-slots strong')).to_have_text(['Ed','Frank'])
     if game=='X01':page.screenshot(path=str(root.parent/'darts-wizard-players.png'),full_page=True)
     page.locator('.wizard-next').click();expect(page.locator('#setup')).to_be_hidden()
     match=page.request.get('http://127.0.0.1:8788/api/state').json()['match']['state']
-    assert [x['name'] for x in match['players']]==(['Ed'] if game=="Bob's 27" else ['Ed','Frank']) and match['active']==(0 if game=="Bob's 27" else 1)
+    assert [x['name'] for x in match['players']]==['Ed','Frank'] and match['active']==1
     assert match['game']==({'X01':'x01','Cricket':'cricket','Tactics':'tactics','121':'x01','Gotcha':'gotcha',"Bob's 27":'bobs27'}[game])
     if game=='X01':assert match['start']==301 and match['inMode']=='double'
    page.reload();expect(page.locator('#connection-status')).to_have_text('Verbonden met NUC')

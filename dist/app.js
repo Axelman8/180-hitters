@@ -126,7 +126,7 @@ function renderInput(){
  }
  if(state?.game==='bobs27'){
   const live=previewBobs27(state,dartList),target=live.target===25?'Bull':'D'+live.target;
-  $('training-status').textContent=`Ronde ${state.round} van 21 | Doel ${target} | Score ${live.score} | ${live.hits} raak`;
+  $('training-status').textContent=`${state.players[state.active].name} | Ronde ${state.round} van 21 | Doel ${target} | Score ${live.score} | ${live.hits} raak`;
  }
  $('entry').textContent=entry||'0';
  $('gotcha-total-options').hidden=state?.game!=='gotcha';
@@ -177,8 +177,8 @@ function renderCheckout(){
  $('board-keys').querySelectorAll('button').forEach(b=>b.disabled=ended||state.phase!=='playing');
 }
 function renderBobs27(){
- const pending=state.phase==='playing'?dartList:[],v=previewBobs27(state,pending),p=state.players[0],target=v.target===25?'Bull':'D'+v.target;
- const score=document.querySelector('#players .remaining');if(score){score.textContent=v.score;score.classList.toggle('pending-points',v.score!==p.remaining);}
+ const pending=state.phase==='playing'?dartList:[],v=previewBobs27(state,pending),p=state.players[state.active],target=v.target===25?'Bull':'D'+v.target;
+ document.querySelectorAll('#players .remaining').forEach((score,i)=>{const active=i===state.active;score.textContent=active?v.score:state.players[i].remaining;score.classList.toggle('pending-points',active&&v.score!==p.remaining);});
  $('points-preview').hidden=!pending.length;$('points-preview').textContent=pending.length?`${v.hits} van ${pending.length} pijlen raak op ${target}`:'';
  $('checkout-title').textContent=`Doel: ${target}`;
  $('checkout-note').textContent=`Drie pijlen. Iedere treffer is +${v.value}; bij nul treffers gaat ${v.value} van je score af. Bij 0 of lager stopt de training.`;
@@ -268,12 +268,12 @@ function render(){
  if(state.game==='gotcha')$('match-label').textContent=`TRAINING / GOTCHA / PRECIES ${state.start} / ${namesOfRules[state.out]}-OUT`;
  if(state.game==='bobs27')$('match-label').textContent="TRAINING / BOB'S 27 / D1 T/M D20 + BULL";
  if(state.training121)$('match-label').textContent='TRAINING / 121 / NEGEN DARTS / DUBBEL-UIT';
- $('turn-label').textContent=state.phase==='playing'?(state.game==='bobs27'?`Richt op ${state.bobsTarget===25?'Bull':'D'+state.bobsTarget}`:`${current.name} is aan de beurt`):(state.training121||state.game==='bobs27')?'Training afgerond':'Leg afgelopen';
+ $('turn-label').textContent=state.phase==='playing'?(state.game==='bobs27'?`${current.name}: richt op ${state.bobsTarget===25?'Bull':'D'+state.bobsTarget}`:`${current.name} is aan de beurt`):(state.training121||state.game==='bobs27')?'Training afgerond':'Leg afgelopen';
  const legSummary=matchSummary(state);
  $('players').replaceChildren(...state.players.map((p,i)=>{
-  const card=document.createElement('article');card.className='player'+(state.active===i?' active':'');
+  const card=document.createElement('article');card.className='player'+(state.active===i?' active':'')+(p.bobsEliminated?' bobs-eliminated':'');
   card.innerHTML='<div class="player-top"><strong></strong><span class="badge"></span><div class="match-score"></div></div><div class="remaining"></div><div class="stats player-statistics"></div>';
-  card.querySelector('strong').textContent=p.name;card.querySelector('.badge').textContent=state.active===i?'● AAN DE BEURT':'';
+  card.querySelector('strong').textContent=p.name;card.querySelector('.badge').textContent=p.bobsEliminated?'AFGEVALLEN':state.active===i?'● AAN DE BEURT':'';
   const matchScores=state.game==='bobs27'?[]:state.training121?[[p.trainingLevel||state.start,'NIVEAU'],[p.trainingBest||state.trainingBest,'BESTE']]:state.matchMode==='sets'?[[p.sets,'SETS'],[p.setLegs,'LEGS (SET)']]:[[p.legs,'LEGS']];
   card.querySelector('.match-score').replaceChildren(...matchScores.map(([value,label])=>{
    const item=document.createElement('span'),number=document.createElement('b'),caption=document.createElement('small');
@@ -454,9 +454,9 @@ $('finish-cancel').onclick=()=>$('finish-dialog').close();
 function showResult(){
  showWinner(state);
  if(state.game==='bobs27'){
-  const p=state.players[0],complete=state.reason==='bobs-complete';
-  $('result-title').textContent=complete?"Bob's 27 voltooid!":'Training afgelopen';
-  $('result-text').textContent=complete?`Eindscore ${p.remaining}. ${p.bobsHits||0} van ${p.darts} darts raakten de juiste dubbel.`:`Je score kwam op ${p.remaining} bij ${state.history.at(-1)?.target===25?'Bull':'D'+state.history.at(-1)?.target}. ${p.bobsHits||0} juiste dubbels geraakt.`;
+  const complete=['bobs-complete','bobs-tie'].includes(state.reason),scores=state.players.map(p=>`${p.name}: ${p.remaining} (${p.bobsHits||0} raak)`).join(' · ');
+  $('result-title').textContent=state.reason==='bobs-tie'?'Gelijkspel!':state.winner!==null?`${state.players[state.winner].name} wint!`:complete?"Bob's 27 voltooid!":'Training afgelopen';
+  $('result-text').textContent=scores;
   $('continue').textContent='Nieuwe training';$('finish-match').hidden=true;
   if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
@@ -485,15 +485,14 @@ function settings(){
  $('scoring-label').hidden=x||training;
  $('gotcha-target-label').hidden=!gotcha;$('gotcha-out-label').hidden=!gotcha;
  $('training-label').hidden=!training;$('training-help').hidden=!training;
- $('training-help').textContent=gotcha?'Gotcha: 2 tot 4 spelers beginnen op 0. Tel per pijl op naar de gekozen doelscore. Kies Straight-out, Double-out of Master-out. Gelijk aan een tegenstander? Die gaat naar 0. Te hoog, een ongeldige finish of 1 punt over bij Double/Master-out is bust: je eigen score gaat terug naar het begin van de beurt; eerdere Gotcha-treffers blijven staan.':bobs?"Bob's 27: solotraining. Start op 27 en gooi drie pijlen op D1 t/m D20 en daarna Bull. Iedere treffer telt de dubbelwaarde erbij. Geen treffer trekt die waarde af. Bij 0 of lager stopt de training.":'121: 1 tot 4 spelers, elk met een eigen niveau. Per speler een poging van maximaal negen darts, daarna de volgende speler. Dubbel-uit. Gelukt: +1 plus overgebleven darts. Niet gelukt: -1, minimaal 121. Een bust verbruikt de rest van je beurt.';
+ $('training-help').textContent=gotcha?'Gotcha: 2 tot 4 spelers beginnen op 0. Tel per pijl op naar de gekozen doelscore. Kies Straight-out, Double-out of Master-out. Gelijk aan een tegenstander? Die gaat naar 0. Te hoog, een ongeldige finish of 1 punt over bij Double/Master-out is bust: je eigen score gaat terug naar het begin van de beurt; eerdere Gotcha-treffers blijven staan.':bobs?"Bob's 27: 1 tot 4 spelers. Iedereen gooit drie pijlen op D1 t/m D20 en daarna Bull. Iedere treffer telt de dubbelwaarde erbij. Geen treffer trekt die waarde af. Bij 0 of lager valt die speler af.":'121: 1 tot 4 spelers, elk met een eigen niveau. Per speler een poging van maximaal negen darts, daarna de volgende speler. Dubbel-uit. Gelukt: +1 plus overgebleven darts. Niet gelukt: -1, minimaal 121. Een bust verbruikt de rest van je beurt.';
  $('count').querySelector('option[value="1"], option:first-child').disabled=gotcha;
- for(const id of ['match-mode','max-rounds','count','starter'])$(id).closest('label').hidden=training&&(bobs||!['count','starter'].includes(id));
+ for(const id of ['match-mode','max-rounds','count','starter'])$(id).closest('label').hidden=training&&!['count','starter'].includes(id);
  document.querySelector('.setup-help:not(#training-help)').hidden=training;
  $('set-legs-label').hidden=training||$('match-mode').value!=='sets';
  $('target-label').hidden=training||$('match-mode').value==='off';
  $('target-text').textContent=$('match-mode').value==='sets'?'Sets nodig om te winnen':'Legs nodig om te winnen';
  if(gotcha&&Number($('count').value)<2){$('count').value='2';names();}
- if(bobs&&Number($('count').value)!==1){$('count').value='1';names();}
 
 }
 

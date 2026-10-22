@@ -116,6 +116,8 @@ body:not(.remote-control)[data-game="bobs27"] #players .player-statistics,
 body:not(.remote-control)[data-game="bobs27"] #players .player-leg-results{
  display:none!important;
 }
+body[data-game="bobs27"] #players .bobs-eliminated{opacity:.55;border-color:#804c4c}
+body[data-game="bobs27"] #players .bobs-eliminated .remaining{color:#d99}
 @media(max-width:700px){
  body:not(.remote-control)[data-game="bobs27"] #screen-overview #checkout{grid-template-columns:1fr}
  body:not(.remote-control)[data-game="bobs27"] #screen-overview #checkout b{min-height:180px}

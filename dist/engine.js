@@ -40,8 +40,8 @@ export function setupShot(score,out='double',n=1,bull='25/50'){
 }
 export function newMatch(names,start=501,out='double',legs=3,options={}){
  if(options.game==='bobs27'){
-  if(names.length!==1)throw Error("Bob's 27 is een solotraining.");
-  start=27;out='double';legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50',starter:0,bobsTarget:1};
+  if(names.length<1||names.length>4)throw Error("Kies 1 tot 4 spelers voor Bob's 27.");
+  start=27;out='double';legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50',starter:options.starter||0,bobsTarget:1,bobsRoundPlayed:[]};
  }
  if(options.game==='gotcha'){if(names.length<2)throw Error('Gotcha heeft minimaal twee spelers nodig.');if(![301,401,501,601,701].includes(start))throw Error('Ongeldige Gotcha-doelscore.');if(!['single','double','master'].includes(out))throw Error('Ongeldige finishregel.');legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50'};}
  if(options.training121){
@@ -50,7 +50,7 @@ export function newMatch(names,start=501,out='double',legs=3,options={}){
  }
  const config={game:'x01',inMode:'single',scoring:'standard',matchMode:'legs',legsPerSet:3,bull:'25/50',maxRounds:50,starter:0,...options};
  const numbers=config.game==='tactics'?[20,19,18,17,16,15,14,13,12,11,10,25]:[20,19,18,17,16,15,25];
- return {version:2,...config,start,out,target:legs,numbers,players:names.map(name=>({name,...(options.training121?{trainingLevel:121,trainingBest:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null};
+ return {version:2,...config,start,out,target:legs,numbers,players:names.map(name=>({name,...(options.training121?{trainingLevel:121,trainingBest:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0,bobsEliminated:false}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null};
 }
 function win(s,index,reason='finish'){
  s.winner=index;s.reason=reason;const p=s.players[index];p.legs++;p.setLegs++;
@@ -105,7 +105,7 @@ export function previewBobs27(state,hits=[]){
  const darts=hits.map(d=>makeDart(d.number,d.mult));
  const targetHits=darts.filter(d=>d.number===target&&d.mult===2).length;
  const complete=darts.length===3,delta=complete?(targetHits?targetHits*value:-value):targetHits*value;
- const score=state.players[0].remaining+delta;
+ const score=state.players[state.active].remaining+delta;
  return {target,value,hits:targetHits,used:darts.length,delta,score,complete,eliminated:complete&&score<=0,finished:complete&&target===25&&score>0};
 }
 export function applyTurn(state,turn){
@@ -148,16 +148,26 @@ export function applyTurn(state,turn){
 function applyBobs27Turn(state,turn){
  if(state.phase!=='playing')throw Error("Deze Bob's 27-training is afgelopen.");
  if(!Array.isArray(turn.hits)||turn.hits.length!==3)throw Error('Voer alle drie de pijlen in, of tik Mis.');
- const result=previewBobs27(state,turn.hits),s=structuredClone(state),p=s.players[0];
+ const result=previewBobs27(state,turn.hits),s=structuredClone(state),current=state.active,p=s.players[current];
  p.remaining=result.score;p.darts+=3;p.bobsHits=(p.bobsHits||0)+result.hits;
  if(result.hits)p.bobsHighest=result.target;
  p.best=Math.max(p.best,result.hits);
+ if(result.eliminated)p.bobsEliminated=true;
  s.history.push({input:structuredClone(turn),name:p.name,score:result.delta,remaining:p.remaining,leg:1,darts:3,
   target:result.target,hits:result.hits,labels:turn.hits.map(d=>makeDart(d.number,d.mult).label).join(' / ')});
- s.turns++;s.round++;
- if(result.eliminated){s.phase='won';s.winner=null;s.reason='bobs-eliminated';}
- else if(result.finished){s.phase='won';s.winner=0;s.reason='bobs-complete';}
- else s.bobsTarget=result.target===20?25:result.target+1;
+ s.turns++;s.bobsRoundPlayed=[...(state.bobsRoundPlayed||[])];s.bobsRoundPlayed[current]=true;
+ const survivors=s.players.map((player,i)=>!player.bobsEliminated?i:-1).filter(i=>i>=0);
+ if(!survivors.length){s.phase='won';s.winner=null;s.reason='bobs-eliminated';return s;}
+ const waiting=survivors.filter(i=>!s.bobsRoundPlayed[i]);
+ const nextFrom=(list,from)=>[...Array(s.players.length)].map((_,step)=>(from+step+1)%s.players.length).find(i=>list.includes(i));
+ if(waiting.length){s.active=nextFrom(waiting,current);return s;}
+ if(result.target===25){
+  const best=Math.max(...survivors.map(i=>s.players[i].remaining));
+  const leaders=survivors.filter(i=>s.players[i].remaining===best);
+  s.phase='won';s.winner=leaders.length===1?leaders[0]:null;s.reason=leaders.length===1?'bobs-complete':'bobs-tie';return s;
+ }
+ s.bobsTarget=result.target===20?25:result.target+1;s.round++;s.bobsRoundPlayed=[];
+ s.active=nextFrom(survivors,(s.starter+s.players.length-1)%s.players.length);
  return s;
 }
 export function previewGotcha(state,hits=[]){
