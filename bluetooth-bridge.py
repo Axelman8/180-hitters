@@ -71,7 +71,7 @@ def relay(connection, device):
             if method not in ('GET', 'POST') or not isinstance(path, str) or not path.startswith('/api/'):
                 raise ValueError('Ongeldig verzoek')
             body = None if method == 'GET' else json.dumps(request.get('body', {}), separators=(',', ':')).encode()
-            headers = {'X-Darts-Control': TOKEN}
+            headers = {'X-Darts-Control': TOKEN, 'X-Darts-Transport': 'bluetooth'}
             if body is not None:
                 headers['Content-Type'] = 'application/json'
                 headers['Content-Length'] = str(len(body))

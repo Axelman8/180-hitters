@@ -201,7 +201,12 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     self.reply(200, display)
             elif route == '/api/venue':
                 with lock:
-                    self.reply(200, venue)
+                    value = dict(venue)
+                    # Large base64 photos are unnecessary on the phone over the
+                    # slower Bluetooth serial link; textual branding still syncs.
+                    if self.headers.get('X-Darts-Transport') == 'bluetooth':
+                        value.update(logoData='', backgroundData='')
+                    self.reply(200, value)
             elif route == '/api/setup':
                 with lock:
                     self.reply(200, {**shared_setup, 'revision': current['revision']})

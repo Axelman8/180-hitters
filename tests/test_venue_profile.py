@@ -9,9 +9,10 @@ from urllib.request import Request, urlopen
 root = Path(__file__).resolve().parents[1]
 
 
-def request(url, body=None):
+def request(url, body=None, extra_headers=None):
     data = json.dumps(body).encode() if body is not None else None
     headers = {'Content-Type': 'application/json'} if data else {}
+    headers.update(extra_headers or {})
     with urlopen(Request(url, data=data, headers=headers), timeout=3) as response:
         return json.load(response)
 
@@ -34,6 +35,9 @@ with tempfile.TemporaryDirectory() as tmp:
         saved = request(base, profile)
         assert saved['venueName'] == 'Testvereniging'
         assert request(base) == saved
+        compact = request(base, extra_headers={'X-Darts-Transport': 'bluetooth'})
+        assert compact['venueName'] == 'Testvereniging'
+        assert compact['logoData'] == compact['backgroundData'] == ''
         assert json.loads((Path(tmp) / 'venue.json').read_text(encoding='utf-8')) == saved
         print('PASS: neutraal locatieprofiel wordt gevalideerd en blijvend opgeslagen')
     finally:
