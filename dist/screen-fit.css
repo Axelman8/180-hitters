@@ -1,0 +1,90 @@
+/* The stage excludes the measured header and QR footer. No browser zoom. */
+body.screen-fit>main{max-width:none;width:100%;padding:10px 16px}
+body.screen-fit #game:not([hidden]){height:var(--stage-height)!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(160px,.8fr) minmax(140px,.55fr) minmax(400px,1.8fr);gap:10px}
+body.screen-fit #game>.match-heading{grid-row:1;margin:0;min-height:0}
+body.screen-fit #turn-label{font-size:clamp(24px,2.6vw,36px);margin:0}
+body.screen-fit #match-label{margin:0 0 3px;font-size:12px}
+body.screen-fit #training-status{grid-row:2;margin:0;font-size:16px}
+body.screen-fit #players.players{grid-row:3;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);grid-template-columns:none!important;min-height:0;margin:0!important;gap:10px}
+body.screen-fit #players.players .player{min-height:0;min-width:0;display:flex;flex-direction:column;padding:10px!important;overflow:auto;container-type:size}
+body.screen-fit #players.players .player-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px}
+body.screen-fit #players.players .player-top>strong{font-size:clamp(24px,3vw,40px);width:100%;line-height:1.1}
+body.screen-fit #players.players .badge{font-size:10px}
+body.screen-fit #players.players .match-score{gap:4px}
+body.screen-fit #players.players .match-score>span{min-width:40px;padding:3px 6px}
+body.screen-fit #players.players .match-score b{font-size:26px}
+body.screen-fit #players.players .match-score small{font-size:9px}
+body.screen-fit #players.players .remaining{flex:1;display:grid;place-content:center;font-size:clamp(44px,min(42cqw,30cqh),180px)!important;line-height:1;letter-spacing:-1px;margin:6px 0}
+body.screen-fit #players.players .player-leg-results{flex:none;max-height:65px;overflow:auto;margin-top:4px;font-size:14px}
+body.screen-fit .leg-results-table th,body.screen-fit .leg-results-table td{padding:2px}
+body.screen-fit #screen-overview{grid-row:4;margin:0!important;gap:10px;min-height:0}
+body.screen-fit #screen-overview>.screen-visit,body.screen-fit #screen-overview>#finish-panel{height:100%!important;min-height:0!important;padding:10px!important;overflow:hidden}
+body.screen-fit #screen-overview #screen-visit-score{font-size:clamp(44px,5vw,90px)}
+body.screen-fit #screen-overview #checkout b{font-size:clamp(24px,3vw,42px)!important;padding:6px!important;min-height:0!important}
+body.screen-fit #screen-overview #checkout-title{font-size:24px!important}
+body.screen-fit #screen-overview #finish-panel>*{grid-column:1!important;grid-row:auto!important}
+body.screen-fit #game>.play-grid{grid-row:5;min-height:0;display:flex!important;flex-direction:column;gap:10px}
+body.screen-fit .play-grid>aside{display:contents}
+body.screen-fit .play-grid .history{display:none!important}
+body.screen-fit .scoring{flex:1;display:flex;flex-direction:column;min-height:0;padding:10px!important;gap:6px;position:relative;overflow:auto}
+body.screen-fit .scoring>.section-heading{position:static!important;inset:auto!important;min-height:44px;pointer-events:auto}
+body.screen-fit .scoring .section-heading h2{font-size:18px}
+body.screen-fit .scoring .tabs{position:static!important;max-width:none!important;flex-direction:row;pointer-events:auto}
+body.screen-fit .scoring .tabs button{min-height:44px;padding:6px 12px;font-size:15px}
+body.screen-fit .scoring>#toggle-input{position:static!important;align-self:flex-end;max-width:none!important;margin:0;min-height:40px;padding:5px 12px;font-size:14px}
+body.screen-fit #total-input,body.screen-fit #dart-input{flex:1;min-height:0;display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0}
+body.screen-fit #total-input .score-input{height:44px!important;min-height:44px!important;margin:0}
+body.screen-fit #keypad{flex:1;grid-template-rows:repeat(4,minmax(44px,1fr));gap:6px;margin:0}
+body.screen-fit #keypad button{min-height:44px;padding:4px;font-size:clamp(24px,3vw,40px)}
+body.screen-fit #dart-slots{margin:0;gap:6px}
+body.screen-fit #dart-slots span{padding:6px;font-size:24px}
+body.screen-fit #multipliers{margin:0;gap:6px}
+body.screen-fit #multipliers button{min-height:44px;padding:5px;font-size:20px}
+body.screen-fit #board-keys{flex:1;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(44px,1fr);gap:6px;margin:0}
+body.screen-fit[data-game="tactics"] #board-keys{grid-template-columns:repeat(4,minmax(0,1fr))}
+body.screen-fit #board-keys button{min-height:44px;padding:4px;font-size:24px}
+body.screen-fit #remove-dart,body.screen-fit #submit{min-height:44px;padding:6px;font-size:16px}
+body.screen-fit #message{margin:0;min-height:0;font-size:14px}
+body.screen-fit #message:empty{display:none}
+body.screen-fit #history-position,body.screen-fit #visit-mode-note,body.screen-fit #total-rule-note{font-size:13px;line-height:1.2;margin:0}
+body.screen-fit .bottom-actions{margin:0;gap:6px}
+body.screen-fit .bottom-actions button{min-height:44px;font-size:14px;padding:6px}
+body.screen-fit #screen-player-history{grid-row:5;margin:0!important;min-height:0;overflow:auto}
+body.screen-fit.input-collapsed:not(.cricket-game) #game:not([hidden]){grid-template-rows:auto auto minmax(200px,1fr) clamp(140px,12dvh,240px) minmax(200px,1fr)}
+body.screen-fit.input-collapsed:not(.remote-control):not(.cricket-game) #game:not([hidden]){height:var(--stage-height)!important;display:grid!important}
+body.screen-fit.input-collapsed:not(.cricket-game) #game>.play-grid{display:none!important}
+body.screen-fit #screen-player-history th,body.screen-fit #screen-player-history td{padding:6px}
+body.screen-fit #screen-player-history tbody td{font-size:clamp(24px,3vw,42px)}
+body.screen-fit #screen-history-leg{margin-bottom:8px}
+/* Cricket and Tactics give the closing board the space left by input. */
+body.screen-fit.cricket-game #game:not([hidden]){grid-template-rows:auto auto minmax(140px,.35fr) minmax(0,2fr)}
+body.screen-fit.cricket-game #game>.play-grid{grid-row:4;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1.25fr) minmax(380px,1fr)}
+body.screen-fit.cricket-game #cricket-panel{grid-row:1;min-height:0;display:flex;flex-direction:column;padding:8px!important;overflow:hidden;margin:0!important}
+body.screen-fit.cricket-game #cricket-panel>.eyebrow,body.screen-fit.cricket-game #cricket-note{display:none}
+body.screen-fit.cricket-game #cricket-live{margin:0 0 4px;font-size:14px}
+body.screen-fit.cricket-game #cricket-board{flex:1;min-height:0;container-type:size}
+body.screen-fit.cricket-game .marks-table{height:100%;width:100%;table-layout:fixed}
+body.screen-fit.cricket-game .marks-table th:first-child{width:12%}
+body.screen-fit.cricket-game .marks-table thead th{font-size:clamp(14px,3cqh,26px);padding:2px;overflow-wrap:anywhere}
+body.screen-fit.cricket-game .marks-table tbody th,body.screen-fit.cricket-game .marks-table tbody td{height:auto!important;font-size:clamp(22px,6cqh,80px)!important;line-height:1;padding:0!important}
+body.screen-fit.cricket-game .scoring{grid-row:2}
+body.screen-fit.cricket-game.input-collapsed #game>.play-grid{grid-template-rows:minmax(0,1fr) auto}
+body.screen-fit.cricket-game.input-collapsed .scoring{flex:none;overflow:visible}
+body.screen-fit.cricket-game.input-collapsed #screen-player-history{display:none!important}
+body.screen-fit[data-game="bobs27"] #screen-overview #checkout{gap:10px!important}
+body.screen-fit[data-game="bobs27"] #screen-overview #checkout b{font-size:clamp(32px,5vw,90px)!important}
+body.screen-fit.input-collapsed[data-game="bobs27"] #game:not([hidden]){grid-template-rows:auto auto minmax(200px,1fr) minmax(240px,1.4fr)}
+@media(orientation:landscape){
+ body.screen-fit #game:not([hidden]){grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto minmax(140px,.8fr) minmax(140px,1fr)}
+ body.screen-fit #game>.match-heading,body.screen-fit #training-status{grid-column:1/-1}
+ body.screen-fit #players.players{grid-column:1;grid-row:3}
+ body.screen-fit #screen-overview{grid-column:1;grid-row:4}
+ body.screen-fit #game>.play-grid{grid-column:2;grid-row:3/5}
+ body.screen-fit.input-collapsed:not(.cricket-game) #game:not([hidden]){grid-template-columns:1fr 1fr;grid-template-rows:auto auto minmax(140px,1fr) minmax(140px,1fr)}
+ body.screen-fit #screen-player-history{grid-column:2;grid-row:3/5}
+ body.screen-fit.cricket-game #game:not([hidden]){grid-template-columns:1fr;grid-template-rows:auto auto minmax(100px,.4fr) minmax(0,1fr)}
+ body.screen-fit.cricket-game #players.players{grid-column:1;grid-row:3}
+ body.screen-fit.cricket-game #game>.play-grid{grid-column:1;grid-row:4;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr)}
+ body.screen-fit.cricket-game #cricket-panel{grid-row:1;grid-column:1}
+ body.screen-fit.cricket-game .scoring{grid-row:1;grid-column:2}
+}
