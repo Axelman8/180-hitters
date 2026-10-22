@@ -15,19 +15,57 @@ UUID = '7a715e67-0d7a-4f89-b0d7-47a16d455501'
 PROFILE_PATH = '/nl/axelman8/darts/profile'
 AGENT_PATH = '/nl/axelman8/darts/agent'
 TOKEN = os.environ.get('DARTS_CONTROL_TOKEN', '')
+ACTIVE_LOCK = threading.Lock()
+ACTIVE_CONNECTION = None
+ACTIVE_DEVICE = None
 
 
-def relay(fd):
-    connection = socket.socket(fileno=fd)
+def replace_active(connection, device):
+    global ACTIVE_CONNECTION, ACTIVE_DEVICE
+    with ACTIVE_LOCK:
+        previous = ACTIVE_CONNECTION
+        ACTIVE_CONNECTION = connection
+        ACTIVE_DEVICE = device
+    if previous is not None and previous is not connection:
+        try: previous.shutdown(socket.SHUT_RDWR)
+        except OSError: pass
+        try: previous.close()
+        except OSError: pass
+    print(f'Bluetooth-bediening overgenomen door {device}', flush=True)
+
+
+def release_active(connection):
+    global ACTIVE_CONNECTION, ACTIVE_DEVICE
+    with ACTIVE_LOCK:
+        if ACTIVE_CONNECTION is connection:
+            ACTIVE_CONNECTION = None
+            ACTIVE_DEVICE = None
+
+
+def disconnect_active(device=None):
+    with ACTIVE_LOCK:
+        connection = ACTIVE_CONNECTION if device is None or ACTIVE_DEVICE == device else None
+    if connection is not None:
+        try: connection.shutdown(socket.SHUT_RDWR)
+        except OSError: pass
+        try: connection.close()
+        except OSError: pass
+
+
+def relay(connection, device):
     stream = connection.makefile('rwb', buffering=0)
+    print(f'Bluetooth-kanaal gereed voor {device}', flush=True)
     try:
         while True:
             line = stream.readline(10_000_001)
             if not line:
+                print(f'Bluetooth-kanaal gesloten door {device}', flush=True)
                 break
             if len(line) > 10_000_000:
                 raise ValueError('Bericht te groot')
             request = json.loads(line)
+            if not TOKEN or request.get('clientToken') != TOKEN:
+                raise PermissionError('Ongeldige 180 Hitters-client')
             method = request.get('method')
             path = request.get('path')
             if method not in ('GET', 'POST') or not isinstance(path, str) or not path.startswith('/api/'):
@@ -53,13 +91,16 @@ def relay(fd):
                 upstream.close()
             stream.write((json.dumps(result, separators=(',', ':')) + '\n').encode())
     except Exception as error:
+        print(f'Bluetooth-fout voor {device}: {error}', flush=True)
         try:
             stream.write((json.dumps({'status': 502, 'body': {'error': str(error)}}) + '\n').encode())
         except Exception:
             pass
     finally:
         try: stream.close()
-        finally: connection.close()
+        finally:
+            try: connection.close()
+            finally: release_active(connection)
 
 
 class Profile(dbus.service.Object):
@@ -69,11 +110,15 @@ class Profile(dbus.service.Object):
 
     @dbus.service.method('org.bluez.Profile1', in_signature='oha{sv}', out_signature='')
     def NewConnection(self, device, fd, properties):
-        threading.Thread(target=relay, args=(fd.take(),), daemon=True).start()
+        connection = socket.socket(fileno=fd.take())
+        connection.setblocking(True)
+        device = str(device)
+        replace_active(connection, device)
+        threading.Thread(target=relay, args=(connection, device), daemon=True).start()
 
     @dbus.service.method('org.bluez.Profile1', in_signature='o', out_signature='')
     def RequestDisconnection(self, device):
-        pass
+        disconnect_active(str(device))
 
 
 class Agent(dbus.service.Object):

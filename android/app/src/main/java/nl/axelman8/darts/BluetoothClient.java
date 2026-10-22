@@ -25,13 +25,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 final class BluetoothClient {
     static final UUID SERVICE_UUID = UUID.fromString("7a715e67-0d7a-4f89-b0d7-47a16d455501");
+    private static final String CLIENT_TOKEN = "d7c87006c31f4da2a4348eeb05b59c8b";
     private final BluetoothAdapter adapter;
     private final AtomicLong sequence = new AtomicLong();
     private final ScheduledExecutorService watchdog = Executors.newSingleThreadScheduledExecutor();
     private String address;
-    private BluetoothSocket socket;
-    private BufferedReader input;
-    private BufferedWriter output;
+    private volatile BluetoothSocket socket;
+    private volatile BufferedReader input;
+    private volatile BufferedWriter output;
     private long lastFailure;
 
     static final class Result {
@@ -69,15 +70,21 @@ final class BluetoothClient {
         ensureConnected();
         JSONObject message = new JSONObject()
                 .put("id", sequence.incrementAndGet())
+                .put("clientToken", CLIENT_TOKEN)
                 .put("method", method)
                 .put("path", path);
         if (body != null && !body.isEmpty()) message.put("body", new JSONObject(body));
-        ScheduledFuture<?> timeout = watchdog.schedule(this::closeSocket, 15, TimeUnit.SECONDS);
+        BufferedWriter currentOutput = output;
+        BufferedReader currentInput = input;
+        ScheduledFuture<?> timeout = watchdog.schedule(() -> {
+            Log.w("180HittersBluetooth", "Bluetooth-verzoek duurde te lang; verbinding wordt hersteld");
+            closeSocket();
+        }, 15, TimeUnit.SECONDS);
         try {
-            output.write(message.toString());
-            output.write('\n');
-            output.flush();
-            String line = input.readLine();
+            currentOutput.write(message.toString());
+            currentOutput.write('\n');
+            currentOutput.flush();
+            String line = currentInput.readLine();
             if (line == null) throw new IllegalStateException("Bluetooth-verbinding verbroken");
             JSONObject response = new JSONObject(line);
             Object responseBody = response.opt("body");
@@ -111,9 +118,10 @@ final class BluetoothClient {
         }
     }
 
-    synchronized void closeSocket() {
-        try { if (socket != null) socket.close(); } catch (Exception ignored) {}
+    void closeSocket() {
+        BluetoothSocket current = socket;
         socket = null; input = null; output = null;
+        try { if (current != null) current.close(); } catch (Exception ignored) {}
     }
 
     void shutdown() { closeSocket(); watchdog.shutdownNow(); }
