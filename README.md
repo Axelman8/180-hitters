@@ -6,6 +6,16 @@ An offline-first darts scoring app for Android, touchscreen displays, Linux NUCs
 
 ## Downloads
 
+Shared NUC matches have one active phone controller. The first phone claims
+control automatically; additional phones follow the match. Choose **Spelen →
+Bediening overnemen** to transfer input to another phone. The NUC display remains
+editable. Confirmed history and the current synchronized draft stay on the NUC.
+Ownership is checked atomically on shared writes, including Bluetooth requests;
+old queued requests cannot edit after a transfer. Ownership resets on server
+restart. This is input coordination on the trusted local network, not account
+authentication. Update both the NUC and Android clients to 1.8.6 or later.
+Standalone Android matches are unaffected.
+
 Download the latest packages from [GitHub Releases](https://github.com/Axelman8/180-hitters/releases/latest):
 
 - `180-Hitters.apk` — signed Android app

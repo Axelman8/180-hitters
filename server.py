@@ -152,6 +152,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     draft = {'value': None, 'time': 0}
     sequences = {}
     shared_setup = {'version': 0, 'value': None}
+    control = {'owner': None, 'epoch': 0}
     kiosk_lock = Lock()
     last_kiosk = 0
     if path.exists():
@@ -178,6 +179,17 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+
+        def may_edit(self, incoming):
+            # Called under the same lock as the mutation: takeover invalidates
+            # queued requests, even if they were sent before the handover.
+            ticket = incoming.get('_controller')
+            if ticket is None and self.client_address[0] in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Transport') != 'bluetooth':
+                return True  # The physical NUC screen remains usable.
+            if isinstance(ticket, dict) and control['owner'] is not None and ticket.get('id') == control['owner'] and ticket.get('epoch') == control['epoch']:
+                return True
+            self.reply(423, {'error': 'Deze telefoon kijkt mee. Kies Bediening overnemen.', 'control': dict(control)})
+            return False
 
         def do_GET(self):
             route = urlsplit(self.path).path
@@ -228,7 +240,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             elif route == '/api/state':
                 with lock:
                     value = {'revision': current['revision']} if self.headers.get('X-Darts-Revision') == str(current['revision']) else current
-                    self.reply(200, {**value, 'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
+                    self.reply(200, {**value, 'control': dict(control), 'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
             elif route == '/api/network':
                 addresses = set()
                 try:
@@ -247,7 +259,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
 
         def do_POST(self):
             nonlocal last_kiosk
-            if self.path not in ('/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -259,6 +271,15 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 < length <= 10000000:
                     return self.reply(413, {'error': 'Partij te groot'})
                 incoming = json.loads(self.rfile.read(length))
+                if self.path == '/api/controller':
+                    client = incoming.get('id')
+                    force = incoming.get('takeover', False)
+                    if not isinstance(client, str) or not 16 <= len(client) <= 80 or type(force) is not bool:
+                        raise ValueError()
+                    with lock:
+                        if control['owner'] is None or (force and control['owner'] != client):
+                            control.update(owner=client, epoch=control['epoch']+1)
+                        return self.reply(200, {'control': dict(control)})
                 if self.path == '/api/venue':
                     if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
                         return self.reply(403, {'error': 'Locatie-instellingen kunnen alleen op de NUC of in de Android-app worden gewijzigd.'})
@@ -300,19 +321,22 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if not isinstance(value.get('values'), dict) or len(value['values']) > 20 or any(not isinstance(v, str) or len(v) > 80 for v in value['values'].values()):
                             raise ValueError()
                     with lock:
+                        if not self.may_edit(incoming): return
                         if incoming.get('revision') != current['revision']:
                             return self.reply(409, {'revision': current['revision']})
                         shared_setup.update(version=shared_setup['version']+1, value=value)
                         self.reply(200, shared_setup)
                     return
                 if self.path == '/api/display':
-                    if not isinstance(incoming, dict) or not incoming or not set(incoming) <= {'inputCollapsed', 'screensaverActive'} or any(type(value) is not bool for value in incoming.values()):
+                    settings = {k:v for k,v in incoming.items() if k != '_controller'}
+                    if not settings or not set(settings) <= {'inputCollapsed', 'screensaverActive'} or any(type(value) is not bool for value in settings.values()):
                         return self.reply(400, {'error': 'Ongeldige scherminstelling'})
                     with lock:
+                        if not self.may_edit(incoming): return
                         temporary = display_path.with_suffix('.tmp')
-                        temporary.write_text(json.dumps({**display, **incoming}), encoding='utf-8')
+                        temporary.write_text(json.dumps({**display, **settings}), encoding='utf-8')
                         temporary.replace(display_path)
-                        display.update(incoming)
+                        display.update(settings)
                         self.reply(200, display)
                     return
                 if self.path == '/api/network/switch':
@@ -419,6 +443,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if type(hit['number']) is not int or hit['number'] not in [0, *range(1,21), 25] or type(hit['mult']) is not int or hit['mult'] not in (1,2,3) or (hit['number'] == 25 and hit['mult'] == 3):
                             raise ValueError()
                     with lock:
+                        if not self.may_edit(incoming): return
                         if incoming['revision'] != current['revision']:
                             return self.reply(409, current)
                         state = (current['match'] or {}).get('state', {})
@@ -450,6 +475,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     elif type(restored.get('score')) is not int or not 0 <= restored['score'] <= 180:
                         raise ValueError()
                 with lock:
+                    if not self.may_edit(incoming): return
                     if incoming['revision'] != current['revision']:
                         return self.reply(409, current)
                     if current['match'] is None and self.client_address[0] not in ('127.0.0.1', '::1'):

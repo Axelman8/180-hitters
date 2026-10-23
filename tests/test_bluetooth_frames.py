@@ -61,3 +61,27 @@ try:env['decode_body']({'bodyGzip':base64.b64encode(gzip.compress(b' ' * 1000000
 except ValueError:pass
 else:raise AssertionError('Decompressed size limit must be enforced')
 print(f'PASS: request/response compression, legacy compatibility, errors and size limit; {legacy_size} -> {len(response)} bytes')
+
+# Different phones may stay connected as viewers; a reconnect only closes
+# the previous socket of that same phone.
+import threading, socket
+registry={'ACTIVE_LOCK':threading.Lock(),'ACTIVE_CONNECTIONS':{},'socket':socket}
+nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in ('replace_active','release_active','disconnect_active')]
+exec(compile(ast.Module(body=nodes,type_ignores=[]),str(source),'exec'),registry)
+class Client:
+ def __init__(self):self.closed=False
+ def shutdown(self,how):pass
+ def close(self):self.closed=True
+a,b,reconnected=Client(),Client(),Client()
+registry['replace_active'](a,'A');registry['replace_active'](b,'B')
+assert not a.closed and not b.closed
+registry['replace_active'](reconnected,'A')
+assert a.closed and not b.closed
+registry['release_active'](a)
+assert registry['ACTIVE_CONNECTIONS']['A'] is reconnected
+registry['disconnect_active']('B')
+assert b.closed and not reconnected.closed
+registry['release_active'](b)
+registry['disconnect_active']()
+assert reconnected.closed
+print('PASS: independent Bluetooth phones, reconnect and targeted disconnect')

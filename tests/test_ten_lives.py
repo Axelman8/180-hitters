@@ -57,7 +57,7 @@ with tempfile.TemporaryDirectory() as tmp:
    expect(screen.locator('.lives-current')).to_have_text('T20')
    full=phone.request.get('http://127.0.0.1:8788/api/state').json()
    unchanged=phone.request.get('http://127.0.0.1:8788/api/state',headers={'X-Darts-Revision':str(full['revision'])}).json()
-   assert unchanged=={'revision':full['revision'],'draft':None}
+   assert unchanged=={'revision':full['revision'],'draft':None,'control':full['control']}
    stale=phone.request.get('http://127.0.0.1:8788/api/state',headers={'X-Darts-Revision':str(full['revision']-1)}).json()
    assert stale['match']==full['match']
    phone.reload();expect(phone.locator('#lives-game')).to_be_visible()

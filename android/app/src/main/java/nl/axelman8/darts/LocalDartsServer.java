@@ -88,7 +88,11 @@ final class LocalDartsServer extends NanoHTTPD {
     }
 
     private static Response jsonStatus(int code, String body) {
-        Response.Status status = Response.Status.lookup(code);
+        Response.IStatus status = Response.Status.lookup(code);
+        if (code == 423) status = new Response.IStatus() {
+            public int getRequestStatus() { return 423; }
+            public String getDescription() { return "423 Locked"; }
+        };
         if (status == null) status = Response.Status.INTERNAL_ERROR;
         Response response = newFixedLengthResponse(status, "application/json; charset=utf-8", body);
         response.addHeader("Cache-Control", "no-store"); return response;

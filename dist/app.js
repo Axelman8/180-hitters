@@ -1,3 +1,4 @@
+import {updateControl,controllerRefreshed} from './controller.js';
 import {renderLives} from './ten-lives.js';
 import {matchSummary,renderLegTable} from './match-summary.js';
 import {renderScreenOverview} from './screen-overview.js';
@@ -83,6 +84,7 @@ async function persist(keepModeOverride=false,restoredTurn=null){
  try{
   const res=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,match:snapshot()}),signal:AbortSignal.timeout(5000)});
   const data=await res.json();
+  if(res.status===423){restore(confirmed);resetInput();render();message('Een andere telefoon bedient de partij. Kies Bediening overnemen onder Spelen.');return false;}
   if(res.status===409){receive(data);connection(true,connectedLabel);message('Een ander apparaat heeft de partij gewijzigd. Controleer de stand en voer je beurt opnieuw in.');return false;}
   if(!res.ok)throw Error(data.error||'Opslaan mislukt');
   if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
@@ -95,6 +97,7 @@ async function synchronize(){
  try{
   const res=await fetch('/api/state',{cache:'no-store',headers:{'X-Darts-Revision':String(revision)},signal:AbortSignal.timeout(4000)});if(!res.ok)throw Error();
   const data=await res.json();
+  updateControl(data.control);
   if(busy||revision!==requestedRevision)return;
   if(data.match===null&&revision===-1&&localScreen&&state){revision=data.revision;if(!await persist())return;}
   else if(data.revision!==revision)receive(data);
@@ -111,11 +114,13 @@ async function synchronize(){
    }
   }
   connection(true,connectedLabel);
+  controllerRefreshed();
  }catch{connection(false,'Geen verbinding met NUC - invoer tijdelijk geblokkeerd');}
  finally{syncing=false;}
 }
+document.addEventListener('controller-refresh',()=>{revision=-1;void synchronize();});
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}

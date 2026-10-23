@@ -19,36 +19,33 @@ PROFILE_PATH = '/nl/axelman8/darts/profile'
 AGENT_PATH = '/nl/axelman8/darts/agent'
 TOKEN = os.environ.get('DARTS_CONTROL_TOKEN', '')
 ACTIVE_LOCK = threading.Lock()
-ACTIVE_CONNECTION = None
-ACTIVE_DEVICE = None
+ACTIVE_CONNECTIONS = {}
 
 
 def replace_active(connection, device):
-    global ACTIVE_CONNECTION, ACTIVE_DEVICE
     with ACTIVE_LOCK:
-        previous = ACTIVE_CONNECTION
-        ACTIVE_CONNECTION = connection
-        ACTIVE_DEVICE = device
+        previous = ACTIVE_CONNECTIONS.get(device)
+        ACTIVE_CONNECTIONS[device] = connection
     if previous is not None and previous is not connection:
         try: previous.shutdown(socket.SHUT_RDWR)
         except OSError: pass
         try: previous.close()
         except OSError: pass
-    print(f'Bluetooth-bediening overgenomen door {device}', flush=True)
+    print(f'Bluetooth-verbinding geopend voor {device}', flush=True)
 
 
 def release_active(connection):
-    global ACTIVE_CONNECTION, ACTIVE_DEVICE
     with ACTIVE_LOCK:
-        if ACTIVE_CONNECTION is connection:
-            ACTIVE_CONNECTION = None
-            ACTIVE_DEVICE = None
+        for device, active in list(ACTIVE_CONNECTIONS.items()):
+            if active is connection:
+                del ACTIVE_CONNECTIONS[device]
 
 
 def disconnect_active(device=None):
     with ACTIVE_LOCK:
-        connection = ACTIVE_CONNECTION if device is None or ACTIVE_DEVICE == device else None
-    if connection is not None:
+        connections = list(ACTIVE_CONNECTIONS.values()) if device is None else [ACTIVE_CONNECTIONS.get(device)]
+    for connection in connections:
+        if connection is None: continue
         try: connection.shutdown(socket.SHUT_RDWR)
         except OSError: pass
         try: connection.close()
