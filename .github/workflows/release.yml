@@ -22,7 +22,8 @@ jobs:
           python -m pip install pyinstaller==6.16.0
           $version = $env:GITHUB_REF_NAME.TrimStart('v')
           Set-Content -Path .version -Value $version
-          python -m PyInstaller --noconfirm --windowed --onedir --name DartsApp --paths . --distpath windows-build --workpath windows-work --add-data "dist;dist" --add-data ".version;." packaging/windows-launcher.py
+          Set-Content -Path .desktop-platform -Value windows
+          python -m PyInstaller --noconfirm --windowed --onedir --name DartsApp --paths . --distpath windows-build --workpath windows-work --add-data "dist;dist" --add-data ".version;." --add-data ".desktop-platform;." packaging/windows-launcher.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' "/DAppVersion=$version" packaging/windows.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

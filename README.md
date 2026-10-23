@@ -8,6 +8,8 @@ An offline-first darts scoring app for Android, touchscreen displays, Linux NUCs
 
 ### Eenvoudig installeren
 
+Vanaf 1.8.12: kies op de computer **Instellingen → Update controleren**. De app vergelijkt de geïnstalleerde versie met de nieuwste GitHub-release en biedt de juiste Windows- of Linux-installer aan. Open het gedownloade bestand en bevestig de installatie; daarna de browser vernieuwen. Spelers en partijen blijven behouden. De eerste upgrade vanaf 1.8.11 gebeurt eenmalig via onderstaande downloadlinks.
+
 - **[Windows-installer (.exe)](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Setup-Windows-x64.exe)** — Windows 10/11, 64-bit. Download, open en volg de installatiestappen. Python is inbegrepen. Start daarna **DartsApp** via het bureaublad of startmenu.
 - **[Ubuntu/Debian-installer (.deb)](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Ubuntu-Debian-amd64.deb)** — Ubuntu 22.04+ of Debian 12+, Intel/AMD 64-bit met systemd. Open met Software installeren. Werkt dat niet, gebruik in de downloadmap `sudo apt install ./DartsApp-Ubuntu-Debian-amd64.deb`. Start daarna **DartsApp** via het toepassingenmenu. De server start automatisch.
 - **[Installatiehulp](packaging/INSTALLER-HELP.txt)** — verbinden met je telefoon, updates en verwijderen.

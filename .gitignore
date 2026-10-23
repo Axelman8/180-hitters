@@ -16,4 +16,5 @@ darts-minimal-*.png
 update-status.json
 .version
 .update.lock
+.desktop-platform
 

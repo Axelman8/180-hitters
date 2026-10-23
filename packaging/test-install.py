@@ -31,6 +31,10 @@ def wait():
 
 
 def write_and_check():
+    installed = json.loads(request('/api/desktop-installation'))
+    assert installed['platform'] == sys.argv[1], installed
+    assert installed['version'] == os.environ['GITHUB_REF_NAME'].lstrip('v'), installed
+    assert b'Update controleren' in request('/desktop-update.js')
     request('/api/players', {'action': 'add', 'name': 'Installer Test'})
     assert b'Installer Test' in request('/api/players')
 

@@ -60,7 +60,7 @@ if(remote){
  // Read-only on followers, while device menus and the takeover button remain usable.
  for(const type of ['click','keydown','submit','change','input'])document.addEventListener(type,event=>{
   if(canControl()||!event.isTrusted)return;
-  if(event.target.closest('#transfer-dialog,#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock'))return;
+  if(event.target.closest('#desktop-update-action,#desktop-update-dialog,#transfer-dialog,#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock'))return;
   event.preventDefault();event.stopImmediatePropagation();
  },true);
 }

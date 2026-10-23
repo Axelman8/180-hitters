@@ -31,6 +31,16 @@ Automatisch instellen van Bluetooth, hotspot en NUC-beheer is niet
 onderdeel van deze algemene desktopinstallers.
 
 UPDATEN EN VERWIJDEREN
+Kies op de computer Instellingen > Update controleren.
+De app toont je versie en controleert of een nieuwere versie beschikbaar is.
+Klik op Update downloaden. Open daarna het gedownloade installatiebestand
+en volg de installatiestappen (Linux vraagt je beheerderswachtwoord).
+Vernieuw na installatie de browser of open DartsApp opnieuw.
+Werk bij tussen partijen: de achtergrondserver wordt opnieuw gestart.
+Dit is een updatecontrole met downloadknop, geen stille installatie.
+Vanaf versie 1.8.12 is deze knop beschikbaar in de desktopinstallers.
+Gebruik je nog 1.8.11, installeer dan eenmalig de nieuwe installer.
+
 Download de nieuwste installer van:
 https://github.com/Axelman8/180-hitters/releases/latest
 Installeer over de bestaande versie. Partijen en spelers blijven bewaard.

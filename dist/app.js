@@ -1,5 +1,6 @@
 import {updateControl,controllerRefreshed} from './controller.js';
 import './match-transfer.js';
+import './desktop-update.js';
 import {renderLives} from './ten-lives.js';
 import {matchSummary,renderLegTable} from './match-summary.js';
 import {renderScreenOverview} from './screen-overview.js';
@@ -74,7 +75,7 @@ function receive(data){
  if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
  revision=data.revision;confirmed=data.match;sharedDraft=null;
  restore(data.match);cache();
- for(const d of document.querySelectorAll('dialog[open]'))if(!['players-dialog','network-dialog','layout-dialog','transfer-dialog'].includes(d.id))d.close();
+ for(const d of document.querySelectorAll('dialog[open]'))if(!['players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
  resetInput();restoreTurnInput();render();
 }
 async function persist(keepModeOverride=false,restoredTurn=null){
@@ -131,7 +132,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}

@@ -37,7 +37,7 @@ function collect(){
    previous=node;
   }
  }
- const update=document.getElementById('android-update-action');
+ const update=document.getElementById('android-update-action')||document.getElementById('desktop-update-action');
  if(update?.parentElement===groups.settings&&groups.settings.lastElementChild!==update)groups.settings.append(update);
 }
 collect();

@@ -20,6 +20,7 @@ with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
     shutil.copytree('dist', root / 'usr/lib/dartsapp/dist')
     shutil.copy2('server.py', root / 'usr/lib/dartsapp/server.py')
     write('usr/lib/dartsapp/.version', version + '\n')
+    write('usr/lib/dartsapp/.desktop-platform', 'linux\n')
     write('usr/share/doc/dartsapp/INSTALLER-HELP.txt', Path('packaging/INSTALLER-HELP.txt').read_text())
     write('DEBIAN/control', f'''Package: dartsapp
 Version: {version}

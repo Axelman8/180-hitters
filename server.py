@@ -266,6 +266,12 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
 
         def do_GET(self):
             route = urlsplit(self.path).path
+            if route == '/api/desktop-installation':
+                marker = root / '.desktop-platform'
+                platform = marker.read_text().strip() if marker.exists() else ''
+                version_file = root / '.version'
+                return self.reply(200, {'platform': platform if platform in ('windows', 'linux') else None,
+                                       'version': version_file.read_text().strip() if version_file.exists() else ''})
             if route == '/api/network/control':
                 try:
                     self.reply(200, network_control('status'))
