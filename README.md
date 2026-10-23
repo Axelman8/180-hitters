@@ -6,6 +6,16 @@ An offline-first darts scoring app for Android, touchscreen displays, Linux NUCs
 
 ## Downloads
 
+### Eenvoudig installeren
+
+- **[Windows-installer (.exe)](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Setup-Windows-x64.exe)** — Windows 10/11, 64-bit. Download, open en volg de installatiestappen. Python is inbegrepen. Start daarna **DartsApp** via het bureaublad of startmenu.
+- **[Ubuntu/Debian-installer (.deb)](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Ubuntu-Debian-amd64.deb)** — Ubuntu 22.04+ of Debian 12+, Intel/AMD 64-bit met systemd. Open met Software installeren. Werkt dat niet, gebruik in de downloadmap `sudo apt install ./DartsApp-Ubuntu-Debian-amd64.deb`. Start daarna **DartsApp** via het toepassingenmenu. De server start automatisch.
+- **[Installatiehulp](packaging/INSTALLER-HELP.txt)** — verbinden met je telefoon, updates en verwijderen.
+
+Deze desktopinstallers ondersteunen lokaal spelen en mobiele bediening via wifi/LAN. Bluetooth-, hotspot- en NUC-systeembeheer zijn onderdeel van de bestaande specifieke NUC-installatie. Gebruik op een reeds ingerichte NUC de bestaande updater, niet een tweede serverinstallatie.
+
+Updates: installeer de nieuwste installer over de bestaande versie. Spelers en partijen blijven bewaard, ook bij verwijderen. Windows bewaart gegevens in `%LOCALAPPDATA%\180 Hitters`; het Debian-pakket gebruikt `/var/lib/dartsapp`. De Windows-installer is nog niet ondertekend met een uitgeverscertificaat.
+
 Shared NUC matches have one active phone controller. The first phone claims
 control automatically; additional phones follow the match. Choose **Spelen →
 Bediening overnemen** to transfer input to another phone. The NUC display remains

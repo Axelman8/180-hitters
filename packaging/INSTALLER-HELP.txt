@@ -1,0 +1,45 @@
+DartsApp - 180 Hitters
+
+WINDOWS 10/11 (64-bit)
+1. Open DartsApp-Setup-Windows-x64.exe en volg de stappen.
+2. Start DartsApp via het bureaublad of startmenu.
+Python is inbegrepen. De app opent in je standaardbrowser.
+Automatisch starten is een optionele keuze in de installer.
+Voor mobiel gebruik: sta DartsApp toe op particuliere netwerken
+wanneer Windows Firewall dit vraagt. Gebruik hetzelfde wifi-netwerk.
+De installer is nog niet voorzien van een uitgeverscertificaat.
+
+UBUNTU 22.04+ / DEBIAN 12+ (64-bit Intel/AMD, desktop met systemd)
+1. Download DartsApp-Ubuntu-Debian-amd64.deb.
+2. Open het bestand met Software installeren en kies Installeren.
+3. Start DartsApp via het toepassingenmenu.
+Als jouw softwarewinkel geen lokale pakketten opent, voer in de
+Downloads-map uit:
+  sudo apt install ./DartsApp-Ubuntu-Debian-amd64.deb
+Benodigde pakketten worden automatisch geinstalleerd (internet nodig).
+De server start automatisch, ook na opnieuw opstarten.
+Een browser zoals Firefox of Chromium moet beschikbaar zijn.
+
+GEBRUIK
+Op de computer: http://127.0.0.1:8765
+Op de telefoon: http://IP-ADRES-VAN-DE-COMPUTER:8765/?remote=1
+De telefoon en computer moeten op hetzelfde lokale netwerk zitten.
+Bij een actieve firewall op Linux: sta TCP-poort 8765 toe voor je LAN.
+De computer moet aan blijven voor mobiele bediening.
+Deze installers bieden lokaal spelen en bediening via wifi/LAN.
+Automatisch instellen van Bluetooth, hotspot en NUC-beheer is niet
+onderdeel van deze algemene desktopinstallers.
+
+UPDATEN EN VERWIJDEREN
+Download de nieuwste installer van:
+https://github.com/Axelman8/180-hitters/releases/latest
+Installeer over de bestaande versie. Partijen en spelers blijven bewaard.
+Windows: verwijder via Instellingen > Apps.
+Linux: verwijder via de softwarewinkel of sudo apt remove dartsapp.
+Gegevens blijven ook na verwijderen bewaard:
+Windows: %LOCALAPPDATA%\180 Hitters
+Linux: /var/lib/dartsapp
+
+Gebruik deze installer voor een nieuwe computer. Een bestaande NUC
+met de eerdere oche-darts-installatie gebruikt de bestaande updater;
+installeer daar geen tweede server naast op poort 8765.
