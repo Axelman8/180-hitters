@@ -26,8 +26,25 @@ final class AppUpdater {
     private static final String LATEST = "https://api.github.com/repos/axelman8/180-hitters/releases/latest";
     private final Activity activity;
     private File pending;
+    private static final java.util.concurrent.atomic.AtomicBoolean downloading = new java.util.concurrent.atomic.AtomicBoolean();
 
-    AppUpdater(Activity activity) { this.activity = activity; }
+    AppUpdater(Activity activity) { this.activity = activity; if(!downloading.get())cleanupDownloads(); }
+
+    private void cleanupDownloads() {
+        File[] files=activity.getCacheDir().listFiles();
+        if(files==null)return;
+        java.util.Arrays.sort(files,(a,b)->Long.compare(b.lastModified(),a.lastModified()));
+        boolean retained=pending!=null&&pending.isFile();
+        for(File file:files){
+            String name=file.getName();
+            if(!name.matches("180-Hitters-[0-9]+\\.[0-9]+\\.[0-9]+\\.apk"))continue;
+            try{if(!file.getCanonicalFile().getParentFile().equals(activity.getCacheDir().getCanonicalFile()))continue;}catch(Exception e){continue;}
+            if(file.equals(pending))continue;
+            String version=name.substring(12,name.length()-4);
+            if(compare(version,BuildConfig.VERSION_NAME)<=0||retained||file.length()>100L*1024*1024||System.currentTimeMillis()-file.lastModified()>7L*24*60*60*1000){file.delete();}
+            else retained=true;
+        }
+    }
 
     void check(boolean userInitiated) {
         if (!userInitiated) {
@@ -67,6 +84,8 @@ final class AppUpdater {
     }
 
     private void download(String version, String apkUrl, String checksumUrl) {
+        if(!version.matches("[0-9]+\\.[0-9]+\\.[0-9]+")||!downloading.compareAndSet(false,true))return;
+        cleanupDownloads();
         Toast.makeText(activity, "Update downloaden…", Toast.LENGTH_LONG).show();
         new Thread(() -> {
             File target = new File(activity.getCacheDir(), "180-Hitters-" + version + ".apk");
@@ -75,12 +94,13 @@ final class AppUpdater {
                 downloadTo(apkUrl, target);
                 if (!expected.equals(sha256(target))) throw new SecurityException("Controlesom klopt niet");
                 pending = target;
+                cleanupDownloads();
                 activity.runOnUiThread(this::installPending);
             } catch (Exception error) {
                 target.delete();
                 activity.runOnUiThread(() -> Toast.makeText(activity,
-                        "Update kon niet veilig worden gedownload.", Toast.LENGTH_LONG).show());
-            }
+                        "Update kon niet worden gedownload. Controleer internet en vrije opslag (minimaal 50 MB extra).", Toast.LENGTH_LONG).show());
+            } finally { downloading.set(false); }
         }, "github-update-download").start();
     }
 
@@ -118,7 +138,12 @@ final class AppUpdater {
         HttpURLConnection connection = connection(value);
         try (InputStream input = connection.getInputStream(); FileOutputStream output = new FileOutputStream(target)) {
             byte[] buffer = new byte[32768]; int count;
-            while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+            long total=0;
+            while ((count = input.read(buffer)) != -1) {
+                total+=count;
+                if(total>100L*1024*1024||target.getParentFile().getUsableSpace()<50L*1024*1024+count)throw new java.io.IOException("Te weinig opslag of update te groot");
+                output.write(buffer, 0, count);
+            }
             output.getFD().sync();
         } finally { connection.disconnect(); }
     }
@@ -135,7 +160,10 @@ final class AppUpdater {
     private static byte[] readAll(InputStream input) throws Exception {
         java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
         byte[] buffer = new byte[8192]; int count;
-        while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+        while ((count = input.read(buffer)) != -1) {
+            if(output.size()+count>2*1024*1024)throw new java.io.IOException("Update-informatie te groot");
+            output.write(buffer, 0, count);
+        }
         return output.toByteArray();
     }
     private static int compare(String left, String right) {

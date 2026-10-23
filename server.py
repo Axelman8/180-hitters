@@ -12,6 +12,33 @@ import subprocess
 import time
 import uuid
 
+BACKUP_COUNT = 30
+BACKUP_BYTES = 100 * 1024 * 1024
+STORAGE_RESERVE = 50 * 1024 * 1024
+
+
+def prune_backups(directory, max_count=BACKUP_COUNT, max_bytes=BACKUP_BYTES):
+    """Only our UUID-named backups; never follow links or delete the newest."""
+    if directory.is_symlink() or not directory.is_dir(): return
+    files = []
+    for file in directory.glob('*.json'):
+        if len(file.stem) != 32 or any(c not in '0123456789abcdef' for c in file.stem) or file.is_symlink() or not file.is_file(): continue
+        info = file.stat()
+        files.append((info.st_mtime_ns, file.name, file, info.st_size))
+    files.sort(reverse=True)
+    total = sum(item[3] for item in files)
+    count = len(files)
+    for _, _, file, size in reversed(files[1:]):
+        if count <= max_count and total <= max_bytes: break
+        file.unlink()
+        count -= 1
+        total -= size
+
+
+def room_for(directory, *values):
+    needed = sum(len(json.dumps(v, ensure_ascii=False, allow_nan=False).encode('utf-8')) for v in values)
+    return shutil.disk_usage(directory).free >= STORAGE_RESERVE + needed
+
 CONTROL_TOKEN = 'd7c87006c31f4da2a4348eeb05b59c8b'
 DEFAULT_VENUE = {
     'venueName': '180 Hitters', 'city': '', 'playerListName': 'Clubspelers',
@@ -153,7 +180,10 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     sequences = {}
     shared_setup = {'version': 0, 'value': None}
     control = {'owner': None, 'epoch': 0}
+    storage = {'checked': 0, 'free': STORAGE_RESERVE * 2}
     backups = path.with_name(path.stem + '-backups')
+    try: prune_backups(backups)
+    except OSError: pass  # Cleanup failure must not prevent playing.
 
     def durable_json(target, value):
         temporary = target.with_suffix('.tmp')
@@ -208,6 +238,12 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
             super().end_headers()
+
+        def log_request(self, code='-', size='-'):
+            # Polls happen several times each second on every connected phone.
+            # Successful polls and expected conflicts do not need journal entries.
+            if isinstance(code, int) and code >= 500:
+                super().log_request(code, size)
 
         def reply(self, status, value):
             body = json.dumps(value, allow_nan=False).encode()
@@ -287,7 +323,11 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                                      'mobilePlayers': mobile_roster})
             elif route == '/api/state':
                 with lock:
+                    if time.monotonic()-storage['checked'] > 60:
+                        storage.update(checked=time.monotonic(), free=shutil.disk_usage(path.parent).free)
                     value = {'revision': current['revision']} if self.headers.get('X-Darts-Revision') == str(current['revision']) else current
+                    if storage['free'] < STORAGE_RESERVE * 2:
+                        value = {**value, 'storageWarning': 'Weinig vrije opslag op de NUC; maak ruimte vrij.'}
                     self.reply(200, {**value, 'control': dict(control), 'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
             elif route == '/api/network':
                 addresses = set()
@@ -342,6 +382,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                                 return self.reply(404, {'error': 'Herstelkopie niet gevonden.'})
                             source = json.loads(backup_file.read_text(encoding='utf-8'))
                         match, pending = transfer_match(source)
+                        if not room_for(path.parent, current, match):
+                            return self.reply(507, {'error': 'Te weinig vrije opslag op de NUC. De huidige partij blijft behouden; maak ruimte vrij en probeer opnieuw.'})
                         backup_id = None
                         if current.get('match'):
                             backups.mkdir(parents=True, exist_ok=True)
@@ -349,13 +391,16 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             durable_json(backups / (backup_id + '.json'), {
                                 'time': time.time(), 'match': current['match'],
                                 'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
+                        recent = dict(list(receipts.items())[-99:])
                         updated = {**current, 'revision': current['revision']+1, 'match': match,
-                                   'transfers': {**receipts, request_id: backup_id}}
+                                   'transfers': {**recent, request_id: backup_id}}
                         durable_json(path, updated)
                         current.update(updated)
                         draft.update(value={**pending,'revision':current['revision']} if pending else None,time=time.monotonic())
                         sequences.clear()
                         shared_setup.update(version=shared_setup['version']+1, value=None)
+                        try: prune_backups(backups)
+                        except OSError: pass
                         return self.reply(200, {'ok': True, 'backup': backup_id})
                 if self.path == '/api/controller':
                     client = incoming.get('id')
@@ -538,6 +583,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if seq <= sequences.get(owner, -1):
                             return self.reply(200, {'ok': True})
                         sequences[owner] = seq
+                        if len(sequences) > 128:
+                            sequences.pop(next(iter(sequences)))
                         draft['value'] = {'owner': owner, 'hits': hits, 'entry': entry, 'revision': current['revision']}
                         draft['time'] = time.monotonic()
                         return self.reply(200, {'ok': True})

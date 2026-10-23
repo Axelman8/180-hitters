@@ -23,7 +23,41 @@ def fetch(url):
                                     'X-GitHub-Api-Version': '2022-11-28',
                                     'User-Agent': '180-Hitters-NUC'})
     with urlopen(request, timeout=30) as response:
-        return response.read()
+        data = response.read(2 * 1024 * 1024 + 1)
+        if len(data) > 2 * 1024 * 1024: raise ValueError('Update-informatie is te groot')
+        return data
+
+
+def download(url, target):
+    request = Request(url, headers={'User-Agent': '180-Hitters-NUC'})
+    with urlopen(request, timeout=30) as response, target.open('wb') as output:
+        total = 0
+        while True:
+            chunk = response.read(65536)
+            if not chunk: break
+            total += len(chunk)
+            if total > 200 * 1024 * 1024: raise ValueError('Update-download is te groot')
+            if shutil.disk_usage(target.parent).free < 50 * 1024 * 1024 + len(chunk):
+                raise OSError('Te weinig vrije opslag voor de update; huidige installatie blijft behouden')
+            output.write(chunk)
+
+
+def digest(path):
+    value = hashlib.sha256()
+    with Path(path).open('rb') as handle:
+        for chunk in iter(lambda: handle.read(65536), b''): value.update(chunk)
+    return value.hexdigest()
+
+
+def cleanup_stale_updates():
+    # Only this updater's abandoned temporary directories, owned by this user.
+    base = Path(tempfile.gettempdir()).resolve()
+    for directory in base.iterdir():
+        if not directory.name.startswith(('180-hitters-download-', '180-hitters-update-')) or directory.is_symlink() or not directory.is_dir(): continue
+        info = directory.stat()
+        if info.st_uid != os.getuid() or time.time()-info.st_mtime < 7*24*3600: continue
+        if directory.resolve().parent != base: continue
+        shutil.rmtree(directory)
 
 
 def write_status(**values):
@@ -54,7 +88,7 @@ def durable_copy(source, target):
         shutil.copyfileobj(incoming, outgoing)
         outgoing.flush()
         os.fsync(outgoing.fileno())
-    if hashlib.sha256(source.read_bytes()).digest() != hashlib.sha256(target.read_bytes()).digest():
+    if digest(source) != digest(target):
         raise ValueError('Gekopieerd updatebestand wijkt af: ' + source.name)
 
 
@@ -63,6 +97,10 @@ def install(bundle, version):
         extracted = Path(directory) / 'payload'
         extracted.mkdir()
         with tarfile.open(bundle, 'r:gz') as archive:
+            size = sum(member.size for member in archive.getmembers())
+            if size > 512 * 1024 * 1024: raise ValueError('Uitgepakte update is te groot')
+            if any(shutil.disk_usage(place).free < size + 50 * 1024 * 1024 for place in (ROOT, extracted)):
+                raise OSError('Te weinig vrije opslag voor de update; huidige installatie blijft behouden')
             for member in archive.getmembers():
                 target = (extracted / member.name).resolve()
                 if extracted.resolve() not in target.parents and target != extracted.resolve():
@@ -107,6 +145,8 @@ def main():
     with lock_path.open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         try:
+            try: cleanup_stale_updates()
+            except OSError: pass
             write_status(state='checking', message='GitHub op updates controleren…')
             release = json.loads(fetch(REPOSITORY))
             latest = release['tag_name'].lstrip('vV')
@@ -117,9 +157,9 @@ def main():
             assets = {asset['name']: asset['browser_download_url'] for asset in release['assets']}
             with tempfile.TemporaryDirectory(prefix='180-hitters-download-') as directory:
                 bundle = Path(directory) / '180-hitters-nuc.tar.gz'
-                bundle.write_bytes(fetch(assets['180-hitters-nuc.tar.gz']))
+                download(assets['180-hitters-nuc.tar.gz'], bundle)
                 expected = fetch(assets['180-hitters-nuc.tar.gz.sha256']).decode().split()[0].lower()
-                actual = hashlib.sha256(bundle.read_bytes()).hexdigest()
+                actual = digest(bundle)
                 if actual != expected: raise ValueError('Controlesom van NUC-update klopt niet')
                 write_status(state='installing', version=latest, message=f'NUC-versie {latest} installeren…')
                 install(bundle, latest)

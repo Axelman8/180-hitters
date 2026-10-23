@@ -114,7 +114,7 @@ async function synchronize(){
     message();renderInput();
    }
   }
-  connection(true,connectedLabel);
+  connection(true,data.storageWarning||connectedLabel);
   controllerRefreshed();
  }catch{connection(false,'Geen verbinding met NUC - invoer tijdelijk geblokkeerd');}
  finally{syncing=false;}

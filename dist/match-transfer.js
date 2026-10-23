@@ -27,7 +27,7 @@ async function listBackups(){
  open('Opgeslagen NUC-partijen');
  try{
   const data=await get('/api/match-backups');
-  $('transfer-description').textContent=data.backups.length?'Kies een partij. Bij terugzetten wordt de huidige partij ook eerst bewaard.':'Er zijn nog geen herstelkopieën van overgezette partijen.';
+  $('transfer-description').textContent=data.backups.length?'Kies een partij. De huidige partij wordt eerst bewaard. Maximaal 30 herstelkopieën / 100 MB; de oudste worden automatisch verwijderd, de nieuwste blijft behouden.':'Er zijn nog geen herstelkopieën van overgezette partijen. Maximaal 30 kopieën / 100 MB; de nieuwste blijft altijd behouden.';
   for(const item of data.backups.sort((a,b)=>b.time-a.time)){
    const b=document.createElement('button');b.className='wide';b.style.marginBottom='8px';
    b.textContent=`${new Date(item.time*1000).toLocaleString('nl-NL')} · ${String(item.game).toUpperCase()} · ${item.players.join(' / ')} · leg ${item.leg??1}`;

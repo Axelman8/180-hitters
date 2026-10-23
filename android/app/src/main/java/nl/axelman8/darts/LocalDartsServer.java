@@ -56,8 +56,9 @@ final class LocalDartsServer extends NanoHTTPD {
 
     synchronized void importSnapshot(String snapshot) throws JSONException, IOException {
         JSONObject match = new JSONObject(snapshot);
-        state = new JSONObject().put("revision", state.optInt("revision", 0) + 1).put("match", match);
-        writeAtomic(stateFile, state.toString());
+        JSONObject updated = new JSONObject().put("revision", state.optInt("revision", 0) + 1).put("match", match);
+        writeAtomic(stateFile, updated.toString());
+        state = updated;
         draft = null;
     }
 
@@ -111,6 +112,7 @@ final class LocalDartsServer extends NanoHTTPD {
                 JSONObject result = String.valueOf(state.getInt("revision")).equals(knownRevision)
                         ? new JSONObject().put("revision", state.getInt("revision")) : new JSONObject(state.toString());
                 result.put("draft", draft != null && System.currentTimeMillis() - draftTime < 180000 ? draft : JSONObject.NULL);
+                if(context.getFilesDir().getUsableSpace()<100L*1024*1024)result.put("storageWarning","Weinig vrije opslag op deze telefoon; maak ruimte vrij.");
                 return json(Response.Status.OK, result);
             }
             case "/api/players": return playerLists();
@@ -135,8 +137,8 @@ final class LocalDartsServer extends NanoHTTPD {
                 JSONObject match = incoming.getJSONObject("match");
                 JSONObject matchState = match.optJSONObject("state");
                 if (matchState == null || matchState.optInt("version") != 2) return json(Response.Status.BAD_REQUEST, new JSONObject().put("error", "Ongeldige partij"));
-                state = new JSONObject().put("revision", state.getInt("revision") + 1).put("match", match);
-                writeAtomic(stateFile, state.toString()); draft = null;
+                JSONObject updated = new JSONObject().put("revision", state.getInt("revision") + 1).put("match", match);
+                writeAtomic(stateFile, updated.toString()); state = updated; draft = null;
                 return json(Response.Status.OK, state);
             }
             case "/api/draft": {
@@ -248,7 +250,14 @@ final class LocalDartsServer extends NanoHTTPD {
     }
     private static JSONObject readObject(File file, JSONObject fallback) { try { return file.exists() ? new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)) : fallback; } catch (Exception e) { return fallback; } }
     private static JSONArray readArray(File file, JSONArray fallback) { try { return file.exists() ? new JSONArray(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)) : fallback; } catch (Exception e) { return fallback; } }
-    private static void writeAtomic(File target, String value) throws IOException { File tmp = new File(target.getPath()+".tmp"); try(FileOutputStream out=new FileOutputStream(tmp)){out.write(value.getBytes(StandardCharsets.UTF_8));out.getFD().sync();} if(target.exists()&&!target.delete())throw new IOException(); if(!tmp.renameTo(target))throw new IOException(); }
+    private static void writeAtomic(File target, String value) throws IOException {
+        File tmp = new File(target.getPath()+".tmp");
+        try {
+            try(FileOutputStream out=new FileOutputStream(tmp)){out.write(value.getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
+            android.system.Os.rename(tmp.getPath(),target.getPath());
+        } catch(android.system.ErrnoException e){throw new IOException("Opslaan mislukt; vorige bestand behouden",e);}
+        finally { if(tmp.exists())tmp.delete(); }
+    }
     private static byte[] readAll(InputStream in) throws IOException { byte[] buffer=new byte[8192]; java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream(); int n; while((n=in.read(buffer))!=-1)out.write(buffer,0,n); return out.toByteArray(); }
     private static JSONArray sort(JSONArray array) throws JSONException { java.util.List<String> list=new java.util.ArrayList<>(); for(int i=0;i<array.length();i++)list.add(array.getString(i)); list.sort(String.CASE_INSENSITIVE_ORDER); JSONArray result=new JSONArray(); for(String value:list)result.put(value); return result; }
 }

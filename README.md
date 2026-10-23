@@ -25,6 +25,18 @@ match again. History, undo/redo data and synchronized draft input are included.
 The phone switches to NUC control; its local copy is retained. Transfer retries
 are deduplicated across server restarts. Both NUC and Android need version 1.8.7.
 
+From 1.8.8, NUC recovery storage is limited to 30 snapshots / 100 MiB. Cleanup
+runs at startup and after successful transfers/restores; the newest backup is
+always kept, even if it alone exceeds the byte limit. The active match is never
+pruned. Transfer receipts retain the most recent 100 requests. Transfers and
+updates require 50 MiB free beyond their estimated write size; clients show a
+warning below 100 MiB. Successful polling is no longer written to the journal.
+NUC updates stream downloads, retain one previous install, and remove abandoned
+updater temp directories older than seven days. Android removes installed/old
+APK downloads, keeps at most one pending installer, limits APK downloads to
+100 MiB, and preserves the previous local match on write failure. These limits
+do not truncate the active match's history or control storage used by other apps.
+
 Download the latest packages from [GitHub Releases](https://github.com/Axelman8/180-hitters/releases/latest):
 
 - `180-Hitters.apk` — signed Android app
