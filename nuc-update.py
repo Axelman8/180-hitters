@@ -41,6 +41,23 @@ def version_parts(value):
     return tuple(result)
 
 
+def healthy_dist(directory):
+    required = ('index.html', 'app.js', 'engine.js', 'style.css')
+    return all((directory / name).is_file() and (directory / name).stat().st_size > 0
+               for name in required) and all(p.stat().st_size > 0 for p in directory.rglob('*') if p.is_file())
+
+
+def durable_copy(source, target):
+    # Verify staged data and flush it before making a new installation visible.
+    source, target = Path(source), Path(target)
+    with source.open('rb') as incoming, target.open('wb') as outgoing:
+        shutil.copyfileobj(incoming, outgoing)
+        outgoing.flush()
+        os.fsync(outgoing.fileno())
+    if hashlib.sha256(source.read_bytes()).digest() != hashlib.sha256(target.read_bytes()).digest():
+        raise ValueError('Gekopieerd updatebestand wijkt af: ' + source.name)
+
+
 def install(bundle, version):
     with tempfile.TemporaryDirectory(prefix='180-hitters-update-') as directory:
         extracted = Path(directory) / 'payload'
@@ -54,10 +71,12 @@ def install(bundle, version):
         required = ['dist', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py']
         if any(not (extracted / item).exists() for item in required):
             raise ValueError('NUC-update is niet compleet')
+        if not healthy_dist(extracted / 'dist'):
+            raise ValueError('NUC-update bevat lege of ontbrekende appbestanden')
         next_dist = ROOT / 'dist.next'
         old_dist = ROOT / 'dist.previous'
         shutil.rmtree(next_dist, ignore_errors=True)
-        shutil.copytree(extracted / 'dist', next_dist)
+        shutil.copytree(extracted / 'dist', next_dist, copy_function=durable_copy)
         # Venue-owned data and licensed/local winner artwork are not distributed
         # through GitHub and must survive an atomic application update.
         preserved = ['club-wifi.json']
@@ -66,16 +85,21 @@ def install(bundle, version):
         preserved.append('winner-trophy.jpg')
         for name in dict.fromkeys(preserved):
             local = ROOT / 'dist' / name
-            if local.is_file(): shutil.copy2(local, next_dist / name)
+            if local.is_file() and local.stat().st_size > 0:
+                durable_copy(local, next_dist / name)
+        if not healthy_dist(next_dist):
+            raise ValueError('Nieuwe appbestanden zijn niet compleet; huidige versie blijft behouden')
+        os.sync()
         shutil.rmtree(old_dist, ignore_errors=True)
         if (ROOT / 'dist').exists(): (ROOT / 'dist').replace(old_dist)
         next_dist.replace(ROOT / 'dist')
         for name in ('server.py', 'bluetooth-bridge.py', 'nuc-update.py'):
             temporary = ROOT / (name + '.next')
-            shutil.copy2(extracted / name, temporary)
+            durable_copy(extracted / name, temporary)
             temporary.replace(ROOT / name)
         VERSION.write_text(version + '\n', encoding='utf-8')
-        shutil.rmtree(old_dist, ignore_errors=True)
+        os.sync()
+        # Keep the previous installation available for recovery after a restart.
 
 
 def main():
@@ -87,7 +111,7 @@ def main():
             release = json.loads(fetch(REPOSITORY))
             latest = release['tag_name'].lstrip('vV')
             current = VERSION.read_text(encoding='utf-8').strip() if VERSION.exists() else '0.0.0'
-            if version_parts(latest) <= version_parts(current):
+            if version_parts(latest) <= version_parts(current) and healthy_dist(ROOT / 'dist'):
                 write_status(state='current', version=current, message=f'NUC is actueel ({current}).')
                 return
             assets = {asset['name']: asset['browser_download_url'] for asset in release['assets']}
