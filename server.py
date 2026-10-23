@@ -153,6 +153,43 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     sequences = {}
     shared_setup = {'version': 0, 'value': None}
     control = {'owner': None, 'epoch': 0}
+    backups = path.with_name(path.stem + '-backups')
+
+    def durable_json(target, value):
+        temporary = target.with_suffix('.tmp')
+        with temporary.open('w', encoding='utf-8') as handle:
+            json.dump(value, handle, ensure_ascii=False, allow_nan=False)
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(target)
+        if os.name != 'nt':
+            fd = os.open(str(target.parent), os.O_RDONLY)
+            try: os.fsync(fd)
+            finally: os.close(fd)
+
+    def transfer_match(incoming):
+        match = incoming.get('match')
+        if not isinstance(match, dict) or not isinstance(match.get('undo'), list):
+            raise ValueError('Ongeldige partij')
+        state = match.get('state')
+        if not isinstance(state, dict) or state.get('version') != 2 or state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives'):
+            raise ValueError('Ongeldig spel')
+        players = state.get('players')
+        if not isinstance(players, list) or not 1 <= len(players) <= 4 or any(not isinstance(p, dict) or not isinstance(p.get('name'), str) for p in players):
+            raise ValueError('Ongeldige spelers')
+        if not isinstance(state.get('history'), list) or not isinstance(match.get('future', []), list):
+            raise ValueError('Ongeldige geschiedenis')
+        pending = incoming.get('draft')
+        if pending is not None:
+            hits, entry = pending.get('hits', []), pending.get('entry', '')
+            if not isinstance(entry, str) or len(entry) > 3 or any(c not in '0123456789' for c in entry) or not isinstance(hits, list) or len(hits) > 3 or (entry and hits):
+                raise ValueError('Ongeldige invoer')
+            for hit in hits:
+                if type(hit.get('number')) is not int or hit['number'] not in [0,*range(1,21),25] or type(hit.get('mult')) is not int or hit['mult'] not in (1,2,3) or (hit['number']==25 and hit['mult']==3):
+                    raise ValueError('Ongeldige pijl')
+            pending = {'owner':'transferred-turn','hits':hits,'entry':entry}
+        json.dumps(match, allow_nan=False)
+        return match, pending
     kiosk_lock = Lock()
     last_kiosk = 0
     if path.exists():
@@ -230,6 +267,17 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             elif route == '/api/setup':
                 with lock:
                     self.reply(200, {**shared_setup, 'revision': current['revision']})
+            elif route == '/api/match-backups':
+                with lock:
+                    items = []
+                    for file in sorted(backups.glob('*.json'), reverse=True):
+                        try:
+                            saved = json.loads(file.read_text(encoding='utf-8'))
+                            state = saved['match']['state']
+                            items.append({'id': file.stem, 'time': saved['time'], 'game': state.get('game'),
+                                          'players': [p['name'] for p in state['players']], 'leg': state.get('leg')})
+                        except (OSError, ValueError, KeyError, TypeError): continue
+                    self.reply(200, {'backups': items})
             elif route == '/api/players':
                 with lock:
                     combined = list(roster)
@@ -259,7 +307,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
 
         def do_POST(self):
             nonlocal last_kiosk
-            if self.path not in ('/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -271,6 +319,44 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 < length <= 10000000:
                     return self.reply(413, {'error': 'Partij te groot'})
                 incoming = json.loads(self.rfile.read(length))
+                if self.path in ('/api/match-transfer', '/api/match-restore'):
+                    request_id = incoming.get('requestId')
+                    if not isinstance(request_id, str) or not 16 <= len(request_id) <= 80:
+                        raise ValueError()
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        # Persist receipts with the match so a lost response/retry
+                        # cannot replace a match twice, including after restart.
+                        receipts = current.get('transfers', {})
+                        if request_id in receipts:
+                            return self.reply(200, {'ok': True, 'backup': receipts[request_id], 'repeated': True})
+                        if incoming.get('revision') != current['revision']:
+                            return self.reply(409, {'error': 'De NUC-partij is veranderd. Controleer opnieuw voordat je overzet.'})
+                        source = incoming
+                        if self.path == '/api/match-restore':
+                            backup_id = incoming.get('backup')
+                            if not isinstance(backup_id, str) or len(backup_id) != 32 or any(c not in '0123456789abcdef' for c in backup_id):
+                                raise ValueError()
+                            backup_file = backups / (backup_id + '.json')
+                            if not backup_file.is_file():
+                                return self.reply(404, {'error': 'Herstelkopie niet gevonden.'})
+                            source = json.loads(backup_file.read_text(encoding='utf-8'))
+                        match, pending = transfer_match(source)
+                        backup_id = None
+                        if current.get('match'):
+                            backups.mkdir(parents=True, exist_ok=True)
+                            backup_id = uuid.uuid4().hex
+                            durable_json(backups / (backup_id + '.json'), {
+                                'time': time.time(), 'match': current['match'],
+                                'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
+                        updated = {**current, 'revision': current['revision']+1, 'match': match,
+                                   'transfers': {**receipts, request_id: backup_id}}
+                        durable_json(path, updated)
+                        current.update(updated)
+                        draft.update(value={**pending,'revision':current['revision']} if pending else None,time=time.monotonic())
+                        sequences.clear()
+                        shared_setup.update(version=shared_setup['version']+1, value=None)
+                        return self.reply(200, {'ok': True, 'backup': backup_id})
                 if self.path == '/api/controller':
                     client = incoming.get('id')
                     force = incoming.get('takeover', False)
@@ -480,7 +566,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         return self.reply(409, current)
                     if current['match'] is None and self.client_address[0] not in ('127.0.0.1', '::1'):
                         return self.reply(403, {'error': 'Start de eerste partij op het NUC-scherm'})
-                    updated = {'revision': current['revision'] + 1, 'match': match}
+                    updated = {**current, 'revision': current['revision'] + 1, 'match': match}
                     encoded = json.dumps(updated, allow_nan=False)
                     temporary = path.with_suffix('.tmp')
                     temporary.write_text(encoded, encoding='utf-8')

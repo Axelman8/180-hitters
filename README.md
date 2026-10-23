@@ -16,6 +16,15 @@ restart. This is input coordination on the trusted local network, not account
 authentication. Update both the NUC and Android clients to 1.8.6 or later.
 Standalone Android matches are unaffected.
 
+From a local Android match, **Spelen → Partij overzetten naar NUC** stages a
+snapshot and asks for wifi or Bluetooth. After connecting and obtaining phone
+control, review both match names and confirm the transfer. The NUC durably saves
+its existing match under `match-backups/` before replacement. **Spelen →
+Opgeslagen NUC-partijen** restores a selected backup, first backing up the active
+match again. History, undo/redo data and synchronized draft input are included.
+The phone switches to NUC control; its local copy is retained. Transfer retries
+are deduplicated across server restarts. Both NUC and Android need version 1.8.7.
+
 Download the latest packages from [GitHub Releases](https://github.com/Axelman8/180-hitters/releases/latest):
 
 - `180-Hitters.apk` — signed Android app

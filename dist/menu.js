@@ -17,7 +17,7 @@ for(const [key,label] of [['play','Spelen'],['settings','Instellingen']]){
   if(event.target.closest('button,a'))group.open=false;
  });
 }
-const play=new Set(['settings','players-list','open-kiosk','take-control']);
+const play=new Set(['settings','players-list','open-kiosk','take-control','transfer-to-nuc','match-backups']);
 function collect(){
  for(const node of [...actions.children]){
   if(node.matches('button,a'))groups[play.has(node.id)?'play':'settings'].append(node);

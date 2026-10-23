@@ -61,6 +61,13 @@ final class LocalDartsServer extends NanoHTTPD {
         draft = null;
     }
 
+    synchronized String exportTransfer() throws JSONException {
+        if (state.isNull("match")) throw new JSONException("Geen lokale partij");
+        return new JSONObject().put("match", state.getJSONObject("match"))
+                .put("draft", draft != null && System.currentTimeMillis()-draftTime < 180000 ? draft : JSONObject.NULL)
+                .put("requestId", java.util.UUID.randomUUID().toString()).toString();
+    }
+
     @Override public synchronized Response serve(IHTTPSession session) {
         try {
             String path = session.getUri();

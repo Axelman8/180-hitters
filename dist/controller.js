@@ -44,7 +44,7 @@ if(remote){
  note.style.cssText='display:block;text-align:center;font-size:12px;padding:3px 8px;color:#82d7e6';
  button.onclick=()=>void claim(true);
  paint();
- const protectedPaths=new Set(['/api/state','/api/draft','/api/setup','/api/display']);
+ const protectedPaths=new Set(['/api/state','/api/draft','/api/setup','/api/display','/api/match-transfer','/api/match-restore']);
  window.fetch=async(input,options)=>{
   const url=new URL(typeof input==='string'?input:input.url,location.href);
   if(url.origin===location.origin&&options?.method?.toUpperCase()==='POST'&&protectedPaths.has(url.pathname)){
@@ -60,7 +60,7 @@ if(remote){
  // Read-only on followers, while device menus and the takeover button remain usable.
  for(const type of ['click','keydown','submit','change','input'])document.addEventListener(type,event=>{
   if(canControl()||!event.isTrusted)return;
-  if(event.target.closest('#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock'))return;
+  if(event.target.closest('#transfer-dialog,#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock'))return;
   event.preventDefault();event.stopImmediatePropagation();
  },true);
 }

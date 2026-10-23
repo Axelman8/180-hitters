@@ -176,6 +176,20 @@ public final class MainActivity extends Activity {
     @Override protected void onDestroy(){if(localServer!=null)localServer.stop(); if(bluetooth!=null)bluetooth.shutdown(); if(web!=null)web.destroy(); super.onDestroy();}
 
     private final class Bridge {
+        @JavascriptInterface public void prepareNucTransfer(){runOnUiThread(()->{
+            if(!"local".equals(mode))return;
+            try {
+                String pending=localServer.exportTransfer();
+                if(!preferences.edit().putString("pending_nuc_transfer",pending).commit())throw new java.io.IOException("Overdracht niet opgeslagen");
+                new AlertDialog.Builder(MainActivity.this).setTitle("Partij overzetten naar NUC")
+                    .setMessage("Kies de verbinding. Op de NUC bevestig je het overzetten; de bestaande partij wordt eerst als herstelkopie opgeslagen.")
+                    .setPositiveButton("Via wifi",(d,w)->askNucAddress())
+                    .setNeutralButton("Via Bluetooth",(d,w)->chooseBluetooth())
+                    .setNegativeButton("Annuleren",(d,w)->preferences.edit().remove("pending_nuc_transfer").apply()).show();
+            } catch(Exception e){Toast.makeText(MainActivity.this,"Geen lokale partij beschikbaar om over te zetten.",Toast.LENGTH_LONG).show();}
+        });}
+        @JavascriptInterface public String getPendingNucTransfer(){return "local".equals(mode)?"":preferences.getString("pending_nuc_transfer","");}
+        @JavascriptInterface public void clearPendingNucTransfer(){preferences.edit().remove("pending_nuc_transfer").commit();}
         @JavascriptInterface public void chooseMode(){runOnUiThread(MainActivity.this::showModeChooser);}
         @JavascriptInterface public boolean isLocalMode(){return "local".equals(mode);}
         @JavascriptInterface public String getConnectionMode(){return mode==null?"local":mode;}
