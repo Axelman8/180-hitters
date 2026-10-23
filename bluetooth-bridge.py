@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """BlueZ RFCOMM bridge from the Android app to the local darts HTTP API."""
 import http.client
+import base64
+import gzip
+import io
 import json
 import os
 import socket
@@ -59,6 +62,30 @@ def send_frame(connection, value):
         connection.sendall(packet[offset:offset+1024])
 
 
+def decode_body(request):
+    if 'bodyGzip' not in request:
+        return json.dumps(request.get('body', {}), separators=(',', ':')).encode()
+    compressed = base64.b64decode(request['bodyGzip'], validate=True)
+    with gzip.GzipFile(fileobj=io.BytesIO(compressed)) as stream:
+        body = stream.read(10_000_001)
+    if len(body) > 10_000_000:
+        raise ValueError('Bericht te groot')
+    json.loads(body)
+    return body
+
+
+def encode_response(request, status, value):
+    result = {'id': request.get('id'), 'status': status, 'body': value, 'capabilities': ['gzip']}
+    if request.get('acceptEncoding') == 'gzip':
+        raw = json.dumps(value, separators=(',', ':')).encode()
+        if len(raw) >= 2048:
+            packed = base64.b64encode(gzip.compress(raw, compresslevel=1)).decode('ascii')
+            if len(packed) < len(raw):
+                del result['body']
+                result['bodyGzip'] = packed
+    return result
+
+
 def relay(connection, device):
     stream = connection.makefile('rb', buffering=65536)
     print(f'Bluetooth-kanaal gereed voor {device}', flush=True)
@@ -77,8 +104,10 @@ def relay(connection, device):
             path = request.get('path')
             if method not in ('GET', 'POST') or not isinstance(path, str) or not path.startswith('/api/'):
                 raise ValueError('Ongeldig verzoek')
-            body = None if method == 'GET' else json.dumps(request.get('body', {}), separators=(',', ':')).encode()
+            body = None if method == 'GET' else decode_body(request)
             headers = {'X-Darts-Control': TOKEN, 'X-Darts-Transport': 'bluetooth'}
+            if isinstance(request.get('knownRevision'), str):
+                headers['X-Darts-Revision'] = request['knownRevision']
             if body is not None:
                 headers['Content-Type'] = 'application/json'
                 headers['Content-Length'] = str(len(body))
@@ -93,7 +122,7 @@ def relay(connection, device):
                     value = json.loads(payload)
                 except (ValueError, UnicodeDecodeError):
                     value = {'error': 'Ongeldig antwoord van de NUC'}
-                result = {'id': request.get('id'), 'status': response.status, 'body': value}
+                result = encode_response(request, response.status, value)
             finally:
                 upstream.close()
             send_frame(connection, result)

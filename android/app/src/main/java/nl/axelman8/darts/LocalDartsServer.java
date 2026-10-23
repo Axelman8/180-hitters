@@ -65,7 +65,7 @@ final class LocalDartsServer extends NanoHTTPD {
         try {
             String path = session.getUri();
             if (bluetoothMode && path.startsWith("/api/")) return proxy(session, path);
-            if (Method.GET.equals(session.getMethod())) return get(path);
+            if (Method.GET.equals(session.getMethod())) return get(path, session.getHeaders().get("x-darts-revision"));
             if (Method.POST.equals(session.getMethod())) return post(path, session);
             return json(Response.Status.METHOD_NOT_ALLOWED, new JSONObject().put("error", "Methode niet toegestaan"));
         } catch (Exception error) {
@@ -83,7 +83,7 @@ final class LocalDartsServer extends NanoHTTPD {
         } else if (!Method.GET.equals(session.getMethod())) {
             return json(Response.Status.METHOD_NOT_ALLOWED, new JSONObject().put("error", "Methode niet toegestaan"));
         }
-        BluetoothClient.Result result = bluetooth.request(session.getMethod().name(), path, body);
+        BluetoothClient.Result result = bluetooth.request(session.getMethod().name(), path, body, session.getHeaders().get("x-darts-revision"));
         return jsonStatus(result.status, result.body);
     }
 
@@ -94,10 +94,11 @@ final class LocalDartsServer extends NanoHTTPD {
         response.addHeader("Cache-Control", "no-store"); return response;
     }
 
-    private Response get(String path) throws Exception {
+    private Response get(String path, String knownRevision) throws Exception {
         switch (path) {
             case "/api/state": {
-                JSONObject result = new JSONObject(state.toString());
+                JSONObject result = String.valueOf(state.getInt("revision")).equals(knownRevision)
+                        ? new JSONObject().put("revision", state.getInt("revision")) : new JSONObject(state.toString());
                 result.put("draft", draft != null && System.currentTimeMillis() - draftTime < 180000 ? draft : JSONObject.NULL);
                 return json(Response.Status.OK, result);
             }

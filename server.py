@@ -227,7 +227,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                                      'mobilePlayers': mobile_roster})
             elif route == '/api/state':
                 with lock:
-                    self.reply(200, {**current, 'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
+                    value = {'revision': current['revision']} if self.headers.get('X-Darts-Revision') == str(current['revision']) else current
+                    self.reply(200, {**value, 'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
             elif route == '/api/network':
                 addresses = set()
                 try:

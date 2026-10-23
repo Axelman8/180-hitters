@@ -19,13 +19,13 @@ with tempfile.TemporaryDirectory() as tmp:
     expect(screen.locator('#entry')).to_have_text(value)
    assert len(saved()['match']['state']['history'])==0
    screen.locator('#backspace').click();expect(phone.locator('#entry')).to_have_text('12')
-   phone.locator('#keypad').get_by_role('button',name='Wis',exact=True).click();expect(screen.locator('#entry')).to_have_text('0')
+   phone.locator('#backspace').click(click_count=3);expect(screen.locator('#entry')).to_have_text('0')
    phone.keyboard.type('180');expect(screen.locator('#entry')).to_have_text('180')
    screen.reload();expect(screen.locator('#entry')).to_have_text('180')
    phone.locator('#confirm-total').click();expect(screen.locator('#turn-label')).to_have_text('B is aan de beurt');expect(screen.locator('#entry')).to_have_text('0')
    assert len(saved()['match']['state']['history'])==1
    screen.locator('#undo').click();expect(phone.locator('#entry')).to_have_text('180')
-   phone.locator('#keypad').get_by_role('button',name='Wis',exact=True).click();expect(screen.locator('#entry')).to_have_text('0')
+   phone.locator('#backspace').click(click_count=3);expect(screen.locator('#entry')).to_have_text('0')
    phone.wait_for_timeout(1600);expect(phone.locator('#entry')).to_have_text('0')
    phone.keyboard.type('60');expect(screen.locator('#entry')).to_have_text('60')
    phone.locator('#mode-dart').click();expect(screen.locator('#mode-dart')).to_have_class('selected')

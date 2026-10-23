@@ -55,6 +55,11 @@ with tempfile.TemporaryDirectory() as tmp:
    for i in range(5):
     phone.locator('#lives-miss').click();expect(phone.locator('.lives-attempts')).to_have_text(f'{4-i} '+('poging over' if 4-i==1 else 'pogingen over') if i<4 else '3 pogingen over')
    expect(screen.locator('.lives-current')).to_have_text('T20')
+   full=phone.request.get('http://127.0.0.1:8788/api/state').json()
+   unchanged=phone.request.get('http://127.0.0.1:8788/api/state',headers={'X-Darts-Revision':str(full['revision'])}).json()
+   assert unchanged=={'revision':full['revision'],'draft':None}
+   stale=phone.request.get('http://127.0.0.1:8788/api/state',headers={'X-Darts-Revision':str(full['revision']-1)}).json()
+   assert stale['match']==full['match']
    phone.reload();expect(phone.locator('#lives-game')).to_be_visible()
    for page in [phone,screen]:
     for w,h in [(390,844),(740,900),(1080,1920),(1920,1080)]:

@@ -5,11 +5,16 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
+import android.util.Base64;
 
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +39,7 @@ final class BluetoothClient {
     private volatile BufferedReader input;
     private volatile BufferedWriter output;
     private long lastFailure;
+    private boolean compressionSupported;
 
     static final class Result {
         final int status;
@@ -64,7 +70,7 @@ final class BluetoothClient {
     synchronized String selectedAddress() { return address; }
 
     @SuppressLint("MissingPermission")
-    synchronized Result request(String method, String path, String body) throws Exception {
+    synchronized Result request(String method, String path, String body, String knownRevision) throws Exception {
         if (System.currentTimeMillis() - lastFailure < 2000)
             throw new IllegalStateException("Bluetooth probeert opnieuw te verbinden");
         ensureConnected();
@@ -72,8 +78,18 @@ final class BluetoothClient {
                 .put("id", sequence.incrementAndGet())
                 .put("clientToken", CLIENT_TOKEN)
                 .put("method", method)
-                .put("path", path);
-        if (body != null && !body.isEmpty()) message.put("body", new JSONObject(body));
+                .put("path", path)
+                .put("acceptEncoding", "gzip");
+        if (knownRevision != null) message.put("knownRevision", knownRevision);
+        if (body != null && !body.isEmpty()) {
+            if (compressionSupported && body.length() >= 2048) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                try (GZIPOutputStream zipped = new GZIPOutputStream(bytes)) {
+                    zipped.write(body.getBytes(StandardCharsets.UTF_8));
+                }
+                message.put("bodyGzip", Base64.encodeToString(bytes.toByteArray(), Base64.NO_WRAP));
+            } else message.put("body", new JSONObject(body));
+        }
         BufferedWriter currentOutput = output;
         BufferedReader currentInput = input;
         ScheduledFuture<?> timeout = watchdog.schedule(() -> {
@@ -87,6 +103,20 @@ final class BluetoothClient {
             String line = currentInput.readLine();
             if (line == null) throw new IllegalStateException("Bluetooth-verbinding verbroken");
             JSONObject response = new JSONObject(line);
+            if (response.optJSONArray("capabilities") != null)
+                compressionSupported = response.getJSONArray("capabilities").toString().contains("\"gzip\"");
+            if (response.has("bodyGzip")) {
+                byte[] packed = Base64.decode(response.getString("bodyGzip"), Base64.DEFAULT);
+                ByteArrayOutputStream plain = new ByteArrayOutputStream();
+                try (GZIPInputStream zipped = new GZIPInputStream(new ByteArrayInputStream(packed))) {
+                    byte[] buffer = new byte[8192]; int count;
+                    while ((count = zipped.read(buffer)) != -1) {
+                        if (plain.size() + count > 10000000) throw new IllegalStateException("Antwoord te groot");
+                        plain.write(buffer, 0, count);
+                    }
+                }
+                return new Result(response.optInt("status", 502), new String(plain.toByteArray(), StandardCharsets.UTF_8));
+            }
             Object responseBody = response.opt("body");
             String encoded = responseBody == null || responseBody == JSONObject.NULL ? "{}" :
                     (responseBody instanceof String ? (String) responseBody : responseBody.toString());
@@ -101,6 +131,7 @@ final class BluetoothClient {
     @SuppressLint("MissingPermission")
     private void ensureConnected() throws Exception {
         if (socket != null && socket.isConnected()) return;
+        compressionSupported = false;
         if (adapter == null || !adapter.isEnabled()) throw new IllegalStateException("Bluetooth staat uit");
         if (address == null) throw new IllegalStateException("Geen NUC gekozen");
         adapter.cancelDiscovery();

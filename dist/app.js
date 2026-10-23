@@ -93,7 +93,7 @@ async function persist(keepModeOverride=false,restoredTurn=null){
 async function synchronize(){
  if(syncing||busy||draftWrites)return;syncing=true;const requestedRevision=revision,requestedDraftSequence=draftSequence;
  try{
-  const res=await fetch('/api/state',{cache:'no-store',signal:AbortSignal.timeout(4000)});if(!res.ok)throw Error();
+  const res=await fetch('/api/state',{cache:'no-store',headers:{'X-Darts-Revision':String(revision)},signal:AbortSignal.timeout(4000)});if(!res.ok)throw Error();
   const data=await res.json();
   if(busy||revision!==requestedRevision)return;
   if(data.match===null&&revision===-1&&localScreen&&state){revision=data.revision;if(!await persist())return;}
