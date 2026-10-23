@@ -26,6 +26,19 @@ function collect(){
   const node=document.getElementById(id);
   if(node&&!menu.contains(node))groups.settings.append(node);
  }
+ // Keep the main actions in a predictable order, including late-added buttons.
+ for(const [panel,ids] of [[groups.play,['settings','players-list']],[groups.settings,['android-app-action']]]){
+  let previous=null;
+  for(const id of ids){
+   const node=document.getElementById(id);
+   if(!node||node.parentElement!==panel)continue;
+   const next=previous?previous.nextElementSibling:panel.firstElementChild;
+   if(next!==node)panel.insertBefore(node,next);
+   previous=node;
+  }
+ }
+ const update=document.getElementById('android-update-action');
+ if(update?.parentElement===groups.settings&&groups.settings.lastElementChild!==update)groups.settings.append(update);
 }
 collect();
 new MutationObserver(collect).observe(actions,{childList:true});
