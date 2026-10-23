@@ -33,6 +33,7 @@ public final class MainActivity extends Activity {
     private AppUpdater updater;
     private SharedPreferences preferences;
     private String mode;
+    private boolean webPaused;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -154,7 +155,24 @@ public final class MainActivity extends Activity {
 
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     @Override public void onBackPressed(){if(web.canGoBack())web.goBack();else super.onBackPressed();}
-    @Override protected void onResume(){super.onResume();if(updater!=null)updater.resumePendingInstall();}
+    @Override protected void onResume(){
+        super.onResume();
+        if(web!=null&&webPaused){
+            web.resumeTimers();
+            web.onResume();
+            webPaused=false;
+        }
+        if(updater!=null)updater.resumePendingInstall();
+    }
+    @Override protected void onPause(){
+        if(web!=null&&!webPaused){
+            web.onPause();
+            web.pauseTimers();
+            webPaused=true;
+        }
+        if(bluetooth!=null)bluetooth.closeSocket();
+        super.onPause();
+    }
     @Override protected void onDestroy(){if(localServer!=null)localServer.stop(); if(bluetooth!=null)bluetooth.shutdown(); if(web!=null)web.destroy(); super.onDestroy();}
 
     private final class Bridge {
