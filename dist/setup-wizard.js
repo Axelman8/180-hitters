@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-const games=[['x01','X01','Van je startscore naar nul.','Wedstrijd'],['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd'],['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd'],['121','121','Checkouttraining met negen darts.','Training'],['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training'],['tenlives','10 levens','20 t/m 10 en Bull. Bewaar je levens.','Training'],['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training']];
+const games=[['x01','X01','Van je startscore naar nul.','Wedstrijd'],['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd'],['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd'],['121','121','Checkouttraining met negen darts.','Training'],['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training'],['tenlives','Hitters Challenge','20 t/m 10 en Bull. Bewaar je levens.','Training'],['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training']];
 const fields=['lives-mode','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','count'];
 let step=0,slot=0,venueRoster=[],mobileRoster=[],selected='x01';
 const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';

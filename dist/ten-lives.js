@@ -32,7 +32,7 @@ export function renderLives(state,actions){
  let root=document.getElementById('lives-game');
  if(!root){root=el('section',undefined,'lives-game');root.id='lives-game';document.getElementById('game').append(root);}
  root.replaceChildren();
- const heading=el('div',undefined,'lives-heading');heading.append(el('h2','10 levens'),el('span',state.livesMode==='triple'?'Triples · 20 t/m 10 → Bull':'Doubles · 20 t/m 10 → Bull'));root.append(heading);
+ const heading=el('div',undefined,'lives-heading');heading.append(el('h2','Hitters Challenge'),el('span',state.livesMode==='triple'?'Triples · 20 t/m 10 → Bull':'Doubles · 20 t/m 10 → Bull'));root.append(heading);
  const cards=el('div',undefined,'lives-players');cards.style.setProperty('--count',state.players.length);
  state.players.forEach((p,i)=>{
   const card=el('article',undefined,'lives-player'+(i===state.active?' active':'')+(p.lives===0?' eliminated':''));
