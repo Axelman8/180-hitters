@@ -4,6 +4,15 @@ export const livesLabel=(state,player)=>player.livesTarget===25?'Bull (50)':(sta
 // A recorded input is one physical dart. Only exhausting a target ends a visit.
 export function applyLivesDart(state,turn){
  if(state.phase!=='playing')throw Error('Deze training is afgelopen.');
+ if(turn.trainingMisses!==undefined){
+  const count=turn.trainingMisses;
+  if(!Number.isInteger(count)||count<1||count>3||count>state.players[state.active].attempts)throw Error('Kies maximaal drie resterende pogingen.');
+  let next=state;
+  for(let i=0;i<count;i++)next=applyLivesDart(next,{trainingHit:false});
+  const last=next.history.at(-1);
+  next.history.splice(state.history.length,count,{...last,darts:count,labels:`${count} keer mis`,input:{trainingMisses:count}});
+  return next;
+ }
  if(typeof turn.trainingHit!=='boolean')throw Error('Kies Doel geraakt of Mis voor deze pijl.');
  const s=structuredClone(state),index=s.active,p=s.players[index],target=p.livesTarget;
  if(p.lives<=0)throw Error('Deze speler is uitgeschakeld.');
@@ -48,10 +57,10 @@ export function renderLives(state,actions){
  const controls=el('section',undefined,'lives-controls panel');
  const btn=(text,id,fn,cls)=>{const b=el('button',text,cls);b.type='button';b.id=id;b.onclick=fn;return b;};
  const tiles=el('div',undefined,'lives-entry');
- tiles.append(btn(`${livesLabel(state,p)} geraakt`,'lives-hit',()=>actions.dart(true),'primary'),btn('Mis / ander vak','lives-miss',()=>actions.dart(false),'lives-miss'));
+ tiles.append(btn(`${livesLabel(state,p)} geraakt`,'lives-hit',()=>actions.dart(true),'primary'),btn('Mis / ander vak','lives-miss',()=>actions.dart(false),'lives-miss'),btn(`${Math.min(3,p.attempts)} keer mis`,'lives-miss-three',()=>actions.misses(Math.min(3,p.attempts)),'lives-miss lives-miss-three'));
  for(const b of tiles.children)b.disabled=state.phase!=='playing';
  controls.append(tiles,el('p','Voer elke pijl direct in. Alleen het aangegeven doel telt. Bull is uitsluitend 50.','lives-hint'));
- const undo=btn('Vorige pijl herstellen','lives-undo',actions.undo,'lives-undo');undo.disabled=!actions.canUndo;
+ const undo=btn('Vorige invoer herstellen','lives-undo',actions.undo,'lives-undo');undo.disabled=!actions.canUndo;
  const redo=btn('Volgende pijl →','lives-redo',actions.redo);redo.disabled=!actions.canRedo;
  const history=el('div',undefined,'lives-history-actions');history.append(undo,redo);controls.append(history);
  const toggle=btn('Scherminvoer in-/uitklappen','lives-toggle',actions.toggle);controls.append(toggle);root.append(controls);

@@ -37,3 +37,5 @@ body.screen-fit.input-collapsed:not(.remote-control):not(.cricket-game)[data-gam
 .life-marks i.lost{color:#71848e;text-decoration:line-through}
 body:not(.remote-control) .lives-attempts{font-size:clamp(42px,7vmin,96px);font-weight:800;color:#eef4f4;line-height:1.1}
 body:not(.remote-control) .lives-player p{font-size:clamp(20px,2.5vw,32px);font-weight:700}
+
+.lives-entry .lives-miss-three{grid-column:1 / -1;background:#a54b29;color:#fff;border-color:#ef9b62;}

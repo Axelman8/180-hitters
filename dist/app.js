@@ -27,7 +27,7 @@ renderHistoryMenu();
 let state=null,undo=[],future=[],pendingTurns=[],pendingReason='',editingPending=false,historyNavigation=false,entry='',dartList=[],multiplier=1,mode='total',preferredMode='total',modeOverride=null,editTurn=null,gotchaRule='end',resetTargetsOpen=false;
 const cricket=()=>state&&['cricket','tactics'].includes(state.game);
 const totalAllowed=()=>!!state&&!['bobs27','tenlives'].includes(state.game);
-function renderLivesGame(){renderLives(state,{dart:hit=>commit({trainingHit:hit}),undo:()=>$('undo').click(),redo:()=>goForward(),canUndo:undo.length>0,canRedo:future.length>0,toggle:()=>$('toggle-input').click()});}
+function renderLivesGame(){renderLives(state,{dart:hit=>commit({trainingHit:hit}),misses:count=>commit({trainingMisses:count}),undo:()=>$('undo').click(),redo:()=>goForward(),canUndo:undo.length>0,canRedo:future.length>0,toggle:()=>$('toggle-input').click()});}
 
 const namesOfRules={single:'Straight',double:'Double',master:'Master'};
 const scoringNames={standard:'Standard','cut-throat':'Cut Throat','no-score':'No Score'};
