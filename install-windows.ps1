@@ -7,6 +7,7 @@ if (-not $python) { throw 'Installeer eerst Python 3 vanaf python.org en vink Ad
 New-Item -ItemType Directory -Force -Path $target | Out-Null
 Copy-Item (Join-Path $source 'dist') $target -Recurse -Force
 Copy-Item (Join-Path $source 'server.py') $target -Force
+Copy-Item (Join-Path $source 'autodarts_bridge.py'), (Join-Path $source 'camera_research.py') $target -Force
 if (Test-Path (Join-Path $source '.version')) { Copy-Item (Join-Path $source '.version') $target -Force }
 $start = Join-Path $target 'Start 180 Hitters.cmd'
 @"

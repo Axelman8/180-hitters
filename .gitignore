@@ -17,4 +17,7 @@ update-status.json
 .version
 .update.lock
 .desktop-platform
+camera-observations/
+camera-settings.json
+camera-prototype/
 

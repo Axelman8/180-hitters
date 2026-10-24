@@ -1,4 +1,6 @@
 import {updateControl,controllerRefreshed} from './controller.js';
+import {cameraControls} from './autoscoring.js';
+import {applyCameraEvent} from './autoscoring-rules.js';
 import './match-transfer.js';
 import './desktop-update.js';
 import {renderLives} from './ten-lives.js';
@@ -75,7 +77,7 @@ function receive(data){
  if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
  revision=data.revision;confirmed=data.match;sharedDraft=null;
  restore(data.match);cache();
- for(const d of document.querySelectorAll('dialog[open]'))if(!['players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
+ for(const d of document.querySelectorAll('dialog[open]'))if(!['autoscoring-dialog','players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
  resetInput();restoreTurnInput();render();
 }
 async function persist(keepModeOverride=false,restoredTurn=null){
@@ -546,3 +548,22 @@ $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await docume
 render();
 
 connection(false,androidLocal?'Lokale opslag openen...':'Verbinding met NUC maken...');synchronize();setInterval(synchronize,750);
+cameraControls(async event=>{
+ if(!ready||busy||syncing||draftWrites)return;
+ busy=true;
+ try{
+  const response=await fetch('/api/state',{signal:AbortSignal.timeout(4000)});
+  if(!response.ok)return;
+  const base=await response.json();
+  const result=applyCameraEvent(base.match,base.draft,event);
+  const res=await fetch('/api/autoscoring/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:base.revision,event:event.id,...result}),signal:AbortSignal.timeout(5000)});
+  if(res.ok){const data=await res.json();receive(data);dartList=(data.draft?.hits||[]).map(d=>makeDart(d.number,d.mult));if(dartList.length)setMode('dart');renderInput();}
+  else if(![409,423].includes(res.status)){const data=await res.json();throw Error(data.error||'Cameraworp niet opgeslagen. Controleer de beurt.');}
+ }catch(e){
+  // A lost response is retried through the server receipt, never guessed locally.
+  if(e.name!=='TimeoutError'&&e.name!=='TypeError'){
+   message(e.message);
+   try{const s=await (await fetch('/api/autoscoring')).json();await fetch('/api/autoscoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:false,recording:s.recording,reason:e.message})});}catch{}
+  }
+ }finally{busy=false;}
+});

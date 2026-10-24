@@ -3,6 +3,8 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from threading import Lock
 from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 import argparse
 import json
 import os
@@ -161,6 +163,7 @@ def open_kiosk(root):
 
 
 def serve(host='0.0.0.0', port=8765, data_file=None):
+    from autodarts_bridge import AutoDartsBridge
     root = Path(__file__).parent
     path = Path(data_file) if data_file else root / 'match.json'
     roster_path = path.with_name(path.stem + '-players.json')
@@ -224,9 +227,19 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     last_kiosk = 0
     if path.exists():
         current = json.loads(path.read_text(encoding='utf-8'))
+        if current.get('cameraDraft', {}).get('revision') == current['revision']:
+            draft.update(value=current['cameraDraft'], time=time.monotonic())
         restored = (current.get('match') or {}).get('editTurn') or {}
         if restored.get('hits'):
             draft.update(value={'owner': 'restored-turn', 'hits': restored['hits'], 'revision': current['revision']}, time=time.monotonic())
+
+    camera = AutoDartsBridge(lock, path.with_name('camera-observations'),
+                            os.environ.get('DARTS_AUTODARTS_URL', 'http://127.0.0.1:3180'))
+    camera_settings = path.with_name('camera-settings.json')
+    try:
+        camera.recording = json.loads(camera_settings.read_text()).get('recording') is True
+    except (OSError, ValueError): pass
+    camera.start()
 
     class Handler(SimpleHTTPRequestHandler):
         extensions_map = {**SimpleHTTPRequestHandler.extensions_map,
@@ -266,6 +279,11 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
 
         def do_GET(self):
             route = urlsplit(self.path).path
+            if route == '/api/autoscoring':
+                with lock:
+                    return self.reply(200, camera.status())
+            if route in ('/api/camera/status', '/api/camera/frame/0', '/api/camera/frame/2', '/api/camera/frame/4'):
+                return self.camera_proxy(route.removeprefix('/api/camera'))
             if route == '/api/desktop-installation':
                 marker = root / '.desktop-platform'
                 platform = marker.read_text().strip() if marker.exists() else ''
@@ -334,7 +352,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     value = {'revision': current['revision']} if self.headers.get('X-Darts-Revision') == str(current['revision']) else current
                     if storage['free'] < STORAGE_RESERVE * 2:
                         value = {**value, 'storageWarning': 'Weinig vrije opslag op de NUC; maak ruimte vrij.'}
-                    self.reply(200, {**value, 'control': dict(control), 'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
+                    self.reply(200, {**value, 'control': dict(control), 'draft': draft['value'] if (draft['value'] or {}).get('owner') == 'camera' or time.monotonic()-draft['time'] < 180 else None})
             elif route == '/api/network':
                 addresses = set()
                 try:
@@ -351,9 +369,35 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             else:
                 super().do_GET()
 
+        def camera_proxy(self, route, method='GET'):
+            try:
+                request = Request('http://127.0.0.1:8766'+route, method=method)
+                with urlopen(request, timeout=3) as response:
+                    body = response.read(2_000_000)
+                    self.send_response(200)
+                    self.send_header('Content-Type', response.headers.get('Content-Type', 'application/json'))
+                    self.send_header('Content-Length', str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+            except HTTPError as error:
+                self.reply(error.code, {'error': 'Camera-test is nog bezig. Stop eerst de lopende test.'})
+            except (URLError, TimeoutError, OSError):
+                self.reply(503, {'error': 'Camera-test is niet beschikbaar op deze machine.'})
+
         def do_POST(self):
             nonlocal last_kiosk
-            if self.path not in ('/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
+            if self.path in ('/api/camera/start', '/api/camera/stop', '/api/camera/retry') + tuple(f'/api/camera/{kind}/{i}' for kind in ('miss', 'undo-miss') for i in (1, 2, 3)):
+                origin = self.headers.get('Origin')
+                if origin and urlsplit(origin).netloc != self.headers.get('Host'):
+                    return self.reply(403, {'error': 'Ongeldige herkomst'})
+                if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
+                    return self.reply(415, {'error': 'JSON nodig'})
+                try: length = int(self.headers.get('Content-Length', '0'))
+                except ValueError: return self.reply(400, {'error':'Ongeldige lengte'})
+                if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
+                self.rfile.read(length)
+                return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
+            if self.path not in ('/api/autoscoring', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -365,12 +409,60 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 < length <= 10000000:
                     return self.reply(413, {'error': 'Partij te groot'})
                 incoming = json.loads(self.rfile.read(length))
+                if self.path == '/api/autoscoring':
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        enabled, recording = incoming.get('enabled'), incoming.get('recording')
+                        if type(enabled) is not bool or type(recording) is not bool: raise ValueError()
+                        match = current.get('match') or {}
+                        if enabled and (match.get('state', {}).get('phase') != 'playing' or match.get('future') or match.get('editTurn') or match.get('pendingTurns')):
+                            return self.reply(409, {'error': 'Start of hervat eerst een partij op de actuele stand.'})
+                        if enabled and draft['value'] and (draft['value'].get('hits') or draft['value'].get('entry')):
+                            return self.reply(409, {'error': 'Rond de handmatige invoer eerst af of wis deze.'})
+                        if enabled and not camera.connected:
+                            return self.reply(503, {'error': 'AutoDarts is niet bereikbaar op de NUC.'})
+                        try:
+                            camera.configure(enabled, recording, current['revision'])
+                        except (OSError, URLError):
+                            return self.reply(503, {'error': 'AutoDarts kon niet uit stand-by starten. Probeer opnieuw.'})
+                        durable_json(camera_settings, {'recording': recording})
+                        reason = incoming.get('reason')
+                        if not enabled and isinstance(reason,str): camera.message = reason[:200]
+                        return self.reply(200, camera.status())
+                if self.path == '/api/autoscoring/apply':
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        token = incoming.get('event')
+                        if current.get('cameraReceipt') == token:
+                            return self.reply(200, {**current, 'draft': draft['value']})
+                        if not camera.enabled or not camera.pending or camera.pending[0]['id'] != token or incoming.get('revision') != current['revision'] or camera.expected_revision != current['revision']:
+                            return self.reply(409, {**current, 'draft': draft['value']})
+                        match = incoming.get('match')
+                        hits = incoming.get('hits')
+                        closed = incoming.get('closed')
+                        if type(closed) is not bool or not isinstance(match, dict) or not isinstance(match.get('undo'), list) or match.get('state', {}).get('version') != 2: raise ValueError()
+                        if not isinstance(hits, list) or len(hits) > 3: raise ValueError()
+                        for hit in hits:
+                            if type(hit.get('number')) is not int or hit['number'] not in [0,*range(1,21),25] or type(hit.get('mult')) is not int or hit['mult'] not in (1,2,3) or (hit['number']==25 and hit['mult']==3): raise ValueError()
+                        updated = {**current, 'revision': current['revision']+1, 'match': match, 'cameraReceipt': token}
+                        pending_draft = {'owner':'camera','hits':hits,'entry':'','revision':updated['revision']} if hits else {}
+                        updated['cameraDraft'] = pending_draft
+                        # State and receipt share one durable write: retry after a lost
+                        # response can never apply the same physical dart twice.
+                        durable_json(path, updated)
+                        current.update(updated)
+                        draft['value'] = pending_draft or None
+                        draft['time'] = time.monotonic()
+                        sequences.clear()
+                        camera.acknowledge(token, current['revision'], closed)
+                        return self.reply(200, {**current, 'draft':draft['value']})
                 if self.path in ('/api/match-transfer', '/api/match-restore'):
                     request_id = incoming.get('requestId')
                     if not isinstance(request_id, str) or not 16 <= len(request_id) <= 80:
                         raise ValueError()
                     with lock:
                         if not self.may_edit(incoming): return
+                        if camera.enabled: camera.pause('Partij overgezet. Hervat camera-invoer met leeg bord.')
                         # Persist receipts with the match so a lost response/retry
                         # cannot replace a match twice, including after restart.
                         receipts = current.get('transfers', {})
@@ -462,6 +554,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if incoming.get('revision') != current['revision']:
                             return self.reply(409, {'revision': current['revision']})
                         shared_setup.update(version=shared_setup['version']+1, value=value)
+                        if camera.enabled and value is not None: camera.pause('Spelinstellingen geopend. Hervat camera-invoer na het starten.')
                         self.reply(200, shared_setup)
                     return
                 if self.path == '/api/display':
@@ -592,6 +685,10 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if len(sequences) > 128:
                             sequences.pop(next(iter(sequences)))
                         draft['value'] = {'owner': owner, 'hits': hits, 'entry': entry, 'revision': current['revision']}
+                        if camera.enabled: camera.pause('Handmatige invoer: camera gepauzeerd. Rond de beurt af en hervat.')
+                        if current.get('cameraDraft'):
+                            current['cameraDraft'] = {}
+                            durable_json(path, current)
                         draft['time'] = time.monotonic()
                         return self.reply(200, {'ok': True})
                 match = incoming['match']
@@ -619,13 +716,14 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         return self.reply(409, current)
                     if current['match'] is None and self.client_address[0] not in ('127.0.0.1', '::1'):
                         return self.reply(403, {'error': 'Start de eerste partij op het NUC-scherm'})
-                    updated = {**current, 'revision': current['revision'] + 1, 'match': match}
+                    updated = {**current, 'revision': current['revision'] + 1, 'match': match, 'cameraDraft': {}}
                     encoded = json.dumps(updated, allow_nan=False)
                     temporary = path.with_suffix('.tmp')
                     temporary.write_text(encoded, encoding='utf-8')
                     temporary.replace(path)
                     current.update(updated)
                     shared_setup.update(version=shared_setup['version']+1, value=None)
+                    if camera.enabled: camera.pause('Partij handmatig gewijzigd. Hervat camera-invoer met leeg bord.')
                     restored = match.get('editTurn') or {}
                     hits = restored.get('hits')
                     draft['value'] = {'owner': 'restored-turn', 'hits': hits, 'revision': current['revision']} if hits else None

@@ -11,6 +11,7 @@ if [[ -z "$BROWSER" ]]; then echo 'Installeer eerst Chromium of Firefox via de s
 mkdir -p "$HOME/.local/share/oche-darts" "$HOME/.config/systemd/user" "$HOME/.config/autostart"
 cp -r "$APP_DIR/dist" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/server.py" "$HOME/.local/share/oche-darts/"
+cp "$APP_DIR/autodarts_bridge.py" "$APP_DIR/camera_research.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/bluetooth-bridge.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/nuc-update.py" "$HOME/.local/share/oche-darts/"
 [[ ! -f "$APP_DIR/.version" ]] || cp "$APP_DIR/.version" "$HOME/.local/share/oche-darts/.version"
