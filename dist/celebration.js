@@ -5,6 +5,7 @@ export function celebrateScore(previous,next){
  if(after.length<before.length){clearEffect();return;}
  if(after.length<=before.length||JSON.stringify(after.slice(0,before.length))!==JSON.stringify(before))return;
  const turn=after.at(-1);
+ if(next.state.game==='tenlives'){if(turn.ended&&turn.score===0)explodeMissedTarget(turn,next.state);return;}
  if(turn.bust||!(turn.score>100)||document.body.classList.contains('remote-control'))return;
  clearEffect();
  const impact=turn.score>=120;
@@ -34,3 +35,24 @@ export function celebrateScore(previous,next){
  timer=setTimeout(clearEffect,impact?3100:4400);
 }
 export function clearEffect(){clearTimeout(timer);effect?.remove();effect=null;document.body.classList.remove('score-impact-active');}
+
+function explodeMissedTarget(turn,state){
+ clearEffect();
+ effect=document.createElement('div');effect.id='lives-fail-effect';
+ effect.setAttribute('popover','manual');effect.setAttribute('aria-hidden','true');
+ const burst=document.createElement('div');burst.className='lives-fail-burst';
+ const ring=document.createElement('i');ring.className='lives-fail-wave';burst.append(ring);
+ for(let i=0;i<12;i++){
+  const spark=document.createElement('i');spark.className='lives-fail-spark';
+  const angle=i*Math.PI/6;
+  spark.style.setProperty('--spark-x',`${Math.cos(angle)*145}px`);
+  spark.style.setProperty('--spark-y',`${Math.sin(angle)*145}px`);
+  spark.style.setProperty('--spark-turn',`${i*30}deg`);burst.append(spark);
+ }
+ const title=document.createElement('strong');title.textContent='Doel gemist';
+ const detail=document.createElement('span');
+ detail.textContent=turn.lives===0?'Geen levens meer':turn.target===20?'?1 leven':`Terug naar ${turn.nextTarget===25?'Bull':(state.livesMode==='triple'?'T':'D')+turn.nextTarget}`;
+ burst.append(title,detail);effect.append(burst);document.body.append(effect);
+ if(effect.showPopover)effect.showPopover();
+ timer=setTimeout(clearEffect,1150);
+}
