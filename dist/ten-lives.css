@@ -39,3 +39,62 @@ body:not(.remote-control) .lives-attempts{font-size:clamp(42px,7vmin,96px);font-
 body:not(.remote-control) .lives-player p{font-size:clamp(20px,2.5vw,32px);font-weight:700}
 
 .lives-entry .lives-miss-three{grid-column:1 / -1;background:#a54b29;color:#fff;border-color:#ef9b62;}
+
+/* Goal and remaining attempts are separate, immediately readable values. */
+.lives-focus-values{display:grid;grid-template-columns:1fr 1fr;align-items:stretch;gap:16px;width:100%;max-width:800px}
+.lives-target-block{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0}
+.lives-focus-label{font-size:14px;font-weight:800;letter-spacing:.08em;color:var(--muted)}
+.lives-attempts{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#d2f866;color:#172114!important;border:2px solid #e7ffa1;border-radius:16px;padding:12px;gap:4px}
+.lives-attempt-count{font-size:clamp(48px,8vmin,110px);line-height:1;font-variant-numeric:tabular-nums}
+.lives-attempt-label{font-size:clamp(15px,2vmin,22px);font-weight:800;line-height:1.2;text-transform:uppercase}
+.lives-attempts.last-attempts{background:#ffbb79;border-color:#ffd6ac}
+body.remote-control[data-game="tenlives"] #lives-game{gap:8px;min-height:0}
+body.remote-control .lives-heading h2{font-size:18px;margin:0}
+body.remote-control .lives-heading span{display:none}
+body.remote-control .lives-players{gap:6px}
+body.remote-control .lives-player{padding:6px;border-radius:10px}
+body.remote-control .lives-player h3{font-size:17px;line-height:1.15;margin-bottom:3px}
+body.remote-control .lives-goal{font-size:21px;line-height:1.1}
+body.remote-control .lives-player p{font-size:13px;margin:2px 0}
+body.remote-control .life-marks{gap:2px;margin:4px 0}
+body.remote-control .life-marks i{height:17px;font-size:10px}
+body.remote-control .lives-player small{font-size:11px}
+body.remote-control .lives-focus{flex:0 0 auto;min-height:0;gap:6px;padding:10px}
+body.remote-control .lives-name{font-size:20px;line-height:1.15}
+body.remote-control .lives-focus-values{gap:10px;max-width:none}
+body.remote-control .lives-current{font-size:52px;line-height:1.05}
+body.remote-control .lives-focus-label{font-size:12px}
+body.remote-control .lives-attempts{padding:8px;border-radius:12px;margin:0}
+body.remote-control .lives-attempt-count{font-size:52px;line-height:1}
+body.remote-control .lives-attempt-label{font-size:13px}
+body.remote-control .lives-route{display:none}
+body.remote-control .lives-controls{padding:8px;min-width:0}
+body.remote-control .lives-entry{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+body.remote-control .lives-entry button{min-height:60px;min-width:0;padding:6px 3px;font-size:18px;line-height:1.15}
+body.remote-control .lives-entry .lives-miss-three{grid-column:auto}
+body.remote-control .lives-hint{display:none}
+body.remote-control .lives-history-actions{margin-top:8px;gap:6px}
+body.remote-control .lives-history-actions button{min-height:44px;padding:6px;font-size:12px}
+body.remote-control #lives-toggle{margin-top:6px;min-height:40px;padding:6px;font-size:12px}
+body.remote-control .lives-last{font-size:12px;margin:0;min-height:0}
+@media(min-width:700px) and (max-height:1100px){
+ body.remote-control[data-game="tenlives"] #lives-game{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto auto auto;align-items:start}
+ body.remote-control .lives-focus{align-self:stretch;justify-content:center}
+ body.remote-control .lives-focus-values{gap:8px}
+}
+
+@media(max-width:699px) and (max-height:720px){
+ body.remote-control[data-game="tenlives"] #lives-game{gap:6px}
+ body.remote-control .lives-player{padding:4px}
+ body.remote-control .lives-player h3{font-size:15px;margin:0}
+ body.remote-control .lives-player p{display:none}
+ body.remote-control .lives-goal{font-size:18px}
+ body.remote-control .life-marks{margin:3px 0}
+ body.remote-control .life-marks i{height:14px;font-size:9px}
+ body.remote-control .lives-player small{font-size:10px}
+ body.remote-control .lives-focus{padding:7px;gap:4px}
+ body.remote-control .lives-name{font-size:18px}
+ body.remote-control .lives-current,body.remote-control .lives-attempt-count{font-size:42px}
+ body.remote-control .lives-attempts{padding:6px}
+ body.remote-control .lives-entry button{min-height:54px;font-size:16px}
+}
