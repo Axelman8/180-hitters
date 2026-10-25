@@ -92,3 +92,14 @@ body.screen-fit.input-collapsed[data-game="bobs27"] #game:not([hidden]){grid-tem
 /* Reclaim the turn announcement space; active player remains highlighted. */
 .match-heading:has(#turn-label[hidden]){min-height:0}
 body.remote-control #game>.match-heading:has(#turn-label[hidden]){display:none!important}
+
+/* Tactics display: name and legs above score + per-leg averages. */
+body.screen-fit[data-game="tactics"] #players.players .player{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);grid-template-rows:auto minmax(0,1fr);gap:6px 10px;overflow:hidden}
+body.screen-fit[data-game="tactics"] #players.players .player-top{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;min-width:0}
+body.screen-fit[data-game="tactics"] #players.players .player-top>strong{width:auto;min-width:0;overflow-wrap:anywhere;font-size:clamp(18px,9cqw,36px)}
+body.screen-fit[data-game="tactics"] #players.players .badge{display:none}
+body.screen-fit[data-game="tactics"] #players.players .match-score{grid-column:2;grid-row:1;flex-wrap:wrap;justify-content:flex-end}
+body.screen-fit[data-game="tactics"] #players.players .remaining{grid-column:1;grid-row:2;min-width:0;min-height:0;margin:0;align-self:stretch;font-size:clamp(28px,min(21cqw,32cqh),100px)!important}
+body.screen-fit[data-game="tactics"] #players.players .player-leg-results{grid-column:2;grid-row:2;min-width:0;min-height:0;max-height:none;align-self:stretch;align-content:start;overflow:auto;margin:0;padding-left:8px;border-left:1px solid var(--line);font-size:clamp(10px,4.5cqw,18px)}
+body.screen-fit[data-game="tactics"] #players.players .leg-results-table{width:100%;table-layout:fixed}
+body.screen-fit[data-game="tactics"] #players.players .leg-results-table th,body.screen-fit[data-game="tactics"] #players.players .leg-results-table td{padding:3px 2px;overflow-wrap:anywhere}
