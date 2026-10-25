@@ -73,9 +73,10 @@ body.remote-control[data-mobile-layout].cricket-game #cricket-note{display:none}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #cricket-panel>.eyebrow{margin:0 0 2px;font-size:10px}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #cricket-live{margin:0 0 2px;font-size:10px;line-height:1.15}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #cricket-board{flex:1;min-height:0;overflow:hidden}
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #cricket-board .marks-table{height:100%}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] .marks-table th{padding:1px 2px;font-size:10px;line-height:1.05}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] .marks-table th:first-child{width:34px}
- html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] .marks-table td{height:auto;padding:1px;font-size:18px;line-height:1}
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] .marks-table td{height:auto;padding:2px;font-size:21px;line-height:1}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] .scoring{
   grid-column:2;grid-row:1;min-width:0;min-height:0;overflow:hidden;padding:6px
  }
@@ -84,7 +85,7 @@ body.remote-control[data-mobile-layout].cricket-game #cricket-note{display:none}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #visit-mode-note{font-size:10px;line-height:1.15}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #dart-slots span{padding:3px;font-size:18px}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #multipliers button{min-height:38px;padding:3px;font-size:15px}
- html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys{flex:none;height:360px;grid-template-rows:repeat(4,minmax(36px,1fr));grid-auto-rows:minmax(36px,1fr);gap:4px}
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys{flex:none;height:430px;grid-template-rows:repeat(4,minmax(36px,1fr));grid-auto-rows:minmax(36px,1fr);gap:4px}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys button{min-height:36px;padding:2px;font-size:18px}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys #tactics-remove,
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys #tactics-confirm{font-size:11px;line-height:1.05}

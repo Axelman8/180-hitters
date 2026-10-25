@@ -27,6 +27,8 @@ with tempfile.TemporaryDirectory() as tmp:
       assert page.evaluate("document.querySelector('.scoring').getBoundingClientRect().bottom<=document.querySelector('main').getBoundingClientRect().bottom+1")
       assert page.evaluate("document.querySelector('#toggle-history').getBoundingClientRect().bottom<=document.querySelector('main').getBoundingClientRect().bottom+1")
       assert page.evaluate("document.querySelector('#tactics-remove').getBoundingClientRect().left===document.querySelector('#board-keys').getBoundingClientRect().left")
+      assert page.evaluate("document.querySelector('#board-keys').getBoundingClientRect().height>=429")
+      assert page.evaluate("document.querySelector('.marks-table').getBoundingClientRect().height>=500")
      if width==768:page.screenshot(path=str(root/'tests/mobile-board-preview.png'))
     page.locator('#board-keys').get_by_role('button',name='20',exact=True).click()
     expect(page.locator('.marks-table [aria-label="Ed: 1 van 3 treffers op 20 (nog bevestigen)"]')).to_be_visible()
