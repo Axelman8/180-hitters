@@ -93,12 +93,13 @@ After=bluetooth.service dartsapp.service
 [Service]
 Type=simple
 Environment=DARTS_CONTROL_TOKEN=d7c87006c31f4da2a4348eeb05b59c8b
-ExecStartPre=/usr/bin/bluetoothctl power on
-ExecStartPre=/usr/bin/bluetoothctl pairable on
-ExecStartPre=/usr/bin/bluetoothctl discoverable on
+ExecStartPre=/usr/bin/bluetoothctl --timeout 5 power on
+ExecStartPre=/usr/bin/bluetoothctl --timeout 5 pairable on
+ExecStartPre=/usr/bin/bluetoothctl --timeout 5 discoverable on
 ExecStart=/usr/bin/python3 /usr/lib/dartsapp/bluetooth-bridge.py
 Restart=on-failure
 RestartSec=3
+TimeoutStartSec=20
 [Install]
 WantedBy=multi-user.target
 ''')
@@ -129,7 +130,9 @@ if [ "$1" = configure ]; then
     systemctl daemon-reload
     systemctl enable dartsapp.service dartsapp-bluetooth.service dartsapp-update.path
     systemctl restart dartsapp.service
-    systemctl restart dartsapp-bluetooth.service
+    # A missing or temporarily unavailable Bluetooth adapter must not block
+    # package installation; systemd retries the bridge when hardware appears.
+    systemctl restart --no-block dartsapp-bluetooth.service
     systemctl restart dartsapp-update.path
   fi
 fi
