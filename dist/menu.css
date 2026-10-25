@@ -23,3 +23,8 @@ body.remote-control>header{flex-direction:row;flex-wrap:nowrap;min-height:56px}
 #camera-game-controls button[aria-pressed="true"],#autoscoring-dialog button[aria-pressed="true"]{background:#42752e!important;color:#fff!important;border-color:#a6df71!important;box-shadow:inset 0 0 0 1px #a6df71}
 @media(max-width:600px){#header-menu{gap:6px}#header-menu summary,#camera-game-controls button{font-size:12px;padding:10px 8px}#header-menu summary{gap:4px}}
 @media(max-width:360px){#header-menu{gap:3px}#camera-game-controls{gap:3px}#header-menu summary,#camera-game-controls button{font-size:11px;padding:10px 5px}}
+
+/* De oude 600px-tablet gebruikt de hele kopregel voor de vier hoofdknoppen. */
+html.tablet-shell body>header .brand{display:none}
+html.tablet-shell #header-menu{width:100%;margin-left:0;justify-content:flex-end;flex-wrap:nowrap}
+html.tablet-shell #header-menu summary,html.tablet-shell #camera-game-controls button{padding-left:9px;padding-right:9px}

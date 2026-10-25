@@ -2,6 +2,8 @@ import {canControl,takeControl} from './controller.js';
 
 export function cameraControls(consume){
  if(window.DartsAndroid?.isLocalMode?.()===true)return;
+ const tabletShell=window.DartsAndroid?.isTabletShell===true;
+ const requestTimeout=tabletShell?20000:4000;
  const button=document.createElement('button');button.id='autoscoring-open';button.textContent='Camera-invoer op NUC';
  document.getElementById('top-actions').append(button);
  const dialog=document.createElement('dialog');dialog.id='autoscoring-dialog';
@@ -26,7 +28,7 @@ export function cameraControls(consume){
  const q=id=>document.getElementById(id);
  button.onclick=()=>dialog.showModal();q('autoscoring-close').onclick=()=>dialog.close();
  async function configure(enabled){
-  const r=await fetch('/api/autoscoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled,recording:q('autoscoring-record').checked}),signal:AbortSignal.timeout(4000)});
+  const r=await fetch('/api/autoscoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled,recording:q('autoscoring-record').checked}),signal:AbortSignal.timeout(requestTimeout)});
   const data=await r.json();if(!r.ok)throw Error(data.error||'Camera-instelling niet opgeslagen');paint(data);
  }
  async function action(enabled){
@@ -61,11 +63,11 @@ export function cameraControls(consume){
  async function poll(){
   if(running)return;running=true;
   try{
-   const r=await fetch('/api/autoscoring',{signal:AbortSignal.timeout(2000)});if(!r.ok)return;
+   const r=await fetch('/api/autoscoring',{signal:AbortSignal.timeout(requestTimeout)});if(!r.ok)return;
    const data=await r.json();paint(data);
    if(data.enabled&&data.pending&&canControl())await consume(data.pending);
   }catch{if(latest?.available){note.hidden=false;note.textContent='Camera: verbinding controleren…';}}
   finally{running=false;}
  }
- poll();setInterval(poll,350);
+ poll();setInterval(poll,tabletShell?3000:350);
 }

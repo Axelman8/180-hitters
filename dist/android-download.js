@@ -46,7 +46,11 @@ if (window.DartsAndroid) {
   if (typeof window.DartsAndroid.checkForUpdate === 'function') {
     const update = document.createElement('button');
     update.id = 'android-update-action'; update.type = 'button'; update.textContent = 'Update';
-    update.addEventListener('click', () => window.DartsAndroid.checkForUpdate());
+    if (window.DartsAndroid.isTabletShell && typeof window.DartsAndroid.bindAction === 'function') {
+      window.DartsAndroid.bindAction(update, () => window.DartsAndroid.checkForUpdate());
+    } else {
+      update.addEventListener('click', () => window.DartsAndroid.checkForUpdate());
+    }
     document.getElementById('top-actions').append(update);
   }
   document.getElementById('mobile-dock').hidden = true;
