@@ -90,6 +90,7 @@ Description=180 Hitters Bluetooth bridge
 Wants=bluetooth.service
 Requires=dartsapp.service
 After=bluetooth.service dartsapp.service
+ConditionPathExists=/sys/class/bluetooth/hci0
 [Service]
 Type=simple
 Environment=DARTS_CONTROL_TOKEN=d7c87006c31f4da2a4348eeb05b59c8b
