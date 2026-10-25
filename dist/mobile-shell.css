@@ -8,7 +8,7 @@ body.remote-control[data-mobile-layout] #players .match-score b{font-size:16px;l
 body.remote-control[data-mobile-layout] #players .match-score small{font-size:10px;line-height:1.1}
 body.remote-control[data-mobile-layout]{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 body.remote-control[data-mobile-layout] > header{flex-shrink:0;gap:6px;padding:6px 10px;padding-top:max(env(safe-area-inset-top),6px)}
-body.remote-control[data-mobile-layout] header button{font-size:13px!important;min-height:44px!important;padding:6px 10px!important}
+body.remote-control[data-mobile-layout] header button:not(#camera-game-on):not(#camera-game-off){font-size:13px!important;min-height:44px!important;padding:6px 10px!important}
 body.remote-control[data-mobile-layout] > #connection-status{flex-shrink:0;font-size:10px;line-height:1.2;margin:0;padding:3px 10px}
 body.remote-control[data-mobile-layout] > main{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;margin:0 auto;padding:6px;padding-bottom:max(env(safe-area-inset-bottom),6px)}
 body.remote-control[data-mobile-layout] #game{min-height:100%;display:flex;flex-direction:column;gap:6px}

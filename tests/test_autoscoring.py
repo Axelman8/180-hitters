@@ -192,6 +192,26 @@ with tempfile.TemporaryDirectory() as tmp:
             wait(lambda:not cam()['enabled'])
             phone.locator('#camera-game-on').click()
             wait(lambda:cam()['enabled'] and cam()['armed'])
+            # Header controls stay visible and indicate exactly the chosen state.
+            for view in (page,phone):
+                view.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
+                assert view.locator('#header-menu #camera-game-controls').count()==1
+                assert view.locator('#camera-game-off').get_attribute('aria-pressed')=='false'
+                for width in (320,393,768,1080):
+                    view.set_viewport_size({'width':width,'height':900})
+                    view.wait_for_timeout(250)
+                    boxes=[view.locator(selector).bounding_box() for selector in ('#header-menu details:first-child summary','#header-menu details:nth-child(2) summary','#camera-game-on','#camera-game-off')]
+                    assert all(box and box['x']>=0 and box['x']+box['width']<=width+1 for box in boxes),(width,boxes)
+                    assert max(box['y'] for box in boxes)-min(box['y'] for box in boxes)<2,(width,boxes)
+                colors=view.evaluate("[...document.querySelectorAll('#camera-game-controls button')].map(b=>getComputedStyle(b).backgroundColor)")
+                assert colors[0]!=colors[1],colors
+            phone.locator('#camera-game-off').click()
+            wait(lambda:not cam()['enabled'])
+            for view in (page,phone):
+                view.wait_for_function("document.querySelector('#camera-game-off').getAttribute('aria-pressed') === 'true'")
+                assert view.locator('#camera-game-on').get_attribute('aria-pressed')=='false'
+            phone.locator('#camera-game-on').click()
+            wait(lambda:cam()['enabled'] and cam()['armed'])
             # A service restart preserves ON and resumes from an empty board.
             proc.terminate();proc.wait()
             proc=subprocess.Popen([sys.executable,str(ROOT/'server.py'),'--host','127.0.0.1','--port','8796','--data-file',str(Path(tmp)/'match.json')],env=env,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)

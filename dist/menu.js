@@ -19,6 +19,8 @@ for(const [key,label] of [['play','Spelen'],['settings','Instellingen']]){
 }
 const play=new Set(['settings','players-list','open-kiosk','take-control','transfer-to-nuc','match-backups']);
 function collect(){
+ const camera=document.getElementById('camera-game-controls');
+ if(camera&&camera.parentElement!==menu)menu.append(camera);
  for(const node of [...actions.children]){
   if(node.matches('button,a'))groups[play.has(node.id)?'play':'settings'].append(node);
  }

@@ -13,12 +13,15 @@ export function cameraControls(consume){
  const note=document.createElement('p');note.id='autoscoring-note';note.setAttribute('role','status');note.style.cssText='margin:2px 12px;font-size:13px;color:#82d7e6';
  document.getElementById('connection-status').after(note);note.hidden=true;
  const quick=document.createElement('div');quick.id='camera-game-controls';
- quick.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0';
- quick.innerHTML='<button type="button" id="camera-game-on">Camera aan</button><button type="button" id="camera-game-off">Camera uit</button><span role="status" style="font-size:12px;flex:1;min-width:120px"></span>';
- document.getElementById('game').before(quick);
- for(const b of quick.querySelectorAll('button'))b.style.cssText='min-height:44px;padding:8px 14px';
- quick.querySelector('#camera-game-on').onclick=()=>action(true);
- quick.querySelector('#camera-game-off').onclick=()=>action(false);
+ quick.setAttribute('role','group');quick.setAttribute('aria-label','Camera-invoer');
+ quick.innerHTML='<button type="button" id="camera-game-on" aria-pressed="false">Camera aan</button><button type="button" id="camera-game-off" aria-pressed="false">Camera uit</button>';
+ document.getElementById('top-actions').append(quick);
+ const bind=(element,handler)=>{
+  if(window.DartsAndroid?.isTabletShell&&typeof window.DartsAndroid.bindAction==='function')window.DartsAndroid.bindAction(element,handler);
+  else element.onclick=handler;
+ };
+ bind(quick.querySelector('#camera-game-on'),()=>action(true));
+ bind(quick.querySelector('#camera-game-off'),()=>action(false));
  let latest=null,running=false,changing=false,actionError='';
  const q=id=>document.getElementById(id);
  button.onclick=()=>dialog.showModal();q('autoscoring-close').onclick=()=>dialog.close();
@@ -38,24 +41,22 @@ export function cameraControls(consume){
   }catch(e){actionError=e.message;q('autoscoring-status').textContent=actionError;}
   finally{changing=false;if(latest)paint(latest);}
  }
- q('autoscoring-start').onclick=()=>action(true);q('autoscoring-pause').onclick=()=>action(false);
+ bind(q('autoscoring-start'),()=>action(true));bind(q('autoscoring-pause'),()=>action(false));
  q('autoscoring-record').onchange=()=>action(latest?.enabled||false);
  function paint(data){
   latest=data;
-  quick.hidden=document.getElementById('game').hidden;
-  quick.style.display=quick.hidden?'none':'flex';
-  q('camera-game-on').disabled=changing;
-  q('camera-game-on').textContent=data.enabled?(data.armed?'Camera aan':'Camera hervatten'):'Camera aan';
-  q('camera-game-on').style.background=data.enabled?'#587f34':'#246474';
-  q('camera-game-on').setAttribute('aria-pressed',String(data.enabled));
-  q('camera-game-off').disabled=changing||!data.enabled;
-  quick.querySelector('span').textContent=actionError||data.message;
+  for(const [id,active] of [['camera-game-on',data.enabled],['camera-game-off',!data.enabled]]){
+   q(id).disabled=changing;
+   q(id).setAttribute('aria-pressed',String(active));
+  }
+  q('autoscoring-start').setAttribute('aria-pressed',String(data.enabled));
+  q('autoscoring-pause').setAttribute('aria-pressed',String(!data.enabled));
   if(data.available&&!button.isConnected)document.getElementById('top-actions').append(button);
   q('autoscoring-status').textContent=actionError||(data.connected?'AutoDarts verbonden. ':'AutoDarts niet bereikbaar. ')+data.message+(!canControl()?' Tik op aan of uit; de tablet neemt dan automatisch de bediening over.':'')+(data.captureError?' Opnamen gepauzeerd: '+data.captureError:'');
   q('autoscoring-record').checked=data.recording;
   q('autoscoring-start').disabled=changing;
   q('autoscoring-pause').disabled=changing;q('autoscoring-record').disabled=changing;
-  note.hidden=!data.available;note.textContent='Camera: '+data.message;button.textContent='Camera-invoer op NUC: '+(data.enabled?'aan':'uit');
+  note.hidden=!data.available;note.textContent=actionError||'Camera: '+data.message;button.textContent='Camera-invoer op NUC: '+(data.enabled?'aan':'uit');
  }
  async function poll(){
   if(running)return;running=true;
