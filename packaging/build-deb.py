@@ -42,6 +42,15 @@ Terminal=false
 Categories=Game;Sports;
 ''')
     write('usr/share/doc/dartsapp/CAMERA-INSTALLATIE.txt', Path('packaging/CAMERA-INSTALLATIE.txt').read_text())
+    write('usr/share/applications/dartsapp-display.desktop', '''[Desktop Entry]
+Type=Application
+Name=Schermrichting instellen
+Comment=Landscape of portrait kiezen voor 180 Hitters
+Exec=gnome-control-center display
+Icon=video-display
+Terminal=false
+Categories=Settings;
+''')
     write('usr/lib/dartsapp/.version', version + '\n')
     write('usr/lib/dartsapp/.desktop-platform', 'linux\n')
     write('usr/share/doc/dartsapp/INSTALLER-HELP.txt', Path('packaging/INSTALLER-HELP.txt').read_text())
@@ -51,7 +60,7 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: Axelman8 <noreply@users.noreply.github.com>
-Depends: python3 (>= 3.10), systemd, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates
+Depends: python3 (>= 3.10), systemd, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center
 Recommends: firefox-esr | firefox | chromium | chromium-browser
 Homepage: https://github.com/Axelman8/180-hitters
 Description: 180 Hitters touchscreen darts scoreboard

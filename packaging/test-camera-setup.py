@@ -45,4 +45,5 @@ with tempfile.TemporaryDirectory() as directory:
         setup.shortcuts()
         assert (desktop/'dartsapp.desktop').is_file()
         assert (desktop/'dartsapp-camera.desktop').is_file()
+        assert (desktop/'dartsapp-display.desktop').is_file()
 print('PASS official download flow, repeat install, camera ownership and desktop shortcuts')

@@ -32,7 +32,7 @@ def shortcuts():
     if not desktop or not desktop.is_absolute() or desktop == HOME:
         return
     desktop.mkdir(parents=True, exist_ok=True)
-    for name in ('dartsapp', 'dartsapp-camera'):
+    for name in ('dartsapp', 'dartsapp-camera', 'dartsapp-display'):
         target = desktop / (name + '.desktop')
         shutil.copy2('/usr/share/applications/' + name + '.desktop', target)
         target.chmod(0o755)
@@ -55,6 +55,11 @@ def launch_detector():
 
 def open_game():
     subprocess.Popen(['xdg-open', 'http://127.0.0.1:8765'],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def display_settings():
+    subprocess.Popen(['gnome-control-center', 'display'],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -102,7 +107,7 @@ def main():
     from tkinter import messagebox
     window = tk.Tk()
     window.title('180 Hitters — camera’s instellen')
-    window.geometry('720x760')
+    window.geometry('720x840')
     window.configure(bg='#10232b')
     def label(text, size=13):
         tk.Label(window, text=text, bg='#10232b', fg='white', font=('Sans', size),
@@ -114,6 +119,10 @@ def main():
           'stel jouw bord en camera’s in. Kalibratie hoort bij dit bord; '
           'die wordt niet van een andere NUC overgenomen.')
     status = tk.StringVar(value='Begin met stap 1. Handmatig spelen kan altijd.')
+    tk.Button(window, text='Schermrichting: landscape / portrait', command=display_settings,
+              font=('Sans',14), bg='#246474', fg='white', pady=10).pack(fill='x', padx=28, pady=5)
+    label('Kies in Ubuntu bij Beeldschermen de richting en bevestig Behouden. '
+          'Staat portrait op zijn kop? Kies de andere staande richting. Ubuntu onthoudt je keuze.', 11)
     messages = queue.Queue()
     buttons = []
     def work(fn, success):

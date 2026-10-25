@@ -32,6 +32,14 @@ MOBIEL
 Verbind de telefoon met hetzelfde wifi-netwerk als de NUC en scan de app-QR.
 Dit pakket maakt geen wifi-hotspot of Bluetooth-koppeling aan.
 
+SCHERMRICHTING
+In de wizard staat Schermrichting: landscape / portrait. Dit opent Ubuntu
+Beeldschermen. Selecteer het juiste scherm, kies de richting, klik Toepassen
+en bevestig Behouden. Staat portrait op zijn kop? Kies de andere staande richting.
+Ubuntu slaat de keuze op voor volgende aanmeldingen. Je kunt dit later opnieuw
+openen met het extra bureaubladicoon Schermrichting instellen.
+De installer forceert geen draairichting: die hangt af van hoe het scherm hangt.
+
 UPDATES
 Gebruik Instellingen > Update controleren. De normale Ubuntu-appupdate behoudt
 de camera-wizard, de automatische start en de partijgegevens. AutoDarts heeft

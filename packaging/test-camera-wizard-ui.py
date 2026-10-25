@@ -13,9 +13,9 @@ failures = []
 def inspect():
     try:
         buttons = [w for w in root.winfo_children() if isinstance(w, tk.Button)]
-        assert len(buttons) == 4
+        assert len(buttons) == 5
         assert all(w.winfo_y()+w.winfo_height() <= root.winfo_height() for w in root.winfo_children())
-        buttons[0].invoke()
+        buttons[1].invoke()
     except Exception as e:
         failures.append(repr(e))
     root.after(600, finish)
