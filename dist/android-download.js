@@ -42,10 +42,13 @@ async function renderDownload() {
 if (window.DartsAndroid) {
   action.textContent = 'Verbindingsmodus';
   action.addEventListener('click', () => window.DartsAndroid.chooseMode());
-  const update = document.createElement('button');
-  update.id = 'android-update-action'; update.type = 'button'; update.textContent = 'Update';
-  update.addEventListener('click', () => window.DartsAndroid.checkForUpdate());
-  document.getElementById('top-actions').append(action, update);
+  document.getElementById('top-actions').append(action);
+  if (typeof window.DartsAndroid.checkForUpdate === 'function') {
+    const update = document.createElement('button');
+    update.id = 'android-update-action'; update.type = 'button'; update.textContent = 'Update';
+    update.addEventListener('click', () => window.DartsAndroid.checkForUpdate());
+    document.getElementById('top-actions').append(update);
+  }
   document.getElementById('mobile-dock').hidden = true;
 } else {
   document.body.classList.add('browser-shell');
