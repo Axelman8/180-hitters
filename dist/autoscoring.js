@@ -12,20 +12,20 @@ export function cameraControls(consume){
  checkbox.parentElement.style.cssText='display:flex;gap:12px;align-items:center;margin:14px 0';
  const note=document.createElement('p');note.id='autoscoring-note';note.setAttribute('role','status');note.style.cssText='margin:2px 12px;font-size:13px;color:#82d7e6';
  document.getElementById('connection-status').after(note);note.hidden=true;
- let latest=null,running=false;
+ let latest=null,running=false,actionError='';
  const q=id=>document.getElementById(id);
  button.onclick=()=>dialog.showModal();q('autoscoring-close').onclick=()=>dialog.close();
  async function configure(enabled){
   const r=await fetch('/api/autoscoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled,recording:q('autoscoring-record').checked}),signal:AbortSignal.timeout(4000)});
   const data=await r.json();if(!r.ok)throw Error(data.error||'Camera-instelling niet opgeslagen');paint(data);
  }
- function action(enabled){configure(enabled).catch(e=>q('autoscoring-status').textContent=e.message);}
+ function action(enabled){actionError='';configure(enabled).catch(e=>{actionError=e.message;q('autoscoring-status').textContent=actionError;});}
  q('autoscoring-start').onclick=()=>action(true);q('autoscoring-pause').onclick=()=>action(false);
  q('autoscoring-record').onchange=()=>action(latest?.enabled||false);
  function paint(data){
   latest=data;
   if(data.available&&!button.isConnected)document.getElementById('top-actions').append(button);
-  q('autoscoring-status').textContent=(data.connected?'AutoDarts verbonden. ':'AutoDarts niet bereikbaar. ')+data.message+(!canControl()?' Kies eerst Spelen ? Bediening overnemen om de camera-invoer te bedienen.':'')+(data.captureError?' Opnamen gepauzeerd: '+data.captureError:'');
+  q('autoscoring-status').textContent=actionError||(data.connected?'AutoDarts verbonden. ':'AutoDarts niet bereikbaar. ')+data.message+(!canControl()?' Kies eerst Spelen ? Bediening overnemen om de camera-invoer te bedienen.':'')+(data.captureError?' Opnamen gepauzeerd: '+data.captureError:'');
   q('autoscoring-record').checked=data.recording;
   q('autoscoring-start').disabled=!canControl()||!data.connected;
   q('autoscoring-pause').disabled=!canControl();q('autoscoring-record').disabled=!canControl();

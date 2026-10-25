@@ -157,6 +157,17 @@ with tempfile.TemporaryDirectory() as tmp:
             phone.locator('#autoscoring-start').click()
             wait(lambda:cam()['enabled'] and cam()['armed'])
             phone.locator('#autoscoring-close').click()
+            # Returning to the latest turn may retain the UI navigation marker.
+            result=page.evaluate("""async()=>{
+              const {newMatch}=await import('/engine.js');
+              const {applyCameraEvent}=await import('/autoscoring-rules.js');
+              const m={state:newMatch(['A','B'],501,'double',3,{game:'x01'}),undo:[],future:[],historyNavigation:true};
+              const accepted=applyCameraEvent(m,null,{kind:'dart',hit:{number:20,mult:1}});
+              m.future=[{state:m.state}];let rejected=false;
+              try{applyCameraEvent(m,null,{kind:'dart',hit:{number:20,mult:1}});}catch{rejected=true;}
+              return {hits:accepted.hits.length,rejected};
+            }""")
+            assert result=={'hits':1,'rejected':True},result
             assert not errors,errors
             print('PASS queue idempotency, pre-existing darts, early finish, double-in, camera/phone sync, Cricket/Tactics points, Hitters carry, manual pause')
             b.close()

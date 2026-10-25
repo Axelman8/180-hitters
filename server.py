@@ -416,7 +416,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if type(enabled) is not bool or type(recording) is not bool: raise ValueError()
                         match = current.get('match') or {}
                         if enabled and (match.get('state', {}).get('phase') != 'playing' or match.get('future') or match.get('editTurn') or match.get('pendingTurns')):
-                            return self.reply(409, {'error': 'Start of hervat eerst een partij op de actuele stand.'})
+                            return self.reply(409, {'error': 'Je kijkt terug in de partij. Ga eerst naar de laatste stand of bevestig een correctie voordat je de camera-invoer aanzet.' if match.get('future') or match.get('editTurn') or match.get('pendingTurns') else 'Start eerst een nieuwe partij; deze partij is nog niet gestart of is afgelopen.'})
                         if enabled and draft['value'] and (draft['value'].get('hits') or draft['value'].get('entry')):
                             return self.reply(409, {'error': 'Rond de handmatige invoer eerst af of wis deze.'})
                         if enabled and not camera.connected:

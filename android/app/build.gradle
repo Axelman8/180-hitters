@@ -13,8 +13,8 @@ android {
         applicationId 'nl.axelman8.darts'
         minSdk 26
         targetSdk 35
-        versionCode 45
-        versionName '1.8.18'
+        versionCode 46
+        versionName '1.8.19'
     }
 
     signingConfigs {
@@ -49,4 +49,3 @@ dependencies {
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     implementation 'androidx.core:core:1.15.0'
 }
-

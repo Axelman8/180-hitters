@@ -9,7 +9,7 @@ export function applyCameraEvent(match,draft,event){
   if(hits.length)throw Error('Niet alle darts geregistreerd. Vul ontbrekende darts of Mis handmatig in en hervat daarna.');
   return {match:next,hits:[],closed:false};
  }
- if(state.phase!=='playing'||next.future?.length||next.editTurn||next.pendingTurns?.length||next.historyNavigation)throw Error('Camera gepauzeerd. Ga naar de actuele partijstand en hervat.');
+ if(state.phase!=='playing'||next.future?.length||next.editTurn||next.pendingTurns?.length)throw Error('Camera gepauzeerd. Ga naar de actuele partijstand en hervat.');
  if(draft?.entry)throw Error('Rond de handmatige invoer eerst af.');
  if(hits.length>=3)throw Error('Drie darts staan al klaar. Controleer de beurt.');
  const hit=makeDart(event.hit.number,event.hit.mult);
