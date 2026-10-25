@@ -57,7 +57,7 @@ with tempfile.TemporaryDirectory() as tmp:
     bridge.observe(state([(20,1),(20,1)])|{'numThrows':3,'throws':state([(20,1),(20,1)])['throws']+[{'segment':{'bed':'Outside','number':20,'multiplier':0,'name':'M20'}}]})
     assert bridge.enabled and bridge.connected and len(bridge.pending)==3
     assert bridge.pending[-1]['hit']=={'number':0,'mult':1}
-    bridge.observe(state([(25,3)]));assert not bridge.enabled and bridge.connected
+    bridge.observe(state([(25,3)]));assert bridge.enabled and not bridge.armed and bridge.connected
     assert 'Onbekende camerameting' in bridge.message
     try: dart({'segment':{'number':25,'multiplier':3}});raise AssertionError('Invalid bull accepted')
     except ValueError: pass
@@ -86,6 +86,7 @@ with tempfile.TemporaryDirectory() as tmp:
                 except AssertionError:
                     print('Camera:',cam(),'Browser errors:',errors,flush=True)
                     raise
+                phone.locator('#camera-game-on').wait_for(state='visible')
                 return s
             setup()
             Mock.value=state([(20,3)])
@@ -102,7 +103,29 @@ with tempfile.TemporaryDirectory() as tmp:
             assert get()['match']['state']['players'][1]['remaining']==498
             # Manual correction invalidates the camera queue, no next-player spill.
             assert api.post(url+'/api/draft',data={'revision':get()['revision'],'owner':'test','seq':1,'hits':[],'entry':'6'}).ok
-            assert not cam()['enabled']
+            assert cam()['enabled'] and not cam()['armed']
+            # Clearing manual entry resumes automatically only after an empty board.
+            assert api.post(url+'/api/draft',data={'revision':get()['revision'],'owner':'test','seq':2,'hits':[],'entry':''}).ok
+            assert cam()['enabled'] and not cam()['armed']
+            Mock.value=state([]);wait(lambda:cam()['armed'])
+            Mock.value=state([(20,1),(20,1),(20,1)])
+            wait(lambda:len(get()['match']['state']['history'])==3)
+            assert get()['match']['state']['players'][0]['remaining']==261
+            # Correct the first dart manually; next two camera darts extend that draft.
+            setup()
+            Mock.value=state([(20,1)])
+            wait(lambda:len((get().get('draft') or {}).get('hits',[]))==1)
+            assert api.post(url+'/api/draft',data={'revision':get()['revision'],'owner':'correction','seq':1,'hits':[{'number':19,'mult':1}],'entry':''}).ok
+            assert cam()['enabled'] and cam()['armed']
+            Mock.value=state([(20,1),(20,3),(1,1)])
+            wait(lambda:len(get()['match']['state']['history'])==1)
+            assert get()['match']['state']['players'][0]['remaining']==421
+            # Change match state without toggling cameras: intent follows the new revision.
+            same=get()['match']
+            assert api.post(url+'/api/state',data={'revision':get()['revision'],'match':same}).ok
+            assert cam()['enabled'] and not cam()['armed']
+            Mock.value=state([]);wait(lambda:cam()['armed'])
+            assert json.loads((Path(tmp)/'camera-settings.json').read_text())['enabled'] is True
             # Early finish, extra physical darts are ignored until removal.
             setup(start=40)
             Mock.value=state([(20,2),(20,3),(20,3)])
@@ -140,10 +163,10 @@ with tempfile.TemporaryDirectory() as tmp:
             Mock.value=state([(20,1)])
             wait(lambda:len((get().get('draft') or {}).get('hits',[]))==1)
             Mock.value=state([])
-            wait(lambda:not cam()['enabled'])
-            assert 'Niet alle darts' in cam()['message'],cam()
+            wait(lambda:cam()['enabled'] and not cam()['armed'])
+            assert 'handmatige' in cam()['message'] or 'Niet alle darts' in cam()['message'],cam()
             assert len(get()['match']['state']['history'])==0
-            # Partial camera draft is durable across restart, camera defaults paused.
+            # Partial camera draft is durable; on/off choice is retained separately.
             saved=json.loads((Path(tmp)/'match.json').read_text())
             assert saved['cameraDraft']['hits']==[{'number':20,'mult':1}]
             # Lost ACK retry returns stored receipt without a second revision.
@@ -162,9 +185,18 @@ with tempfile.TemporaryDirectory() as tmp:
             phone.locator('#autoscoring-open').click()
             phone.locator('#autoscoring-pause').click()
             wait(lambda:not cam()['enabled'])
-            phone.locator('#autoscoring-start').click()
-            wait(lambda:cam()['enabled'] and cam()['armed'])
             phone.locator('#autoscoring-close').click()
+            phone.locator('#camera-game-on').click()
+            wait(lambda:cam()['enabled'] and cam()['armed'])
+            phone.locator('#camera-game-off').click()
+            wait(lambda:not cam()['enabled'])
+            phone.locator('#camera-game-on').click()
+            wait(lambda:cam()['enabled'] and cam()['armed'])
+            # A service restart preserves ON and resumes from an empty board.
+            proc.terminate();proc.wait()
+            proc=subprocess.Popen([sys.executable,str(ROOT/'server.py'),'--host','127.0.0.1','--port','8796','--data-file',str(Path(tmp)/'match.json')],env=env,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+            time.sleep(.8)
+            wait(lambda:cam()['enabled'] and cam()['armed'])
             # Returning to the latest turn may retain the UI navigation marker.
             result=page.evaluate("""async()=>{
               const {newMatch}=await import('/engine.js');

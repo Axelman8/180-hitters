@@ -563,7 +563,7 @@ cameraControls(async event=>{
   // A lost response is retried through the server receipt, never guessed locally.
   if(e.name!=='TimeoutError'&&e.name!=='TypeError'){
    message(e.message);
-   try{const s=await (await fetch('/api/autoscoring')).json();await fetch('/api/autoscoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:false,recording:s.recording,reason:e.message})});}catch{}
+   try{const s=await (await fetch('/api/autoscoring')).json();await fetch('/api/autoscoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:s.enabled,recording:s.recording,recover:true,reason:e.message})});}catch{}
   }
  }finally{busy=false;}
 });

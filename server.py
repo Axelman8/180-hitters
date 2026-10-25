@@ -237,8 +237,37 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             os.environ.get('DARTS_AUTODARTS_URL', 'http://127.0.0.1:3180'))
     camera_settings = path.with_name('camera-settings.json')
     try:
-        camera.recording = json.loads(camera_settings.read_text()).get('recording') is True
+        saved_camera = json.loads(camera_settings.read_text())
+        camera.recording = saved_camera.get('recording') is True
+        camera.enabled = saved_camera.get('enabled') is True
     except (OSError, ValueError): pass
+    def camera_context(allow_draft=False):
+        match = current.get('match') or {}
+        value = draft['value'] or {}
+        reason = ''
+        same_visit = False
+        if shared_setup['value'] is not None:
+            reason = 'Camera aan; wacht op het starten van de partij.'
+        elif match.get('state', {}).get('phase') != 'playing':
+            reason = 'Camera aan; wacht op de volgende leg of partij.'
+        elif match.get('future') or match.get('editTurn') or match.get('pendingTurns'):
+            reason = 'Camera aan; rond de correctie af en ga naar de laatste stand.'
+        elif value.get('entry') or value.get('hits'):
+            latest = camera.latest or {}
+            same_visit = bool(allow_draft and not value.get('entry') and value.get('hits')
+                              and latest.get('numThrows') == len(value['hits'])
+                              and latest.get('numThrows') == len(latest.get('throws', [])))
+            if not same_visit:
+                reason = 'Camera aan; bevestig of wis de handmatige beurtinvoer.'
+        return reason, same_visit
+
+    def follow_camera(allow_draft=False):
+        reason, same_visit = camera_context(allow_draft)
+        camera.follow(current['revision'], reason, continue_visit=same_visit)
+
+    camera.resume_blocker = lambda: camera_context()[0]
+
+    follow_camera()
     camera.start()
 
     class Handler(SimpleHTTPRequestHandler):
@@ -414,18 +443,15 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if not self.may_edit(incoming): return
                         enabled, recording = incoming.get('enabled'), incoming.get('recording')
                         if type(enabled) is not bool or type(recording) is not bool: raise ValueError()
-                        match = current.get('match') or {}
-                        if enabled and (match.get('state', {}).get('phase') != 'playing' or match.get('future') or match.get('editTurn') or match.get('pendingTurns')):
-                            return self.reply(409, {'error': 'Je kijkt terug in de partij. Ga eerst naar de laatste stand of bevestig een correctie voordat je de camera-invoer aanzet.' if match.get('future') or match.get('editTurn') or match.get('pendingTurns') else 'Start eerst een nieuwe partij; deze partij is nog niet gestart of is afgelopen.'})
-                        if enabled and draft['value'] and (draft['value'].get('hits') or draft['value'].get('entry')):
-                            return self.reply(409, {'error': 'Rond de handmatige invoer eerst af of wis deze.'})
-                        if enabled and not camera.connected:
-                            return self.reply(503, {'error': 'AutoDarts is niet bereikbaar op de NUC.'})
                         try:
-                            camera.configure(enabled, recording, current['revision'])
+                            if incoming.get('recover') is True:
+                                camera.pause(incoming.get('reason') or 'Camera aan; wacht op een leeg bord.')
+                            else:
+                                camera.configure(enabled, recording, current['revision'])
+                            follow_camera(allow_draft=incoming.get('recover') is not True)
                         except (OSError, URLError):
                             return self.reply(503, {'error': 'AutoDarts kon niet uit stand-by starten. Probeer opnieuw.'})
-                        durable_json(camera_settings, {'recording': recording})
+                        durable_json(camera_settings, {'recording': camera.recording, 'enabled': camera.enabled})
                         reason = incoming.get('reason')
                         if not enabled and isinstance(reason,str): camera.message = reason[:200]
                         return self.reply(200, camera.status())
@@ -462,7 +488,6 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         raise ValueError()
                     with lock:
                         if not self.may_edit(incoming): return
-                        if camera.enabled: camera.pause('Partij overgezet. Hervat camera-invoer met leeg bord.')
                         # Persist receipts with the match so a lost response/retry
                         # cannot replace a match twice, including after restart.
                         receipts = current.get('transfers', {})
@@ -497,6 +522,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         draft.update(value={**pending,'revision':current['revision']} if pending else None,time=time.monotonic())
                         sequences.clear()
                         shared_setup.update(version=shared_setup['version']+1, value=None)
+                        follow_camera()
                         try: prune_backups(backups)
                         except OSError: pass
                         return self.reply(200, {'ok': True, 'backup': backup_id})
@@ -560,8 +586,9 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if not self.may_edit(incoming): return
                         if incoming.get('revision') != current['revision']:
                             return self.reply(409, {'revision': current['revision']})
+                        was_setup = shared_setup['value'] is not None
                         shared_setup.update(version=shared_setup['version']+1, value=value)
-                        if camera.enabled and value is not None: camera.pause('Spelinstellingen geopend. Hervat camera-invoer na het starten.')
+                        if was_setup or value is not None: follow_camera()
                         self.reply(200, shared_setup)
                     return
                 if self.path == '/api/display':
@@ -692,7 +719,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if len(sequences) > 128:
                             sequences.pop(next(iter(sequences)))
                         draft['value'] = {'owner': owner, 'hits': hits, 'entry': entry, 'revision': current['revision']}
-                        if camera.enabled: camera.pause('Handmatige invoer: camera gepauzeerd. Rond de beurt af en hervat.')
+                        follow_camera(allow_draft=True)
                         if current.get('cameraDraft'):
                             current['cameraDraft'] = {}
                             durable_json(path, current)
@@ -730,12 +757,12 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     temporary.replace(path)
                     current.update(updated)
                     shared_setup.update(version=shared_setup['version']+1, value=None)
-                    if camera.enabled: camera.pause('Partij handmatig gewijzigd. Hervat camera-invoer met leeg bord.')
                     restored = match.get('editTurn') or {}
                     hits = restored.get('hits')
                     draft['value'] = {'owner': 'restored-turn', 'hits': hits, 'revision': current['revision']} if hits else None
                     draft['time'] = time.monotonic()
                     sequences.clear()
+                    follow_camera()
                     self.reply(200, current)
             except (ValueError, KeyError, TypeError, AttributeError):
                 self.reply(400, {'error': 'Ongeldige partij'})

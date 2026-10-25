@@ -25,7 +25,8 @@ De controle in stap 6 controleert de softwareverbinding, niet de nauwkeurigheid.
 Houd AutoDarts open, of gebruik de achtergrondservice die AutoDarts aanbiedt.
 Na een volgende desktopaanmelding start de wizard de cameramotor en opent de app.
 Ubuntu aanmelden blijft nodig; dit pakket schakelt wachtwoorden niet uit.
-Bij elke nieuwe start moet je camera-invoer bewust aanzetten met een leeg bord.
+De app onthoudt camera aan/uit. Als camera aan staat, hervat de verwerking na een
+herstart of beurtcorrectie automatisch zodra de partij klaarstaat en het bord leeg is.
 Handmatig spelen blijft mogelijk zonder AutoDarts of camera's.
 
 MOBIEL

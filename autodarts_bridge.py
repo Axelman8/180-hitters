@@ -2,8 +2,8 @@
 
 All scoring queue access uses the host server's match lock. The browser runs the
 existing rules and the server atomically commits its result and event receipt.
-Restart/disconnect always requires a new empty-board observation and explicit
-resume, never replays an uncertain physical visit.
+Restart/disconnect retains the on/off choice but requires a new empty-board
+observation; manual edits rebase the queue without replaying existing darts.
 """
 import json
 import os
@@ -50,6 +50,8 @@ class AutoDartsBridge:
         self.last_sample = None
         self.analysis_status = 'Nog geen vergelijkbare worp'
         self.starting_until = 0
+        self.blocked = ''
+        self.resume_blocker = lambda: ''
 
     def status(self):
         return dict(available=self.available, connected=self.connected,
@@ -57,13 +59,38 @@ class AutoDartsBridge:
                     armed=self.armed, message=self.message,
                     pending=self.pending[0] if self.pending else None,
                     droppedCaptures=self.dropped, captureError=self.capture_error,
-                    analysis=self.analysis_status)
+                    analysis=self.analysis_status, waiting=self.enabled and not self.armed)
 
     def pause(self, reason='Camera-invoer gepauzeerd; controleer de beurt en hervat met leeg bord.'):
-        self.enabled = False
         self.armed = False
+        self.closed = False
+        self.seen = []
         self.pending.clear()
         self.message = reason
+
+    def follow(self, revision, blocked='', continue_visit=False):
+        """Rebase after a manual edit, retaining the user's on/off choice.
+
+        A corrected per-dart draft can continue the same physical visit only
+        when the caller verified its length against the detector snapshot.
+        Committed/manual totals and history changes require a fresh empty board.
+        """
+        self.expected_revision = revision
+        self.blocked = blocked
+        self.pending.clear()
+        self.closed = False
+        self.armed = False
+        self.seen = []
+        if not self.enabled:
+            return
+        self.message = blocked or 'Camera aan; haal de darts uit het bord om verder te spelen.'
+        if continue_visit and not blocked and self.latest and self.latest.get('running'):
+            try:
+                self.seen = [dart(t) for t in self.latest.get('throws', [])]
+                self.armed = True
+                self.message = 'Camera-invoer actief; handmatige correctie overgenomen.'
+            except (ValueError, TypeError, AttributeError):
+                pass
 
     def configure(self, enabled, recording, revision):
         if enabled and self.latest and not self.latest.get('running'):
@@ -79,6 +106,7 @@ class AutoDartsBridge:
         self.closed = False
         self.seen = []
         self.expected_revision = revision
+        self.blocked = ''
         self.message = 'Haal alle darts uit het bord om te beginnen.' if enabled else 'Handmatige invoer'
 
     def push(self, kind, hit=None):
@@ -117,8 +145,15 @@ class AutoDartsBridge:
         empty = n == 0 and value.get('status') == 'Throw'
         if not self.enabled:
             return
+        if self.blocked:
+            self.message = self.blocked
+            return
         if not self.armed:
             if empty:
+                reason = self.resume_blocker()
+                if reason:
+                    self.message = reason
+                    return
                 self.armed = True
                 self.seen = []
                 self.message = 'Camera-invoer actief'
@@ -171,7 +206,7 @@ class AutoDartsBridge:
             except Exception:
                 with self.lock:
                     self.connected = False
-                    if self.enabled: self.pause('Verbinding met AutoDarts verloren. Controleer en hervat.')
+                    if self.enabled: self.pause('Camera aan; verbinding verloren. Herstel volgt automatisch met een leeg bord.')
                 previous = None
             time.sleep(max(.05, .15 - (time.monotonic() - started)))
 

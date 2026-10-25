@@ -11,6 +11,12 @@ let status=null,claiming=false,refreshing=false,failedAutoClaim=false,errorText=
 const button=document.createElement('button');button.id='take-control';button.type='button';
 const note=document.createElement('span');note.id='controller-note';note.setAttribute('role','status');
 export function canControl(){return !remote||(!refreshing&&status?.owner===id);}
+export async function takeControl(){
+ if(canControl())return true;
+ await claim(true);
+ for(let attempt=0;attempt<60&&!canControl();attempt++)await new Promise(resolve=>setTimeout(resolve,100));
+ return canControl();
+}
 function paint(){
  if(!remote)return;
  const own=canControl();
@@ -60,7 +66,7 @@ if(remote){
  // Read-only on followers, while device menus and the takeover button remain usable.
  for(const type of ['click','keydown','submit','change','input'])document.addEventListener(type,event=>{
   if(canControl()||!event.isTrusted)return;
-  if(event.target.closest('#autoscoring-open,#autoscoring-dialog,#desktop-update-action,#desktop-update-dialog,#transfer-dialog,#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock'))return;
+  if(event.target.closest('#camera-game-controls,#autoscoring-open,#autoscoring-dialog,#desktop-update-action,#desktop-update-dialog,#transfer-dialog,#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock'))return;
   event.preventDefault();event.stopImmediatePropagation();
  },true);
 }
