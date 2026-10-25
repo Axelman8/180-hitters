@@ -180,12 +180,10 @@ with tempfile.TemporaryDirectory() as tmp:
             assert api.post(url+'/api/autoscoring',data={'enabled':True,'recording':False}).ok
             wait(lambda:cam()['armed'])
             assert Mock.value['running'] is True
-            # The controlling phone can operate the NUC camera switch from Settings.
-            phone.locator('#header-menu summary').filter(has_text='Instellingen').click()
-            phone.locator('#autoscoring-open').click()
-            phone.locator('#autoscoring-pause').click()
+            # Only the header contains camera controls; Settings has no duplicate.
+            assert phone.locator('#autoscoring-open').count()==0
+            phone.locator('#camera-game-off').click()
             wait(lambda:not cam()['enabled'])
-            phone.locator('#autoscoring-close').click()
             phone.locator('#camera-game-on').click()
             wait(lambda:cam()['enabled'] and cam()['armed'])
             phone.locator('#camera-game-off').click()
