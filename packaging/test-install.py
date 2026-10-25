@@ -68,14 +68,15 @@ if sys.argv[1] == 'windows':
     assert data.is_file() and 'Installer Test' in data.read_text()
     assert not (target / 'DartsApp.exe').exists()
 else:
+    subprocess.run(['sudo', 'apt-get', 'update', '-qq'], check=True)
     package = './DartsApp-Ubuntu-Debian-amd64.deb'
-    subprocess.run(['sudo', 'apt-get', 'install', '-y', package], check=True)
+    subprocess.run(['sudo', 'apt-get', 'install', '--no-install-recommends', '-y', package], check=True)
     wait()
     write_and_check()
     subprocess.run(['sudo', 'dpkg', '-i', package], check=True)
     wait()
     assert b'Installer Test' in request('/api/players')
-    subprocess.run(['sudo', 'apt-get', 'install', '-y', './180-Hitters-NUC-Cameras-Ubuntu-amd64.deb'], check=True)
+    subprocess.run(['sudo', 'apt-get', 'install', '--no-install-recommends', '-y', './180-Hitters-NUC-Cameras-Ubuntu-amd64.deb'], check=True)
     # dpkg explicitly replaces an equal-version base package with camera edition.
     subprocess.run(['sudo', 'dpkg', '-i', './180-Hitters-NUC-Cameras-Ubuntu-amd64.deb'], check=True)
     wait()
