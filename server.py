@@ -318,7 +318,10 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 platform = marker.read_text().strip() if marker.exists() else ''
                 version_file = root / '.version'
                 return self.reply(200, {'platform': platform if platform in ('windows', 'linux') else None,
-                                       'version': version_file.read_text().strip() if version_file.exists() else ''})
+                                       'version': version_file.read_text().strip() if version_file.exists() else '',
+                                       'nativeUpdate': (root / 'nuc-update.py').is_file() and (
+                                           (root == Path('/usr/lib/dartsapp') and Path('/lib/systemd/system/dartsapp-update.path').is_file()) or
+                                           (root == Path.home() / '.local/share/oche-darts' and (Path.home() / '.config/systemd/user/oche-darts-update.service').is_file()))})
             if route == '/api/network/control':
                 try:
                     self.reply(200, network_control('status'))
@@ -334,8 +337,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     except (RuntimeError, OSError, subprocess.SubprocessError) as error:
                         self.reply(503, {'error': str(error)})
             elif route == '/api/update/status':
-                if self.headers.get('X-Darts-Control') != 'd7c87006c31f4da2a4348eeb05b59c8b':
-                    self.reply(403, {'error': 'Alleen beschikbaar vanuit de Android-app.'})
+                if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                    self.reply(403, {'error': 'Alleen beschikbaar op de NUC of vanuit de gekoppelde app.'})
                 else:
                     status_path = root / 'update-status.json'
                     value = json.loads(status_path.read_text(encoding='utf-8')) if status_path.exists() else {
@@ -546,8 +549,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         venue.clear(); venue.update(updated)
                         return self.reply(200, venue)
                 if self.path == '/api/update/check':
-                    if self.headers.get('X-Darts-Control') != 'd7c87006c31f4da2a4348eeb05b59c8b':
-                        return self.reply(403, {'error': 'Alleen beschikbaar vanuit de Android-app.'})
+                    if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                        return self.reply(403, {'error': 'Alleen beschikbaar op de NUC of vanuit de gekoppelde app.'})
                     if incoming != {}:
                         return self.reply(400, {'error': 'Ongeldig updateverzoek.'})
                     if root == Path('/usr/lib/dartsapp') and Path('/run/systemd/system').is_dir():
@@ -561,7 +564,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                                                 capture_output=True, text=True, timeout=4)
                         if result.returncode:
                             return self.reply(503, {'error': 'NUC-update kon niet worden gestart.'})
-                    return self.reply(202, {'message': 'NUC controleert GitHub op updates.'})
+                    return self.reply(202, {'message': 'NUC controleert GitHub op updates.', 'requestedAt': int(time.time())})
                 if self.path == '/api/system/action':
                     if self.headers.get('X-Darts-Control') != 'd7c87006c31f4da2a4348eeb05b59c8b':
                         return self.reply(403, {'error': 'Alleen beschikbaar vanuit de Android-app.'})

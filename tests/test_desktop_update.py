@@ -51,6 +51,29 @@ with tempfile.TemporaryDirectory() as tmp:
             page.goto('http://127.0.0.1:8789/')
             page.wait_for_timeout(300)
             expect(page.locator('#desktop-update-action')).to_have_count(0)
+            page.close()
+            for result in ('current','updated','error','start-error'):
+                page=browser.new_page()
+                installation={'platform':None,'version':'1.8.28','nativeUpdate':True}
+                page.route('**/api/desktop-installation',lambda route:route.fulfill(json=installation))
+                calls=[]
+                def start_native(route):
+                    calls.append(route.request.method)
+                    route.fulfill(status=503 if result=='start-error' else 202,json={'requestedAt':100,'message':'Updates controleren','error':'Update kon niet worden gestart'})
+                page.route('**/api/update/check',start_native)
+                def native_status(route):
+                    if result=='updated':installation['version']='1.8.29'
+                    route.fulfill(json={'time':101,'state':result,'version':installation['version'],'message':{'current':'NUC is actueel','updated':'NUC is bijgewerkt','error':'Download mislukt'}.get(result,'')})
+                page.route('**/api/update/status',native_status)
+                page.goto('http://127.0.0.1:8789/')
+                page.get_by_text('Instellingen',exact=True).click()
+                page.locator('#desktop-update-action').click()
+                assert not calls
+                page.get_by_text('Controleren en bijwerken',exact=True).click()
+                if result=='updated':expect(page.locator('#desktop-update-dialog')).not_to_be_visible(timeout=10000)
+                else:expect(page.locator('#desktop-update-dialog')).to_contain_text({'current':'NUC is actueel','error':'Download mislukt','start-error':'Update kon niet worden gestart'}[result])
+                assert calls==['POST'],calls
+                page.close()
             browser.close()
         print('Desktop updater UI: both platforms, up-to-date, missing asset, offline and NUC hiding passed.')
     finally:
