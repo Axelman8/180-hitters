@@ -45,14 +45,14 @@ function explodeMissedTarget(turn,state){
  for(let i=0;i<12;i++){
   const spark=document.createElement('i');spark.className='lives-fail-spark';
   const angle=i*Math.PI/6;
-  spark.style.setProperty('--spark-x',`${Math.cos(angle)*145}px`);
-  spark.style.setProperty('--spark-y',`${Math.sin(angle)*145}px`);
+  spark.style.setProperty('--spark-x',`${Math.cos(angle)*180}px`);
+  spark.style.setProperty('--spark-y',`${Math.sin(angle)*180}px`);
   spark.style.setProperty('--spark-turn',`${i*30}deg`);burst.append(spark);
  }
  const title=document.createElement('strong');title.textContent='Doel gemist';
  const detail=document.createElement('span');
- detail.textContent=turn.lives===0?'Geen levens meer':turn.target===20?'?1 leven':`Terug naar ${turn.nextTarget===25?'Bull':(state.livesMode==='triple'?'T':'D')+turn.nextTarget}`;
+ detail.textContent=turn.target===20?'-1 leven':`Terug naar ${turn.nextTarget===25?'Bull':(state.livesMode==='triple'?'T':'D')+turn.nextTarget}`;
  burst.append(title,detail);effect.append(burst);document.body.append(effect);
  if(effect.showPopover)effect.showPopover();
- timer=setTimeout(clearEffect,1150);
+ timer=setTimeout(clearEffect,2000);
 }
