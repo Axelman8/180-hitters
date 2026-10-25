@@ -88,5 +88,7 @@ body.remote-control[data-mobile-layout].cricket-game #cricket-note{display:none}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys button{min-height:36px;padding:2px;font-size:18px}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys #tactics-remove,
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys #tactics-confirm{font-size:11px;line-height:1.05}
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys #tactics-remove{grid-column:1;grid-row:4}
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys #tactics-confirm{grid-column:4;grid-row:4}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #toggle-history{min-height:36px;padding:3px;font-size:11px}
 }
