@@ -21,6 +21,8 @@ def dart(value):
         return {'number': 0, 'mult': 1}
     segment = value.get('segment', {})
     number, mult = segment.get('number'), segment.get('multiplier')
+    if segment.get('bed') == 'Outside' and type(mult) is int and mult == 0 and type(number) is int and number in (0, *range(1,21),25):
+        return {'number': 0, 'mult': 1}
     if segment.get('name') in ('MISS', 'Miss', 'MIS', 'OFF') or number == 0:
         return {'number': 0, 'mult': 1}
     if type(number) is not int or number not in (*range(1, 21), 25) or type(mult) is not int or mult not in (1, 2, 3) or (number == 25 and mult == 3):
@@ -121,7 +123,11 @@ class AutoDartsBridge:
                 self.seen = []
                 self.message = 'Camera-invoer actief'
             return
-        hits = [dart(t) for t in throws]
+        try:
+            hits = [dart(t) for t in throws]
+        except (ValueError, TypeError, AttributeError):
+            self.pause('Onbekende camerameting. Controleer de dart handmatig en hervat.')
+            return
         if empty and self.seen:
             # Keep removal ordered behind all still pending darts.
             self.push('removed')

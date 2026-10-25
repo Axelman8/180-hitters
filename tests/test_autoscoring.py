@@ -51,6 +51,14 @@ with tempfile.TemporaryDirectory() as tmp:
     bridge.observe(state([]));bridge.acknowledge(bridge.pending[0]['id'],2)
     assert not bridge.closed
     assert dart({'bouncer':True})=={'number':0,'mult':1}
+    for n in range(1,21):
+        assert dart({'segment':{'bed':'Outside','number':n,'multiplier':0,'name':'M'+str(n)}})=={'number':0,'mult':1}
+    bridge.configure(True,False,2);bridge.observe(state([]))
+    bridge.observe(state([(20,1),(20,1)])|{'numThrows':3,'throws':state([(20,1),(20,1)])['throws']+[{'segment':{'bed':'Outside','number':20,'multiplier':0,'name':'M20'}}]})
+    assert bridge.enabled and bridge.connected and len(bridge.pending)==3
+    assert bridge.pending[-1]['hit']=={'number':0,'mult':1}
+    bridge.observe(state([(25,3)]));assert not bridge.enabled and bridge.connected
+    assert 'Onbekende camerameting' in bridge.message
     try: dart({'segment':{'number':25,'multiplier':3}});raise AssertionError('Invalid bull accepted')
     except ValueError: pass
 
