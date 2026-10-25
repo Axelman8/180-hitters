@@ -75,6 +75,17 @@ else:
     subprocess.run(['sudo', 'dpkg', '-i', package], check=True)
     wait()
     assert b'Installer Test' in request('/api/players')
+    subprocess.run(['sudo', 'apt-get', 'install', '-y', './180-Hitters-NUC-Cameras-Ubuntu-amd64.deb'], check=True)
+    # dpkg explicitly replaces an equal-version base package with camera edition.
+    subprocess.run(['sudo', 'dpkg', '-i', './180-Hitters-NUC-Cameras-Ubuntu-amd64.deb'], check=True)
+    wait()
+    assert Path('/etc/dartsapp/camera-enabled').exists()
+    assert Path('/usr/share/applications/dartsapp-camera.desktop').exists()
+    assert Path('/etc/xdg/autostart/dartsapp-camera.desktop').exists()
+    subprocess.run(['sudo', 'dpkg', '-i', package], check=True)
+    wait()
+    assert Path('/etc/dartsapp/camera-enabled').exists(), 'Camera autostart lost after normal update'
+    assert b'Installer Test' in request('/api/players')
     subprocess.run(['sudo', 'apt-get', 'remove', '-y', 'dartsapp'], check=True)
     subprocess.run(['sudo', 'test', '-f', '/var/lib/dartsapp/match-players.json'], check=True)
     assert subprocess.run(['systemctl', 'is-active', '--quiet', 'dartsapp']).returncode != 0

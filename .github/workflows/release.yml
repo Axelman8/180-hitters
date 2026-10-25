@@ -96,7 +96,11 @@ jobs:
       - name: Build and test Debian installer
         run: |
           python3 packaging/build-deb.py "${GITHUB_REF_NAME#v}"
+          python3 packaging/build-deb.py "${GITHUB_REF_NAME#v}" --cameras
+          python3 packaging/test-camera-setup.py
           python3 packaging/test-install.py linux
+          xvfb-run -a /usr/bin/python3 packaging/test-camera-wizard-ui.py
+          sha256sum 180-Hitters-NUC-Cameras-Ubuntu-amd64.deb > 180-Hitters-NUC-Cameras-Ubuntu-amd64.deb.sha256
           sha256sum DartsApp-Ubuntu-Debian-amd64.deb > DartsApp-Ubuntu-Debian-amd64.deb.sha256
 
       - uses: actions/download-artifact@v4
@@ -124,6 +128,9 @@ jobs:
           DartsApp-Setup-Windows-x64.exe.sha256
           DartsApp-Ubuntu-Debian-amd64.deb
           DartsApp-Ubuntu-Debian-amd64.deb.sha256
+          180-Hitters-NUC-Cameras-Ubuntu-amd64.deb
+          180-Hitters-NUC-Cameras-Ubuntu-amd64.deb.sha256
+          packaging/CAMERA-INSTALLATIE.txt
           packaging/INSTALLER-HELP.txt
           --title "180 Hitters ${GITHUB_REF_NAME}"
           --generate-notes

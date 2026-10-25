@@ -7,6 +7,7 @@ import sys
 import tempfile
 
 version = sys.argv[1]
+camera_bundle = '--cameras' in sys.argv[2:]
 assert re.fullmatch(r'\d+\.\d+\.\d+', version)
 with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
     root = Path(tmp)
@@ -21,6 +22,26 @@ with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
     shutil.copy2('server.py', root / 'usr/lib/dartsapp/server.py')
     for name in ('autodarts_bridge.py', 'camera_research.py'):
         shutil.copy2(name, root / 'usr/lib/dartsapp' / name)
+    shutil.copy2('packaging/camera-setup.py', root / 'usr/lib/dartsapp/camera-setup.py')
+    write('usr/share/icons/hicolor/scalable/apps/dartsapp.svg', Path('packaging/dartsapp.svg').read_text())
+    write('usr/bin/dartsapp-camera', '#!/bin/sh\nexec python3 /usr/lib/dartsapp/camera-setup.py "$@"\n', True)
+    write('etc/xdg/autostart/dartsapp-camera.desktop', '''[Desktop Entry]
+Type=Application
+Name=180 Hitters camera-opstart
+Exec=dartsapp-camera --autostart
+Terminal=false
+X-GNOME-Autostart-enabled=true
+''')
+    write('usr/share/applications/dartsapp-camera.desktop', '''[Desktop Entry]
+Type=Application
+Name=Camera's instellen
+Comment=180 Hitters camera-installatie en kalibratie
+Exec=dartsapp-camera
+Icon=dartsapp
+Terminal=false
+Categories=Game;Sports;
+''')
+    write('usr/share/doc/dartsapp/CAMERA-INSTALLATIE.txt', Path('packaging/CAMERA-INSTALLATIE.txt').read_text())
     write('usr/lib/dartsapp/.version', version + '\n')
     write('usr/lib/dartsapp/.desktop-platform', 'linux\n')
     write('usr/share/doc/dartsapp/INSTALLER-HELP.txt', Path('packaging/INSTALLER-HELP.txt').read_text())
@@ -30,7 +51,7 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: Axelman8 <noreply@users.noreply.github.com>
-Depends: python3 (>= 3.10), systemd, adduser, xdg-utils
+Depends: python3 (>= 3.10), systemd, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates
 Recommends: firefox-esr | firefox | chromium | chromium-browser
 Homepage: https://github.com/Axelman8/180-hitters
 Description: 180 Hitters touchscreen darts scoreboard
@@ -55,19 +76,20 @@ PrivateTmp=true
 [Install]
 WantedBy=multi-user.target
 ''')
-    write('DEBIAN/postinst', '''#!/bin/sh
+    write('DEBIAN/postinst', ('''#!/bin/sh
 set -e
 if [ "$1" = configure ]; then
   if ! getent passwd dartsapp >/dev/null; then
     adduser --system --group --home /var/lib/dartsapp --no-create-home dartsapp
   fi
+  @CAMERA_ENABLE@
   if [ -d /run/systemd/system ]; then
     systemctl daemon-reload
     systemctl enable dartsapp.service
     systemctl restart dartsapp.service
   fi
 fi
-''', True)
+''').replace('@CAMERA_ENABLE@', 'mkdir -p /etc/dartsapp; touch /etc/dartsapp/camera-enabled' if camera_bundle else ':'), True)
     write('DEBIAN/prerm', '''#!/bin/sh
 set -e
 if [ -d /run/systemd/system ]; then
@@ -82,13 +104,13 @@ if [ -d /run/systemd/system ]; then systemctl daemon-reload; fi
     write('usr/bin/dartsapp', '#!/bin/sh\nexec xdg-open http://127.0.0.1:8765\n', True)
     write('usr/share/applications/dartsapp.desktop', '''[Desktop Entry]
 Type=Application
-Name=DartsApp
+Name=180 Hitters
 Comment=180 Hitters dartscorebord
 Exec=dartsapp
-Icon=applications-games
+Icon=dartsapp
 Terminal=false
 Categories=Game;Sports;
 StartupNotify=false
 ''')
     subprocess.run(['dpkg-deb', '--root-owner-group', '--build', tmp,
-                    'DartsApp-Ubuntu-Debian-amd64.deb'], check=True)
+                    '180-Hitters-NUC-Cameras-Ubuntu-amd64.deb' if camera_bundle else 'DartsApp-Ubuntu-Debian-amd64.deb'], check=True)
