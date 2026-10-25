@@ -142,6 +142,10 @@ def install(bundle, version):
 
 
 def main():
+    try:
+        (Path('/var/lib/dartsapp') / 'update.request').unlink(missing_ok=True)
+    except OSError:
+        pass
     lock_path = ROOT / '.update.lock'
     with lock_path.open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -165,8 +169,12 @@ def main():
                 write_status(state='installing', version=latest, message=f'NUC-versie {latest} installeren…')
                 install(bundle, latest)
             write_status(state='updated', version=latest, message=f'NUC is bijgewerkt naar {latest}.')
-            subprocess.run(['systemctl', '--user', 'restart', 'oche-darts-bluetooth.service'], check=False)
-            subprocess.run(['systemctl', '--user', 'restart', 'oche-darts.service'], check=False)
+            if ROOT == Path('/usr/lib/dartsapp') and Path('/run/systemd/system').is_dir():
+                subprocess.run(['systemctl', 'restart', 'dartsapp-bluetooth.service'], check=False)
+                subprocess.run(['systemctl', 'restart', 'dartsapp.service'], check=False)
+            else:
+                subprocess.run(['systemctl', '--user', 'restart', 'oche-darts-bluetooth.service'], check=False)
+                subprocess.run(['systemctl', '--user', 'restart', 'oche-darts.service'], check=False)
         except Exception as error:
             write_status(state='error', message=f'NUC-update mislukt: {error}')
             raise

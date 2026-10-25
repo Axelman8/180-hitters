@@ -524,10 +524,17 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         return self.reply(403, {'error': 'Alleen beschikbaar vanuit de Android-app.'})
                     if incoming != {}:
                         return self.reply(400, {'error': 'Ongeldig updateverzoek.'})
-                    result = subprocess.run(['systemctl', '--user', 'start', '--no-block', 'oche-darts-update.service'],
-                                            capture_output=True, text=True, timeout=4)
-                    if result.returncode:
-                        return self.reply(503, {'error': 'NUC-update kon niet worden gestart.'})
+                    if root == Path('/usr/lib/dartsapp') and Path('/run/systemd/system').is_dir():
+                        # The Debian/NUC install runs as the restricted dartsapp
+                        # account. A systemd path unit safely elevates only the
+                        # signed updater instead of granting general sudo access.
+                        request = path.parent / 'update.request'
+                        request.write_text(str(int(time.time())) + '\n', encoding='utf-8')
+                    else:
+                        result = subprocess.run(['systemctl', '--user', 'start', '--no-block', 'oche-darts-update.service'],
+                                                capture_output=True, text=True, timeout=4)
+                        if result.returncode:
+                            return self.reply(503, {'error': 'NUC-update kon niet worden gestart.'})
                     return self.reply(202, {'message': 'NUC controleert GitHub op updates.'})
                 if self.path == '/api/system/action':
                     if self.headers.get('X-Darts-Control') != 'd7c87006c31f4da2a4348eeb05b59c8b':

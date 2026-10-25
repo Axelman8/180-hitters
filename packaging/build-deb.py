@@ -20,7 +20,7 @@ with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
 
     shutil.copytree('dist', root / 'usr/lib/dartsapp/dist')
     shutil.copy2('server.py', root / 'usr/lib/dartsapp/server.py')
-    for name in ('autodarts_bridge.py', 'camera_research.py'):
+    for name in ('autodarts_bridge.py', 'camera_research.py', 'bluetooth-bridge.py', 'nuc-update.py'):
         shutil.copy2(name, root / 'usr/lib/dartsapp' / name)
     shutil.copy2('packaging/camera-setup.py', root / 'usr/lib/dartsapp/camera-setup.py')
     write('usr/share/icons/hicolor/scalable/apps/dartsapp.svg', Path('packaging/dartsapp.svg').read_text())
@@ -60,7 +60,7 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: Axelman8 <noreply@users.noreply.github.com>
-Depends: python3 (>= 3.10), systemd, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center
+Depends: python3 (>= 3.10), python3-dbus, python3-gi, bluez, systemd, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center
 Recommends: firefox-esr | firefox | chromium | chromium-browser
 Homepage: https://github.com/Axelman8/180-hitters
 Description: 180 Hitters touchscreen darts scoreboard
@@ -85,6 +85,39 @@ PrivateTmp=true
 [Install]
 WantedBy=multi-user.target
 ''')
+    write('lib/systemd/system/dartsapp-bluetooth.service', '''[Unit]
+Description=180 Hitters Bluetooth bridge
+Wants=bluetooth.service
+Requires=dartsapp.service
+After=bluetooth.service dartsapp.service
+[Service]
+Type=simple
+Environment=DARTS_CONTROL_TOKEN=d7c87006c31f4da2a4348eeb05b59c8b
+ExecStartPre=/usr/bin/bluetoothctl power on
+ExecStartPre=/usr/bin/bluetoothctl pairable on
+ExecStartPre=/usr/bin/bluetoothctl discoverable on
+ExecStart=/usr/bin/python3 /usr/lib/dartsapp/bluetooth-bridge.py
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=multi-user.target
+''')
+    write('lib/systemd/system/dartsapp-update.service', '''[Unit]
+Description=Update 180 Hitters from GitHub
+After=network-online.target
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/rm -f /var/lib/dartsapp/update.request
+ExecStart=/usr/bin/python3 /usr/lib/dartsapp/nuc-update.py
+''')
+    write('lib/systemd/system/dartsapp-update.path', '''[Unit]
+Description=Watch for a 180 Hitters update request
+[Path]
+PathExists=/var/lib/dartsapp/update.request
+Unit=dartsapp-update.service
+[Install]
+WantedBy=multi-user.target
+''')
     write('DEBIAN/postinst', ('''#!/bin/sh
 set -e
 if [ "$1" = configure ]; then
@@ -94,15 +127,20 @@ if [ "$1" = configure ]; then
   @CAMERA_ENABLE@
   if [ -d /run/systemd/system ]; then
     systemctl daemon-reload
-    systemctl enable dartsapp.service
+    systemctl enable dartsapp.service dartsapp-bluetooth.service dartsapp-update.path
     systemctl restart dartsapp.service
+    systemctl restart dartsapp-bluetooth.service
+    systemctl restart dartsapp-update.path
   fi
 fi
 ''').replace('@CAMERA_ENABLE@', 'mkdir -p /etc/dartsapp; touch /etc/dartsapp/camera-enabled' if camera_bundle else ':'), True)
     write('DEBIAN/prerm', '''#!/bin/sh
 set -e
 if [ -d /run/systemd/system ]; then
-  case "$1" in remove|deconfigure) systemctl stop dartsapp.service; systemctl disable dartsapp.service ;; esac
+  case "$1" in remove|deconfigure)
+    systemctl stop dartsapp-update.path dartsapp-bluetooth.service dartsapp.service
+    systemctl disable dartsapp-update.path dartsapp-bluetooth.service dartsapp.service
+  ;; esac
 fi
 ''', True)
     write('DEBIAN/postrm', '''#!/bin/sh
