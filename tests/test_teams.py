@@ -47,6 +47,10 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator("#players .player").first.locator("strong").first).to_have_text("Rood")
             expect(page.locator("#players .player").first.locator(".team-members span")).to_have_text(["Anita", "Bert", "Dylan", "Judith", "Leen"])
             expect(page.locator("#players .player").first.locator(".team-members .current")).to_have_text("Anita")
+            member_size = page.locator("#players .player").first.locator(".team-members span").first.evaluate(
+                "element => parseFloat(getComputedStyle(element).fontSize)"
+            )
+            assert member_size >= 24, f"NUC team member text is too small: {member_size}px"
             state = page.request.get("http://127.0.0.1:8791/api/state").json()["match"]["state"]
             assert state["teamMode"] is True
             assert state["players"][0]["members"] == ["Anita", "Bert", "Dylan", "Judith", "Leen"]

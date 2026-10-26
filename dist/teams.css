@@ -12,6 +12,8 @@
 .team-members span.current{border-color:var(--accent);background:#29413a;color:#d5ff73;font-weight:800}
 body.remote-control .team-members{justify-content:center;font-size:11px;gap:3px 5px}
 body.remote-control .team-members span{padding:2px 5px}
+body.screen-fit .team-members{font-size:clamp(24px,2.7vw,36px);line-height:1.25;gap:10px 14px;margin-top:10px}
+body.screen-fit .team-members span{padding:7px 14px;border-width:2px}
 @media(max-width:600px){.team-editor{padding:10px}.team-member-row{grid-template-columns:minmax(0,1fr) 48px}.team-members{font-size:11px}}
 .wizard-team{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:14px}
 .wizard-team>legend{padding:0 8px;color:var(--accent);font-size:19px;font-weight:850}
