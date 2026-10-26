@@ -10,10 +10,10 @@
 .team-members{display:flex;flex-wrap:wrap;gap:5px 8px;grid-column:1/-1;margin-top:5px;color:#cbd8dc;font-size:clamp(12px,1.4vw,18px)}
 .team-members span{padding:3px 8px;border:1px solid #47606c;border-radius:999px;background:#172a34}
 .team-members span.current{border-color:var(--accent);background:#29413a;color:#d5ff73;font-weight:800}
-body.remote-control .team-members{justify-content:center;font-size:clamp(15px,4vw,19px);line-height:1.25;gap:6px 8px}
-body.remote-control .team-members span{padding:4px 8px}
-body.screen-fit .team-members{font-size:clamp(32px,3.8vw,48px);line-height:1.2;gap:12px 16px;margin-top:12px}
-body.screen-fit .team-members span{padding:8px 16px;border-width:2px}
+body.remote-control .team-members{justify-content:center;font-size:clamp(30px,8vw,38px);line-height:1.15;gap:8px 10px}
+body.remote-control .team-members span{padding:6px 10px}
+body.screen-fit .team-members{font-size:clamp(64px,7.6vw,96px);line-height:1.1;gap:14px 18px;margin-top:14px}
+body.screen-fit .team-members span{padding:10px 18px;border-width:3px}
 @media(max-width:600px){.team-editor{padding:10px}.team-member-row{grid-template-columns:minmax(0,1fr) 48px}.team-members{font-size:11px}}
 .wizard-team{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:14px}
 .wizard-team>legend{padding:0 8px;color:var(--accent);font-size:19px;font-weight:850}
