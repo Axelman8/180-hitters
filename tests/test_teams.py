@@ -20,7 +20,8 @@ with tempfile.TemporaryDirectory() as tmp:
         time.sleep(1)
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
-            page = browser.new_page(viewport={"width": 600, "height": 1024})
+            # The shared web bundle is also the full-screen Linux NUC UI.
+            page = browser.new_page(viewport={"width": 1080, "height": 1920})
             page.goto("http://127.0.0.1:8791/")
             page.get_by_role("button", name="X01 Van je startscore").click()
             page.get_by_role("button", name="Kies spelers").click()

@@ -167,6 +167,15 @@ The NUC maintains the venue player list. The Android app maintains a separate pe
 - names are synchronized and deduplicated case-insensitively;
 - removing a saved name does not modify an active match.
 
+## Temporary teams
+
+For a new match, choose **Teams** instead of individual players. A match can
+contain two to four temporary teams, with one to five members per team. Members
+can be selected from the combined player lists or entered manually. The team
+shares one score, while 180 Hitters automatically rotates and highlights the
+active member. Temporary teams belong only to that match and do not change the
+saved venue or personal player lists.
+
 ## Winner screen and local artwork
 
 The winner screen displays “Game shot and the match”, match statistics, animations, and an optional local photo banner in the upper third of the screen. Third-party venue artwork is intentionally excluded from the public repository when redistribution rights are unclear. Files named `winner-stage*.jpg`, `winner-stage*.jpeg`, and `winner-trophy.jpg` in the installed `dist` directory are preserved by NUC updates.
