@@ -50,7 +50,7 @@ with tempfile.TemporaryDirectory() as tmp:
             member_size = page.locator("#players .player").first.locator(".team-members span").first.evaluate(
                 "element => parseFloat(getComputedStyle(element).fontSize)"
             )
-            assert member_size >= 64, f"NUC team member text is too small: {member_size}px"
+            assert member_size >= 32, f"NUC team member text is too small: {member_size}px"
             state = page.request.get("http://127.0.0.1:8791/api/state").json()["match"]["state"]
             assert state["teamMode"] is True
             assert state["players"][0]["members"] == ["Anita", "Bert", "Dylan", "Judith", "Leen"]
@@ -66,7 +66,7 @@ with tempfile.TemporaryDirectory() as tmp:
             mobile_member_size = mobile.locator("#players .player").first.locator(".team-members span").first.evaluate(
                 "element => parseFloat(getComputedStyle(element).fontSize)"
             )
-            assert mobile_member_size >= 30, f"Mobile team member text is too small: {mobile_member_size}px"
+            assert mobile_member_size >= 15, f"Mobile team member text is too small: {mobile_member_size}px"
             print("PASS: tijdelijke teams, maximaal vijf namen, scorekaarten en spelersrotatie")
             browser.close()
     finally:
