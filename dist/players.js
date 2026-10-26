@@ -28,7 +28,8 @@ function lists(data){
  document.dispatchEvent(new CustomEvent('players-lists-updated',{detail:{venuePlayers,mobilePlayers}}));
 }
 function choices(){
- for(const label of $('names').children){
+ for(const label of $('names').querySelectorAll('label')){
+  if(label.dataset.teamName!==undefined)continue;
   const input=label.querySelector('input');if(!input)continue;
   let select=label.querySelector('select');
   if(!select){select=document.createElement('select');select.setAttribute('aria-label',label.firstChild.textContent+' kiezen uit spelerslijst');label.insertBefore(select,input);select.onchange=()=>{if(select.value){input.value=select.value;input.dispatchEvent(new Event('input',{bubbles:true}));}};}
@@ -91,5 +92,6 @@ if(addNucButton)addNucButton.onclick=()=>{const name=$('player-name').value.trim
 if(addTabletButton)addTabletButton.onclick=()=>{const name=$('player-name').value.trim();if(name)save('add',name,'tablet');};
 for(const id of ['category-match','category-training'])$(id).addEventListener('click',refresh);
 new MutationObserver(choices).observe($('names'),{childList:true});
+document.addEventListener('team-members-changed',choices);
 document.addEventListener('venue-profile-ready',()=>{choices();renderLists();});
 refresh();

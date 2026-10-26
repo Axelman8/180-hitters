@@ -1,0 +1,23 @@
+#names.team-mode{display:grid;gap:16px}
+.team-editor{margin:0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#10212a}
+.team-editor legend{padding:0 8px;color:var(--accent);font-size:18px;font-weight:800}
+.team-editor label{display:block;margin:0 0 10px}
+.team-members-editor{display:grid;gap:8px}
+.team-member-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}
+.team-member-row label{margin:0}
+.team-member-remove{min-width:48px;min-height:48px;padding:8px 12px}
+.team-member-add{width:100%;margin-top:10px}
+.team-members{display:flex;flex-wrap:wrap;gap:5px 8px;grid-column:1/-1;margin-top:5px;color:#cbd8dc;font-size:clamp(12px,1.4vw,18px)}
+.team-members span{padding:3px 8px;border:1px solid #47606c;border-radius:999px;background:#172a34}
+.team-members span.current{border-color:var(--accent);background:#29413a;color:#d5ff73;font-weight:800}
+body.remote-control .team-members{justify-content:center;font-size:11px;gap:3px 5px}
+body.remote-control .team-members span{padding:2px 5px}
+@media(max-width:600px){.team-editor{padding:10px}.team-member-row{grid-template-columns:minmax(0,1fr) 48px}.team-members{font-size:11px}}
+.wizard-team{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:14px}
+.wizard-team>legend{padding:0 8px;color:var(--accent);font-size:19px;font-weight:850}
+.wizard-team-name{display:grid;gap:6px;margin-bottom:10px}
+.wizard-team-name input{min-height:48px;font-size:18px}
+.wizard-team-slots{margin-bottom:8px}
+.wizard-team-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wizard-team-actions button{min-height:48px}
+@media(max-width:520px){.wizard-team-actions{grid-template-columns:1fr}}

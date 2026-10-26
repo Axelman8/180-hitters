@@ -302,18 +302,25 @@ function render(){
  }
  $('setup').hidden=true;$('game').hidden=false;document.body.classList.toggle('cricket-game',cricket());document.body.classList.toggle('training-game',!!state.training121||state.game==='bobs27');setMode(modeOverride||preferredMode);buildKeys();
  const current=state.players[state.active],format=state.matchMode==='off'?'VRIJ SPELEN':`EERSTE TOT ${state.target} ${state.matchMode==='sets'?'SETS':'LEGS'}`;
+ const currentMember=current.members?.length?current.members[state.history.filter(turn=>turn.leg===state.leg&&turn.name===current.name).length%current.members.length]:null;
  $('match-label').textContent=cricket()?`${state.game.toUpperCase()} / ${scoringNames[state.scoring]} / ${format}`:`${state.start} / ${namesOfRules[state.inMode]}-IN / ${namesOfRules[state.out]}-OUT / ${format}`;
  $('match-label').textContent+=` / RONDE ${state.round}${state.tiebreak?' (VERLENGING)':''}`;
  if(state.game==='gotcha')$('match-label').textContent=`TRAINING / GOTCHA / PRECIES ${state.start} / ${namesOfRules[state.out]}-OUT`;
  if(state.game==='bobs27')$('match-label').textContent="TRAINING / BOB'S 27 / D1 T/M D20 + BULL";
  if(state.training121)$('match-label').textContent='TRAINING / 121 / NEGEN DARTS / DUBBEL-UIT';
  $('turn-label').hidden=state.phase==='playing'&&state.game!=='bobs27';
- $('turn-label').textContent=state.phase==='playing'?(state.game==='bobs27'?`${current.name}: richt op ${state.bobsTarget===25?'Bull':'D'+state.bobsTarget}`:`${current.name} is aan de beurt`):(state.training121||state.game==='bobs27')?'Training afgerond':'Leg afgelopen';
+ $('turn-label').textContent=state.phase==='playing'?(state.game==='bobs27'?`${current.name}: richt op ${state.bobsTarget===25?'Bull':'D'+state.bobsTarget}`:currentMember?`${currentMember} is aan de beurt voor ${current.name}`:`${current.name} is aan de beurt`):(state.training121||state.game==='bobs27')?'Training afgerond':'Leg afgelopen';
  const legSummary=matchSummary(state);
  $('players').replaceChildren(...state.players.map((p,i)=>{
   const card=document.createElement('article');card.className='player'+(state.active===i?' active':'')+(p.bobsEliminated?' bobs-eliminated':'');
   card.innerHTML='<div class="player-top"><strong></strong><span class="badge"></span><div class="match-score"></div></div><div class="remaining"></div><div class="stats player-statistics"></div>';
   card.querySelector('strong').textContent=p.name;card.querySelector('.badge').textContent=p.bobsEliminated?'AFGEVALLEN':state.active===i?'● AAN DE BEURT':'';
+  if(p.members?.length){
+   const members=document.createElement('div');members.className='team-members';
+   const next=p.members[state.history.filter(turn=>turn.leg===state.leg&&turn.name===p.name).length%p.members.length];
+   members.replaceChildren(...p.members.map(name=>{const member=document.createElement('span');member.textContent=name;if(state.active===i&&name===next)member.className='current';return member;}));
+   card.querySelector('.player-top').after(members);
+  }
   const matchScores=state.game==='bobs27'?[]:state.training121?[[p.trainingLevel||state.start,'NIVEAU'],[p.trainingBest||state.trainingBest,'BESTE']]:state.matchMode==='sets'?[[p.sets,'SETS'],[p.setLegs,'LEGS (SET)']]:[[p.legs,'LEGS']];
   card.querySelector('.match-score').replaceChildren(...matchScores.map(([value,label])=>{
    const item=document.createElement('span'),number=document.createElement('b'),caption=document.createElement('small');
@@ -522,10 +529,47 @@ function showResult(){
 $('continue').onclick=async()=>{$('result-dialog').close();if(state.phase==='won')showSetup();else{state=nextLeg(state);if(!await persist())return;resetInput();render();}};
 $('result-undo').onclick=()=>{$('result-dialog').close();$('undo').click();};
 $('finish-match').onclick=async()=>{state={...state,phase:'won',winner:null};if(!await persist())return;$('result-dialog').close();showSetup();};
-function starterOptions(){const previous=$('starter').value;$('starter').replaceChildren(...[...$('names').querySelectorAll('input')].map((input,i)=>{const o=document.createElement('option');o.value=i;o.textContent=input.value.trim()||`Speler ${i+1}`;return o;}));$('starter').value=Number(previous)<Number($('count').value)?previous:'0';if(!$('starter').value)$('starter').value='0';}
-function names(){const old=[...$('names').querySelectorAll('input')].map(i=>i.value);$('names').replaceChildren(...Array.from({length:Number($('count').value)},(_,i)=>{const label=document.createElement('label');label.textContent=`Speler ${i+1}`;const input=document.createElement('input');input.value=old[i]||`Speler ${i+1}`;input.maxLength=24;input.required=true;input.autocomplete='off';input.oninput=starterOptions;label.append(input);return label;}));starterOptions();}
+const teamMode=()=>$('participant-mode').value==='teams'&&$('game-type').value!=='training';
+function participantNameInputs(){return teamMode()?[...$('names').querySelectorAll('input[data-team-name]')]:[...$('names').children].filter(element=>element.tagName==='LABEL').map(label=>label.querySelector('input'));}
+function starterOptions(){const previous=$('starter').value;$('starter').replaceChildren(...participantNameInputs().map((input,i)=>{const o=document.createElement('option');o.value=i;o.textContent=input.value.trim()||(teamMode()?`Team ${i+1}`:`Speler ${i+1}`);return o;}));$('starter').value=Number(previous)<Number($('count').value)?previous:'0';if(!$('starter').value)$('starter').value='0';}
+function renumberMembers(container){
+ [...container.children].forEach((row,index)=>{row.querySelector('label').firstChild.textContent=`Naam ${index+1}`;row.querySelector('.team-member-remove').disabled=container.children.length===1;});
+ const add=container.closest('.team-editor')?.querySelector('.team-member-add');if(add)add.disabled=container.children.length>=5;
+}
+function addTeamMember(container,value=''){
+ if(container.children.length>=5)return;
+ const row=document.createElement('div');row.className='team-member-row';
+ const label=document.createElement('label');label.dataset.playerName='';label.append(document.createTextNode(`Naam ${container.children.length+1}`));
+ const input=document.createElement('input');input.dataset.memberName='';input.value=value;input.maxLength=24;input.required=true;input.autocomplete='off';label.append(input);
+ const remove=document.createElement('button');remove.type='button';remove.className='team-member-remove';remove.textContent='×';remove.setAttribute('aria-label','Naam uit team verwijderen');remove.onclick=()=>{if(container.children.length>1){row.remove();renumberMembers(container);}};
+ row.append(label,remove);container.append(row);renumberMembers(container);document.dispatchEvent(new Event('team-members-changed'));
+}
+function names(){
+ const count=Number($('count').value);
+ const oldTeams=[...$('names').querySelectorAll('.team-editor')].map(team=>({name:team.querySelector('input[data-team-name]')?.value||'',members:[...team.querySelectorAll('input[data-member-name]')].map(input=>input.value)}));
+ const oldIndividuals=[...$('names').children].filter(element=>element.tagName==='LABEL').map(label=>label.querySelector('input')?.value||'');
+ $('names').classList.toggle('team-mode',teamMode());$('names').replaceChildren();
+ if(teamMode()){
+  for(let i=0;i<count;i++){
+   const saved=oldTeams[i]||{},team=document.createElement('fieldset');team.className='team-editor';
+   const legend=document.createElement('legend');legend.textContent=`Team ${i+1}`;
+   const nameLabel=document.createElement('label');nameLabel.dataset.teamName='';nameLabel.append(document.createTextNode('Teamnaam'));
+   const teamName=document.createElement('input');teamName.dataset.teamName='';teamName.value=saved.name||`Team ${i+1}`;teamName.maxLength=24;teamName.required=true;teamName.autocomplete='off';teamName.oninput=starterOptions;nameLabel.append(teamName);
+   const members=document.createElement('div');members.className='team-members-editor';
+   const add=document.createElement('button');add.type='button';add.className='team-member-add';add.textContent='Naam toevoegen';add.onclick=()=>addTeamMember(members);
+   team.append(legend,nameLabel,members,add);$('names').append(team);
+   for(const value of (saved.members?.length?saved.members:['','']).slice(0,5))addTeamMember(members,value);
+  }
+ }else{
+  for(let i=0;i<count;i++){const label=document.createElement('label');label.dataset.playerName='';label.append(document.createTextNode(`Speler ${i+1}`));const input=document.createElement('input');input.value=oldIndividuals[i]||`Speler ${i+1}`;input.maxLength=24;input.required=true;input.autocomplete='off';input.oninput=starterOptions;label.append(input);$('names').append(label);}
+ }
+ starterOptions();
+}
 function settings(){
  const training=$('game-type').value==='training',gotcha=training&&$('training-type').value==='gotcha',bobs=training&&$('training-type').value==='bobs27',x=$('game-type').value==='x01';
+ if(training&&$('participant-mode').value==='teams'){$('participant-mode').value='individual';names();}
+ $('participant-mode-label').hidden=training;
+ $('count-label').textContent=teamMode()?'Aantal teams':'Aantal spelers';
  document.querySelectorAll('[data-x01]').forEach(el=>el.hidden=!x);
  $('game-type').closest('label').hidden=training;
  $('scoring-label').hidden=x||training;
@@ -533,17 +577,17 @@ function settings(){
  $('gotcha-target-label').hidden=!gotcha;$('gotcha-out-label').hidden=!gotcha;
  $('training-label').hidden=!training;$('training-help').hidden=!training;
  $('training-help').textContent=training&&$('training-type').value==='tenlives'?'Hitters Challenge: Doubles of Triples van 20 t/m 10, daarna Bull (50). Raak: resterende pogingen plus 3. Mis je alle pogingen, dan ??n doel terug of op 20 ??n leven kwijt; daarna de volgende speler.':gotcha?'Gotcha: 2 tot 4 spelers beginnen op 0. Tel per pijl op naar de gekozen doelscore. Kies Straight-out, Double-out of Master-out. Gelijk aan een tegenstander? Die gaat naar 0. Te hoog, een ongeldige finish of 1 punt over bij Double/Master-out is bust: je eigen score gaat terug naar het begin van de beurt; eerdere Gotcha-treffers blijven staan.':bobs?"Bob's 27: 1 tot 4 spelers. Iedereen gooit drie pijlen op D1 t/m D20 en daarna Bull. Iedere treffer telt de dubbelwaarde erbij. Geen treffer trekt die waarde af. Bij 0 of lager valt die speler af.":'121: 1 tot 4 spelers, elk met een eigen niveau. Per speler een poging van maximaal negen darts, daarna de volgende speler. Dubbel-uit. Gelukt: +1 plus overgebleven darts. Niet gelukt: -1, minimaal 121. Een bust verbruikt de rest van je beurt.';
- $('count').querySelector('option[value="1"], option:first-child').disabled=gotcha;
+ $('count').querySelector('option[value="1"], option:first-child').disabled=gotcha||teamMode();
  for(const id of ['match-mode','max-rounds','count','starter'])$(id).closest('label').hidden=training&&!['count','starter'].includes(id);
  document.querySelector('.setup-help:not(#training-help)').hidden=training;
  $('set-legs-label').hidden=training||$('match-mode').value!=='sets';
  $('target-label').hidden=training||$('match-mode').value==='off';
  $('target-text').textContent=$('match-mode').value==='sets'?'Sets nodig om te winnen':'Legs nodig om te winnen';
- if(gotcha&&Number($('count').value)<2){$('count').value='2';names();}
+ if((gotcha||teamMode())&&Number($('count').value)<2){$('count').value='2';names();}
 
 }
 
-$('training-type').onchange=settings;$('game-type').onchange=settings;$('match-mode').onchange=settings;$('count').onchange=names;names();settings();$('settings').onclick=()=>{if(state&&state.phase!=='won'){if(!$('new-match-dialog').open)$('new-match-dialog').showModal();}else showSetup();};
+$('training-type').onchange=settings;$('game-type').onchange=settings;$('match-mode').onchange=settings;$('participant-mode').onchange=()=>{if(teamMode()&&Number($('count').value)<2)$('count').value='2';names();settings();};$('count').onchange=names;names();settings();$('settings').onclick=()=>{if(state&&state.phase!=='won'){if(!$('new-match-dialog').open)$('new-match-dialog').showModal();}else showSetup();};
 $('new-match-cancel').onclick=()=>$('new-match-dialog').close();
 $('new-match-confirm').onclick=()=>{$('new-match-dialog').close();showSetup();};$('cancel').onclick=()=>{editingCurrentMatch=false;setupCopy(false);render();};
 
@@ -569,8 +613,16 @@ function editCurrentMatch(){
  $('match-mode').value=state.matchMode||'legs';selectValue('legs',state.target);
  selectValue('set-legs',state.legsPerSet||3);selectValue('max-rounds',state.maxRounds||0);
  $('lives-mode').value=state.livesMode||'double';
+ $('participant-mode').value=state.teamMode?'teams':'individual';
  $('count').value=String(state.players.length);names();
- [...$('names').querySelectorAll('input')].forEach((input,index)=>input.value=state.players[index].name);
+ if(state.teamMode){
+  [...$('names').querySelectorAll('.team-editor')].forEach((team,index)=>{
+   team.querySelector('input[data-team-name]').value=state.players[index].name;
+   const container=team.querySelector('.team-members-editor');container.replaceChildren();
+   for(const member of (state.players[index].members||[]).slice(0,5))addTeamMember(container,member);
+   if(!container.children.length)addTeamMember(container,'');
+  });
+ }else participantNameInputs().forEach((input,index)=>input.value=state.players[index].name);
  starterOptions();$('starter').value=String(state.starter);
  $('category-match').setAttribute('aria-pressed',String(!training));
  $('category-training').setAttribute('aria-pressed',String(training));
@@ -579,15 +631,19 @@ function editCurrentMatch(){
 window.DartsTabletMatchEditor={open:editCurrentMatch};
 
 $('setup-form').onsubmit=async e=>{
- e.preventDefault();const players=[...$('names').querySelectorAll('input')].map(i=>i.value.trim()).filter(Boolean);if(players.length!==Number($('count').value))return;
+ e.preventDefault();
+ const teams=teamMode()?[...$('names').querySelectorAll('.team-editor')].map(team=>({name:team.querySelector('input[data-team-name]').value.trim(),members:[...team.querySelectorAll('input[data-member-name]')].map(input=>input.value.trim()).filter(Boolean)})):[];
+ const players=teamMode()?teams.map(team=>team.name):participantNameInputs().map(input=>input.value.trim()).filter(Boolean);
+ if(players.length!==Number($('count').value)||teams.some(team=>!team.name||team.members.length<1||team.members.length>5)){$('team-validation').hidden=false;$('team-validation').textContent='Geef ieder team een naam en voeg per team 1 tot maximaal 5 spelers toe.';return;}$('team-validation').hidden=true;
  const gotcha=$('game-type').value==='training'&&$('training-type').value==='gotcha',bobs=$('game-type').value==='training'&&$('training-type').value==='bobs27';
  const proposed=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
+ proposed.teamMode=teamMode();if(proposed.teamMode)proposed.players=proposed.players.map((player,index)=>({...player,members:teams[index].members}));
  if(editingCurrentMatch){
-  const compatible=state.game===proposed.game&&state.start===proposed.start&&state.players.length===proposed.players.length&&!!state.training121===!!proposed.training121&&(state.livesMode||'double')===(proposed.livesMode||'double')&&state.starter===proposed.starter;
+  const compatible=state.game===proposed.game&&state.start===proposed.start&&state.players.length===proposed.players.length&&!!state.training121===!!proposed.training121&&(state.livesMode||'double')===(proposed.livesMode||'double')&&state.starter===proposed.starter&&!!state.teamMode===!!proposed.teamMode;
   if(!compatible&&!confirm('Deze structurele wijziging kan niet op de bestaande scorestand worden toegepast. De partij blijft in hetzelfde scherm, maar scores, legs en geschiedenis beginnen opnieuw. Doorgaan?'))return;
   if(compatible){
    const renamed={};state.players.forEach((player,index)=>{renamed[player.name]=players[index];});
-   state={...state,game:proposed.game,inMode:proposed.inMode,out:proposed.out,scoring:proposed.scoring,matchMode:proposed.matchMode,target:proposed.target,legsPerSet:proposed.legsPerSet,bull:proposed.bull,maxRounds:proposed.maxRounds,livesMode:proposed.livesMode,players:state.players.map((player,index)=>({...player,name:players[index],opened:proposed.inMode==='single'?true:player.opened})),history:state.history.map(turn=>({...turn,name:renamed[turn.name]||turn.name}))};
+   state={...state,game:proposed.game,inMode:proposed.inMode,out:proposed.out,scoring:proposed.scoring,matchMode:proposed.matchMode,target:proposed.target,legsPerSet:proposed.legsPerSet,bull:proposed.bull,maxRounds:proposed.maxRounds,livesMode:proposed.livesMode,teamMode:proposed.teamMode,players:state.players.map((player,index)=>({...player,name:players[index],members:proposed.players[index].members,opened:proposed.inMode==='single'?true:player.opened})),history:state.history.map(turn=>({...turn,name:renamed[turn.name]||turn.name}))};
   }else{
    state=proposed;undo=[];future=[];pendingTurns=[];pendingReason='';editingPending=false;historyNavigation=false;
   }
