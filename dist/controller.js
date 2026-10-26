@@ -3,11 +3,12 @@ const params=new URLSearchParams(location.search);
 const localHost=['127.0.0.1','localhost','::1','[::1]'].includes(location.hostname);
 const remote=window.DartsAndroid?.isLocalMode?.()!==true&&
  (!!window.DartsAndroid||params.get('remote')==='1'||!localHost);
+const tabletShell=window.DartsAndroid?.isTabletShell===true;
 const originalFetch=window.fetch.bind(window);
 let id;
 try{id=sessionStorage.getItem('darts.controller');}catch{}
 if(!id){id=Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);try{sessionStorage.setItem('darts.controller',id);}catch{}}
-let status=null,claiming=false,refreshing=false,failedAutoClaim=false,errorText='';
+let status=null,claiming=false,refreshing=false,failedAutoClaim=false,lastTabletAutoClaim=0,errorText='';
 const button=document.createElement('button');button.id='take-control';button.type='button';
 const note=document.createElement('span');note.id='controller-note';note.setAttribute('role','status');
 export function canControl(){return !remote||(!refreshing&&status?.owner===id);}
@@ -20,14 +21,18 @@ export async function takeControl(){
 function paint(){
  if(!remote)return;
  const own=canControl();
- button.textContent=own?'Bediening op deze telefoon':'Bediening overnemen';
- button.disabled=claiming||own;note.textContent=errorText||(own?'Scorebediening actief':status?'Meekijken · bediening via Spelen':'Bediening controleren…');
+ button.textContent=own?(tabletShell?'Bediening gekoppeld':'Bediening op deze telefoon'):'Bediening overnemen';
+ button.disabled=claiming||own;
+ note.textContent=errorText||(own?'Scorebediening actief':status?(tabletShell?'Meekijken - bediening via Verbindingsmodus':'Meekijken - bediening via Spelen'):'Bediening controleren...');
  document.body.classList.toggle('controller-viewer',!own);
 }
 export function updateControl(value){
  if(!remote||!value)return;
  status=value;paint();
- if(!status.owner&&!claiming&&!failedAutoClaim)void claim(false);
+ // De dedicated tablet neemt de bediening over zodra Bluetooth of wifi de
+ // NUC werkelijk bereikt. Een korte wachttijd voorkomt herhaalde claims.
+ if(tabletShell&&status.owner!==id&&!claiming&&Date.now()-lastTabletAutoClaim>5000){lastTabletAutoClaim=Date.now();void claim(true);}
+ else if(!status.owner&&!claiming&&!failedAutoClaim)void claim(false);
 }
 async function claim(takeover){
  if(claiming)return;claiming=true;errorText='';paint();
@@ -40,13 +45,18 @@ async function claim(takeover){
    refreshing=true;
    document.dispatchEvent(new Event('controller-refresh'));
   }
- }catch{failedAutoClaim=true;errorText='Overname niet bevestigd; probeer opnieuw via Spelen.';}
+ }catch{failedAutoClaim=true;errorText=tabletShell?'Overname niet bevestigd; probeer opnieuw via Verbindingsmodus.':'Overname niet bevestigd; probeer opnieuw via Spelen.';}
  finally{claiming=false;paint();}
 }
 export function controllerRefreshed(){refreshing=false;paint();}
 if(remote){
- document.getElementById('top-actions').append(button);
- document.getElementById('connection-status').after(note);
+ if(tabletShell){
+  // Verbindingsmodus haalt deze verborgen houder naar zijn eigen paneel.
+  const host=document.createElement('div');host.id='tablet-control-host';host.hidden=true;host.append(button,note);document.body.append(host);
+ }else{
+  document.getElementById('top-actions').append(button);
+  document.getElementById('connection-status').after(note);
+ }
  note.style.cssText='display:block;text-align:center;font-size:12px;padding:3px 8px;color:#82d7e6';
  button.onclick=()=>void claim(true);
  paint();

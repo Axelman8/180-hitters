@@ -88,7 +88,7 @@ async function persist(keepModeOverride=false,restoredTurn=null){
  try{
   const res=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,match:snapshot()}),signal:AbortSignal.timeout(5000)});
   const data=await res.json();
-  if(res.status===423){restore(confirmed);resetInput();render();message('Een andere telefoon bedient de partij. Kies Bediening overnemen onder Spelen.');return false;}
+  if(res.status===423){restore(confirmed);resetInput();render();message(window.DartsAndroid?.isTabletShell?'Een ander apparaat bedient de partij. Kies Bediening overnemen onder Verbindingsmodus.':'Een andere telefoon bedient de partij. Kies Bediening overnemen onder Spelen.');return false;}
   if(res.status===409){receive(data);connection(true,connectedLabel);message('Een ander apparaat heeft de partij gewijzigd. Controleer de stand en voer je beurt opnieuw in.');return false;}
   if(!res.ok)throw Error(data.error||'Opslaan mislukt');
   if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
