@@ -39,6 +39,7 @@ function render(){
  const content=el('div',undefined,'wizard-content');root.append(content);
  if(step===0){
   content.append(el('p','Kies een spel om te beginnen.','wizard-hint'));
+  if(document.body.classList.contains('editing-current-match'))content.append(el('p','Je past de huidige partij aan. De app behoudt de stand waar dat technisch mogelijk is en waarschuwt vóór een wijziging waarvoor de score opnieuw moet beginnen.','wizard-info'));
   for(const category of ['Wedstrijd','Training']){
    content.append(el('h2',category));const tiles=el('div',undefined,'wizard-games');
    for(const [id,name,description,cat] of games.filter(g=>g[3]===category)){
@@ -48,7 +49,7 @@ function render(){
   }
  }else if(step===1){
   content.append(el('p',games.find(g=>g[0]===selected)?.[1]+' · tik op een tegel om te kiezen','wizard-hint'));
-  const main=[['lives-mode','Doubles of Triples'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set']];
+  const main=[['lives-mode','Doubles of Triples'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
   for(const [id,title] of main){const group=options(id,title);if(group)content.append(group);}
   if(selected==='tenlives')content.append(el('p','Iedereen begint met 10 levens en 3 pogingen op 20. Raak: resterende pijlen + 3 naar het volgende doel. Pogingen op: ??n doel terug; alleen op 20 kost dit een leven. Dan wisselt de speler. Bull (50) wint.','wizard-info'));
   if(selected==='121')content.append(el('p','Negen darts om uit te gooien. Je niveau begint bij 121.','wizard-info'));
@@ -76,7 +77,7 @@ function render(){
  const actions=el('div',undefined,'wizard-actions');
  actions.append(button(step?'← Terug':'Terug naar partij',()=>step?move(step-1):$('cancel').click(),'wizard-back'));
  if(!step)actions.firstChild.hidden=$('cancel').hidden;
- if(step)actions.append(button(step===2?'Start partij →':'Kies spelers →',()=>{
+ if(step)actions.append(button(step===2?(document.body.classList.contains('editing-current-match')?'Wijzigingen toepassen →':'Start partij →'):'Kies spelers →',()=>{
   if(step===1){move(2);return;}
   if(names().some(i=>!i.value.trim())){root.querySelector('.wizard-custom input')?.focus();return;}
   remember();$('setup-form').requestSubmit();
@@ -89,6 +90,7 @@ async function refreshRoster(){try{const r=await fetch('/api/players',{cache:'no
 document.addEventListener('players-lists-updated',event=>applyRosters(event.detail));
 document.addEventListener('venue-profile-ready',()=>{if(step===2)render();});
 new MutationObserver(()=>{if(applying)return;if(!$('setup').hidden){step=0;render();refreshRoster();}else{localSetupOwner=false;queueSetup();}}).observe($('setup'),{attributes:true,attributeFilter:['hidden']});
+document.addEventListener('tablet-edit-match-open',event=>{if(event.detail?.selected&&games.some(game=>game[0]===event.detail.selected))selected=event.detail.selected;step=0;render();refreshRoster();});
 try{const saved=JSON.parse(localStorage.getItem('darts.setup.preferences'));if(saved){for(const id of fields)if(saved.values?.[id]&&[...$(id).options].some(o=>o.value===saved.values[id]))change(id,saved.values[id]);if(games.some(g=>g[0]===saved.selected))chooseGame(saved.selected);}}catch{}
 render();refreshRoster();
 

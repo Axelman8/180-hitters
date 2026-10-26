@@ -26,7 +26,7 @@ function renderHistoryMenu(){
 }
 $('toggle-history').onclick=()=>{historyOpen=!historyOpen;try{localStorage.setItem('axelman8.historyOpen',String(historyOpen));}catch{}renderHistoryMenu();};
 renderHistoryMenu();
-let state=null,undo=[],future=[],pendingTurns=[],pendingReason='',editingPending=false,historyNavigation=false,entry='',dartList=[],multiplier=1,mode='total',preferredMode='total',modeOverride=null,editTurn=null,gotchaRule='end',resetTargetsOpen=false;
+let state=null,undo=[],future=[],pendingTurns=[],pendingReason='',editingPending=false,historyNavigation=false,entry='',dartList=[],multiplier=1,mode='total',preferredMode='total',modeOverride=null,editTurn=null,gotchaRule='end',resetTargetsOpen=false,editingCurrentMatch=false;
 const cricket=()=>state&&['cricket','tactics'].includes(state.game);
 const totalAllowed=()=>!!state&&!['bobs27','tenlives'].includes(state.game);
 function renderLivesGame(){renderLives(state,{dart:hit=>commit({trainingHit:hit}),misses:count=>commit({trainingMisses:count}),undo:()=>$('undo').click(),redo:()=>goForward(),canUndo:undo.length>0,canRedo:future.length>0,toggle:()=>$('toggle-input').click()});}
@@ -227,12 +227,23 @@ function setMode(m){
  $('visit-mode-note').hidden=!(cricket()&&mode==='total');
 }
 
-function showSetup(){document.querySelector('main').scrollTop=0;window.scrollTo(0,0);$('setup').hidden=false;$('game').hidden=true;$('cancel').hidden=!state;$('setup-form').hidden=true;$('category-cancel').hidden=!state;for(const id of ['category-match','category-training'])$(id).setAttribute('aria-pressed','false');}
+function setupCopy(editing){
+ document.body.classList.toggle('editing-current-match',editing);
+ const title=$('setup').querySelector('h1'),submit=$('setup-form').querySelector('button[type="submit"]');
+ title.textContent=editing?'Partij-instellingen aanpassen':'Tijd voor een potje darts.';
+ submit.textContent=editing?'Wijzigingen toepassen':'Start partij';
+ let note=$('edit-match-note');
+ if(!note){note=document.createElement('p');note.id='edit-match-note';note.className='muted';$('setup-form').prepend(note);}
+ note.hidden=!editing;
+ note.textContent='Alle instellingen zijn aanpasbaar. Compatibele wijzigingen behouden de stand. Bij een ander speltype, een andere beginscore, een ander spelersaantal of een andere starter vraagt de app eerst toestemming om de scorestand opnieuw te beginnen.';
+}
+function showSetup(){editingCurrentMatch=false;setupCopy(false);document.querySelector('main').scrollTop=0;window.scrollTo(0,0);$('setup').hidden=false;$('game').hidden=true;$('cancel').hidden=!state;$('setup-form').hidden=true;$('category-cancel').hidden=!state;for(const id of ['category-match','category-training'])$(id).setAttribute('aria-pressed','false');}
 function chooseCategory(training){
  $('game-type').value=training?'training':$('game-type').value==='training'?'x01':$('game-type').value;
  $('setup-form').hidden=false;$('category-cancel').hidden=true;
  $('category-match').setAttribute('aria-pressed',String(!training));$('category-training').setAttribute('aria-pressed',String(training));
  settings();
+ document.dispatchEvent(new CustomEvent('tablet-edit-match-open',{detail:{selected:training?(state.training121?'121':state.game):state.game}}));
 }
 $('category-match').onclick=()=>chooseCategory(false);$('category-training').onclick=()=>chooseCategory(true);$('category-cancel').onclick=()=>render();
 function buildKeys(){
@@ -534,12 +545,56 @@ function settings(){
 
 $('training-type').onchange=settings;$('game-type').onchange=settings;$('match-mode').onchange=settings;$('count').onchange=names;names();settings();$('settings').onclick=()=>{if(state&&state.phase!=='won'){if(!$('new-match-dialog').open)$('new-match-dialog').showModal();}else showSetup();};
 $('new-match-cancel').onclick=()=>$('new-match-dialog').close();
-$('new-match-confirm').onclick=()=>{$('new-match-dialog').close();showSetup();};$('cancel').onclick=render;
+$('new-match-confirm').onclick=()=>{$('new-match-dialog').close();showSetup();};$('cancel').onclick=()=>{editingCurrentMatch=false;setupCopy(false);render();};
+
+function selectValue(id,value){
+ const select=$(id),text=String(value);
+ if(![...select.options].some(option=>option.value===text)){
+  const option=document.createElement('option');option.value=text;option.textContent=text;select.append(option);
+ }
+ select.value=text;
+}
+function editCurrentMatch(){
+ if(!state)return;
+ editingCurrentMatch=true;setupCopy(true);
+ document.querySelector('main').scrollTop=0;window.scrollTo(0,0);
+ $('setup').hidden=false;$('game').hidden=true;$('setup-form').hidden=false;
+ $('cancel').hidden=false;$('category-cancel').hidden=true;
+ const training=!!state.training121||['gotcha','bobs27','tenlives'].includes(state.game);
+ $('game-type').value=training?'training':state.game;
+ if(training)$('training-type').value=state.training121?'121':state.game==='tenlives'?'tenlives':state.game;
+ selectValue('start',state.start);selectValue('gotcha-target',state.start);
+ $('in-mode').value=state.inMode||'single';$('out').value=state.out||'double';$('gotcha-out').value=state.out||'single';
+ $('bull-mode').value=state.bull||'25/50';$('scoring').value=state.scoring||'standard';
+ $('match-mode').value=state.matchMode||'legs';selectValue('legs',state.target);
+ selectValue('set-legs',state.legsPerSet||3);selectValue('max-rounds',state.maxRounds||0);
+ $('lives-mode').value=state.livesMode||'double';
+ $('count').value=String(state.players.length);names();
+ [...$('names').querySelectorAll('input')].forEach((input,index)=>input.value=state.players[index].name);
+ starterOptions();$('starter').value=String(state.starter);
+ $('category-match').setAttribute('aria-pressed',String(!training));
+ $('category-training').setAttribute('aria-pressed',String(training));
+ settings();
+}
+window.DartsTabletMatchEditor={open:editCurrentMatch};
+
 $('setup-form').onsubmit=async e=>{
  e.preventDefault();const players=[...$('names').querySelectorAll('input')].map(i=>i.value.trim()).filter(Boolean);if(players.length!==Number($('count').value))return;
  const gotcha=$('game-type').value==='training'&&$('training-type').value==='gotcha',bobs=$('game-type').value==='training'&&$('training-type').value==='bobs27';
- state=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
- undo=[];future=[];pendingTurns=[];pendingReason='';editingPending=false;historyNavigation=false;mode=totalAllowed()?preferredMode:'dart';if(!await persist())return;resetInput();render();
+ const proposed=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
+ if(editingCurrentMatch){
+  const compatible=state.game===proposed.game&&state.start===proposed.start&&state.players.length===proposed.players.length&&!!state.training121===!!proposed.training121&&(state.livesMode||'double')===(proposed.livesMode||'double')&&state.starter===proposed.starter;
+  if(!compatible&&!confirm('Deze structurele wijziging kan niet op de bestaande scorestand worden toegepast. De partij blijft in hetzelfde scherm, maar scores, legs en geschiedenis beginnen opnieuw. Doorgaan?'))return;
+  if(compatible){
+   const renamed={};state.players.forEach((player,index)=>{renamed[player.name]=players[index];});
+   state={...state,game:proposed.game,inMode:proposed.inMode,out:proposed.out,scoring:proposed.scoring,matchMode:proposed.matchMode,target:proposed.target,legsPerSet:proposed.legsPerSet,bull:proposed.bull,maxRounds:proposed.maxRounds,livesMode:proposed.livesMode,players:state.players.map((player,index)=>({...player,name:players[index],opened:proposed.inMode==='single'?true:player.opened})),history:state.history.map(turn=>({...turn,name:renamed[turn.name]||turn.name}))};
+  }else{
+   state=proposed;undo=[];future=[];pendingTurns=[];pendingReason='';editingPending=false;historyNavigation=false;
+  }
+ }else{
+  state=proposed;undo=[];future=[];pendingTurns=[];pendingReason='';editingPending=false;historyNavigation=false;
+ }
+ editingCurrentMatch=false;setupCopy(false);mode=totalAllowed()?preferredMode:'dart';if(!await persist())return;resetInput();render();
 };
 document.addEventListener('show-shared-setup',()=>{for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();});
 document.addEventListener('close-shared-setup',()=>render());
