@@ -134,7 +134,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
@@ -291,8 +291,14 @@ function renderBoard(){
  }
  $('cricket-note').textContent=state.scoring==='no-score'?'Sluit elk doel met drie treffers. / = 1 · × = 2 · ⊗ = gesloten.':state.scoring==='cut-throat'?'Extra treffers geven punten aan tegenstanders die dit doel nog open hebben. Sluit alles met de laagste score.':'Extra treffers scoren zolang een tegenstander het doel nog open heeft. Sluit alles met de hoogste score.';
 }
+function teamMemberIndex(matchState,player){
+ if(!player?.members?.length)return -1;
+ return matchState.history.filter(turn=>turn.name===player.name).length%player.members.length;
+}
 function render(){
  document.body.dataset.game=state?.game||'';
+ $('edit-match').hidden=!state||state.phase==='won';
+ $('team-manager').hidden=!state||state.phase==='won'||!state.teamMode;
  if(!state){showSetup();return;}
  if(state.game==='tenlives'){
   mode='dart';
@@ -302,7 +308,8 @@ function render(){
  }
  $('setup').hidden=true;$('game').hidden=false;document.body.classList.toggle('cricket-game',cricket());document.body.classList.toggle('training-game',!!state.training121||state.game==='bobs27');setMode(modeOverride||preferredMode);buildKeys();
  const current=state.players[state.active],format=state.matchMode==='off'?'VRIJ SPELEN':`EERSTE TOT ${state.target} ${state.matchMode==='sets'?'SETS':'LEGS'}`;
- const currentMember=current.members?.length?current.members[state.history.filter(turn=>turn.leg===state.leg&&turn.name===current.name).length%current.members.length]:null;
+ const currentMemberIndex=teamMemberIndex(state,current);
+ const currentMember=currentMemberIndex>=0?current.members[currentMemberIndex]:null;
  $('match-label').textContent=cricket()?`${state.game.toUpperCase()} / ${scoringNames[state.scoring]} / ${format}`:`${state.start} / ${namesOfRules[state.inMode]}-IN / ${namesOfRules[state.out]}-OUT / ${format}`;
  $('match-label').textContent+=` / RONDE ${state.round}${state.tiebreak?' (VERLENGING)':''}`;
  if(state.game==='gotcha')$('match-label').textContent=`TRAINING / GOTCHA / PRECIES ${state.start} / ${namesOfRules[state.out]}-OUT`;
@@ -317,8 +324,8 @@ function render(){
   card.querySelector('strong').textContent=p.name;card.querySelector('.badge').textContent=p.bobsEliminated?'AFGEVALLEN':state.active===i?'● AAN DE BEURT':'';
   if(p.members?.length){
    const members=document.createElement('div');members.className='team-members';
-   const next=p.members[state.history.filter(turn=>turn.leg===state.leg&&turn.name===p.name).length%p.members.length];
-   members.replaceChildren(...p.members.map(name=>{const member=document.createElement('span');member.textContent=name;if(state.active===i&&name===next)member.className='current';return member;}));
+   const activeMember=teamMemberIndex(state,p);
+   members.replaceChildren(...p.members.map((name,memberIndex)=>{const member=document.createElement('span');member.textContent=name;if(state.active===i&&memberIndex===activeMember){member.className='current';member.dataset.turnOrder='NU';}return member;}));
    card.querySelector('.player-top').after(members);
   }
   const matchScores=state.game==='bobs27'?[]:state.training121?[[p.trainingLevel||state.start,'NIVEAU'],[p.trainingBest||state.trainingBest,'BESTE']]:state.matchMode==='sets'?[[p.sets,'SETS'],[p.setLegs,'LEGS (SET)']]:[[p.legs,'LEGS']];
@@ -629,6 +636,45 @@ function editCurrentMatch(){
  settings();
 }
 window.DartsTabletMatchEditor={open:editCurrentMatch};
+
+let teamManagerMembers=[];
+function renderTeamManager(){
+ const list=$('team-manager-list');list.replaceChildren();
+ state.players.forEach((team,teamIndex)=>{
+  const section=document.createElement('section');section.className='team-manager-team';
+  const heading=document.createElement('h3');heading.textContent=team.name+(state.active===teamIndex?' - aan de beurt':'');section.append(heading);
+  const activeIndex=teamMemberIndex(state,team),members=teamManagerMembers[teamIndex];
+  members.forEach((name,memberIndex)=>{
+   const row=document.createElement('div');row.className='team-manager-row';
+   const input=document.createElement('input');input.value=name;input.maxLength=24;input.setAttribute('aria-label',`Naam ${memberIndex+1}`);
+   if(state.active===teamIndex&&memberIndex===activeIndex){input.className='current-member-input';input.setAttribute('data-turn-order','NU');}
+   input.oninput=()=>{members[memberIndex]=input.value;};
+   const up=document.createElement('button');up.type='button';up.textContent='Omhoog';up.disabled=memberIndex===0;up.onclick=()=>{[members[memberIndex-1],members[memberIndex]]=[members[memberIndex],members[memberIndex-1]];renderTeamManager();};
+   const down=document.createElement('button');down.type='button';down.textContent='Omlaag';down.disabled=memberIndex===members.length-1;down.onclick=()=>{[members[memberIndex+1],members[memberIndex]]=[members[memberIndex],members[memberIndex+1]];renderTeamManager();};
+   const remove=document.createElement('button');remove.type='button';remove.textContent='Weg';remove.disabled=members.length<=1;remove.onclick=()=>{members.splice(memberIndex,1);renderTeamManager();};
+   row.append(input,up,down,remove);section.append(row);
+  });
+  const add=document.createElement('button');add.type='button';add.className='wide';add.textContent=members.length>=5?'Maximaal 5 spelers':'Invaller toevoegen';add.disabled=members.length>=5;
+  add.onclick=()=>{members.push('Nieuwe speler');renderTeamManager();setTimeout(()=>section.querySelector('.team-manager-row:last-of-type input')?.select(),0);};
+  section.append(add);list.append(section);
+ });
+}
+function openTeamManager(){
+ if(!state?.teamMode){message('Start eerst een teamwedstrijd.');return;}
+ teamManagerMembers=state.players.map(player=>[...(player.members||[])]);
+ $('team-manager-status').textContent='';renderTeamManager();$('team-manager-dialog').showModal();
+}
+$('team-manager').onclick=openTeamManager;
+$('team-manager-close').onclick=()=>$('team-manager-dialog').close();
+$('team-manager-save').onclick=async()=>{
+ const members=teamManagerMembers.map(team=>team.map(name=>name.trim()));
+ if(members.some(team=>team.length<1||team.length>5||team.some(name=>!name))){$('team-manager-status').textContent='Ieder team moet 1 tot maximaal 5 ingevulde namen hebben.';return;}
+ state={...state,players:state.players.map((player,index)=>({...player,members:members[index]}))};
+ $('team-manager-status').textContent='Teams opslaan...';
+ if(!await persist())return;
+ $('team-manager-dialog').close();resetInput();render();
+};
+$('edit-match').onclick=()=>{if(state&&state.phase!=='won')editCurrentMatch();};
 
 $('setup-form').onsubmit=async e=>{
  e.preventDefault();

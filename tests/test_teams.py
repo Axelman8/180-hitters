@@ -73,9 +73,43 @@ with tempfile.TemporaryDirectory() as tmp:
             enter_total(page, "45")
             page.locator("#submit:visible, #confirm-total:visible").click()
             expect(page.locator("#players .player").first.locator(".team-members .current")).to_have_text("Bert")
+            # De spelersvolgorde loopt door over een legwissel en start niet
+            # onterecht opnieuw bij de eerste naam.
+            current_payload = page.request.get("http://127.0.0.1:8791/api/state").json()
+            current_payload["match"]["state"]["leg"] = 2
+            saved = page.request.post(
+                "http://127.0.0.1:8791/api/state",
+                data={"revision": current_payload["revision"], "match": current_payload["match"]},
+            )
+            assert saved.ok
+            page.wait_for_timeout(1200)
+            expect(page.locator("#players .player").first.locator(".team-members .current")).to_have_text("Bert")
+
+            # Teambeheer is tijdens de partij beschikbaar op de NUC.
+            page.locator("#team-manager").evaluate("element => element.click()")
+            expect(page.locator("#team-manager-dialog")).to_be_visible()
+            first_team = page.locator(".team-manager-team").first
+            first_team.locator(".team-manager-row").first.get_by_role("button", name="Omlaag").click()
+            reordered = first_team.locator("input").evaluate_all("elements => elements.map(element => element.value)")
+            assert reordered == ["Bert", "Anita", "Dylan", "Judith", "Leen"], reordered
+            first_team.locator("input").nth(1).fill("Invaller")
+            page.locator("#team-manager-save").click()
+            expect(page.locator("#team-manager-dialog")).to_be_hidden()
+            expect(page.locator("#players .player").first.locator(".team-members span")).to_have_text(
+                ["Bert", "Invaller", "Dylan", "Judith", "Leen"]
+            )
+            expect(page.locator("#players .player").first.locator(".team-members .current")).to_have_text("Invaller")
+
+            # Partij aanpassen opent hetzelfde volledige instellingenscherm.
+            page.locator("#edit-match").evaluate("element => element.click()")
+            expect(page.locator("#setup")).to_be_visible()
+            expect(page.locator(".wizard-back")).to_be_visible()
+            page.locator(".wizard-back").click()
             mobile = browser.new_page(viewport={"width": 393, "height": 852})
             mobile.goto("http://127.0.0.1:8791/?remote=1")
-            expect(mobile.locator("#players .player").first.locator(".team-members span")).to_have_text(["Anita", "Bert", "Dylan", "Judith", "Leen"])
+            expect(mobile.locator("#players .player").first.locator(".team-members span")).to_have_text(["Bert", "Invaller", "Dylan", "Judith", "Leen"])
+            expect(mobile.locator("#team-manager")).to_have_count(1)
+            expect(mobile.locator("#edit-match")).to_have_count(1)
             mobile_member_size = mobile.locator("#players .player").first.locator(".team-members span").first.evaluate(
                 "element => parseFloat(getComputedStyle(element).fontSize)"
             )

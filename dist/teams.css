@@ -10,11 +10,19 @@
 .team-members{display:flex;flex-wrap:wrap;gap:5px 8px;grid-column:1/-1;margin-top:5px;color:#cbd8dc;font-size:clamp(12px,1.4vw,18px)}
 .team-members span{padding:3px 8px;border:1px solid #47606c;border-radius:999px;background:#172a34}
 .team-members span.current{border-color:var(--accent);background:#29413a;color:#d5ff73;font-weight:800}
+.team-members span.current::before{content:'NU';display:inline-block;margin-right:7px;padding:1px 5px;border-radius:4px;background:var(--accent);color:#182416;font-size:.68em;font-weight:900;letter-spacing:.06em;vertical-align:middle}
+.team-manager-team{margin:14px 0;padding:14px;border:1px solid #47606c;border-radius:14px;background:#10212a}
+.team-manager-team h3{margin:0 0 10px;color:var(--accent)}
+.team-manager-row{display:grid;grid-template-columns:minmax(150px,1fr) auto auto auto;gap:7px;margin:8px 0}
+.team-manager-row input{min-width:0}
+.team-manager-row input.current-member-input{border-color:var(--accent);background:#efffd0;color:#13262f;font-weight:800}
+.team-manager-row button{min-height:48px;padding:8px 12px}
+#team-manager-status{min-height:24px;color:#c8f56a}
 body.remote-control .team-members{justify-content:center;font-size:clamp(15px,4vw,19px);line-height:1.25;gap:6px 8px}
 body.remote-control .team-members span{padding:4px 8px}
 body.screen-fit .team-members{font-size:clamp(32px,3.8vw,48px);line-height:1.2;gap:12px 16px;margin-top:12px}
 body.screen-fit .team-members span{padding:8px 16px;border-width:2px}
-@media(max-width:600px){.team-editor{padding:10px}.team-member-row{grid-template-columns:minmax(0,1fr) 48px}.team-members{font-size:11px}}
+@media(max-width:600px){.team-editor{padding:10px}.team-member-row{grid-template-columns:minmax(0,1fr) 48px}.team-members{font-size:11px}.team-manager-row{grid-template-columns:1fr 1fr 1fr}.team-manager-row input{grid-column:1/-1}}
 .wizard-team{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:14px}
 .wizard-team>legend{padding:0 8px;color:var(--accent);font-size:19px;font-weight:850}
 .wizard-team-name{display:grid;gap:6px;margin-bottom:10px}
