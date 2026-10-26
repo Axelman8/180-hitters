@@ -33,6 +33,19 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator(".wizard-team").first.locator(".wizard-team-slots button")).to_have_count(5)
             expect(first_add).to_be_disabled()
             page.evaluate("""
+                () => [...document.querySelector('.team-editor').querySelectorAll('[data-member-name]')]
+                    .forEach((input, index) => input.value = ['Een','Twee','Midden','Vier','Vijf'][index])
+            """)
+            page.locator(".wizard-team").first.locator(".wizard-team-slots button").nth(2).click()
+            page.locator(".wizard-team").first.get_by_role("button", name="Geselecteerde naam weghalen").click()
+            expect(page.locator(".wizard-team").first.locator(".wizard-team-slots button")).to_have_count(4)
+            remaining = page.evaluate("""
+                () => [...document.querySelector('.team-editor').querySelectorAll('[data-member-name]')].map(input => input.value)
+            """)
+            assert remaining == ['Een', 'Twee', 'Vier', 'Vijf'], remaining
+            first_add.click()
+            expect(page.locator(".wizard-team").first.locator(".wizard-team-slots button")).to_have_count(5)
+            page.evaluate("""
                 () => {
                     const teams = [...document.querySelectorAll('#names .team-editor')];
                     const values = [['Rood', ['Anita','Bert','Dylan','Judith','Leen']], ['Blauw', ['Ed','Frank']]];
@@ -67,6 +80,20 @@ with tempfile.TemporaryDirectory() as tmp:
                 "element => parseFloat(getComputedStyle(element).fontSize)"
             )
             assert mobile_member_size >= 15, f"Mobile team member text is too small: {mobile_member_size}px"
+            android_phone = browser.new_page(viewport={"width": 393, "height": 852})
+            android_phone.add_init_script("""
+                window.DartsAndroid = {
+                    isTabletShell: false,
+                    isLocalMode: () => true,
+                    getMobilePlayers: () => '[]',
+                    saveMobilePlayers: () => {},
+                    getVenuePlayers: () => '[]',
+                    saveVenuePlayers: () => {},
+                    hasMobilePlayers: () => true
+                };
+            """)
+            android_phone.goto("http://127.0.0.1:8791/")
+            expect(android_phone.locator("#players-form .player-destination-actions button").nth(1)).to_have_text("Toevoegen aan mobiel")
             print("PASS: tijdelijke teams, maximaal vijf namen, scorekaarten en spelersrotatie")
             browser.close()
     finally:

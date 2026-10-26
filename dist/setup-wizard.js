@@ -63,7 +63,7 @@ function renderIndividuals(content){
 }
 function renderTeams(content){
  const editors=teamEditors();teamSlot=Math.min(teamSlot,editors.length-1);memberSlot=Math.min(memberSlot,memberInputs().length-1);
- content.append(el('p','Maak per wedstrijd nieuwe teams. Kies daarna per team maximaal vijf spelers.','wizard-hint'));
+ content.append(el('p','Maak per wedstrijd nieuwe teams. Selecteer een naam om die te wijzigen of weg te halen.','wizard-hint'));
  editors.forEach((team,index)=>{
   const panel=el('fieldset',undefined,'wizard-team');panel.append(el('legend',`Team ${index+1}`));
   const sourceName=team.querySelector('input[data-team-name]');
@@ -72,7 +72,7 @@ function renderTeams(content){
   memberInputs(index).forEach((input,i)=>{const b=button('',()=>{teamSlot=index;memberSlot=i;render();});b.setAttribute('aria-pressed',String(index===teamSlot&&i===memberSlot));b.append(el('small',`Naam ${i+1}`),el('strong',input.value||'Kies naam'));slots.append(b);});panel.append(slots);
   const actions=el('div',undefined,'wizard-team-actions');
   const add=button('Naam toevoegen',()=>{team.querySelector('.team-member-add').click();teamSlot=index;memberSlot=memberInputs(index).length-1;render();});add.disabled=memberInputs(index).length>=5;actions.append(add);
-  const remove=button('Laatste naam verwijderen',()=>{const rows=team.querySelectorAll('.team-member-row');rows[rows.length-1]?.querySelector('.team-member-remove').click();teamSlot=index;memberSlot=Math.max(0,memberInputs(index).length-1);render();});remove.disabled=memberInputs(index).length<=1;actions.append(remove);panel.append(actions);content.append(panel);
+  const remove=button('Geselecteerde naam weghalen',()=>{if(index!==teamSlot)return;const rows=team.querySelectorAll('.team-member-row');rows[memberSlot]?.querySelector('.team-member-remove').click();memberSlot=Math.min(memberSlot,memberInputs(index).length-1);render();});remove.disabled=index!==teamSlot||memberInputs(index).length<=1;actions.append(remove);panel.append(actions);content.append(panel);
  });
  rosterGroups(content);
  const active=memberInputs()[memberSlot],label=el('label',`Naam ${memberSlot+1} van ${names()[teamSlot]?.value||`Team ${teamSlot+1}`}`,'wizard-custom'),input=el('input');input.value=active?.value||'';input.maxLength=24;input.autocomplete='off';

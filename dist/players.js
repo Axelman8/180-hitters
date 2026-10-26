@@ -1,5 +1,7 @@
 const $=id=>document.getElementById(id);
 const android=window.DartsAndroid&&typeof window.DartsAndroid.getMobilePlayers==='function';
+const tabletShell=!!window.DartsAndroid?.isTabletShell;
+const personalDevice=tabletShell?'tablet':'mobiel';
 const nucScreen=!android&&['127.0.0.1','localhost','::1'].includes(location.hostname);
 let venuePlayers=[],mobilePlayers=[],saving=false,nucConnected=false;
 const originalAddButton=$('players-form').querySelector('button[type="submit"]');
@@ -8,7 +10,7 @@ if(android){
  originalAddButton.hidden=true;
  const actions=document.createElement('div');actions.className='player-destination-actions';
  addNucButton=document.createElement('button');addNucButton.type='button';addNucButton.textContent='Toevoegen aan NUC';
- addTabletButton=document.createElement('button');addTabletButton.type='button';addTabletButton.className='primary';addTabletButton.textContent='Toevoegen aan tablet';
+ addTabletButton=document.createElement('button');addTabletButton.type='button';addTabletButton.className='primary';addTabletButton.textContent=`Toevoegen aan ${personalDevice}`;
  actions.append(addNucButton,addTabletButton);$('players-form').append(actions);
  const style=document.createElement('style');
  style.textContent='#players-form{display:grid;grid-template-columns:1fr;align-items:stretch}#players-form>label{width:100%}.player-destination-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.player-destination-actions button{min-height:52px}@media(max-width:520px){.player-destination-actions{grid-template-columns:1fr}}';
@@ -52,7 +54,7 @@ function renderLists(){
  $('players-form').hidden=!(android||nucScreen);
  $('players-form-label').textContent=android?'Naam van nieuwe speler':`Speler toevoegen aan ${venueLabel()}`;
  if(addNucButton){addNucButton.disabled=saving||!canEditNuc;addTabletButton.disabled=saving;}
- $('players-dialog-note').textContent=android?(canEditNuc?`Kies per speler of deze op de NUC of alleen op deze tablet wordt opgeslagen.`:`De tabletlijst is beschikbaar. Verbind eerst met de NUC om ook ${venueLabel()} bij te werken.`):nucScreen?`Beheer hier ${venueLabel()}. Mijn spelers is een alleen-lezen kopie van de Android-app.`:'De spelerslijsten zijn hier alleen beschikbaar om te kiezen.';
+ $('players-dialog-note').textContent=android?(canEditNuc?`Kies per speler of deze op de NUC of alleen op ${personalDevice} wordt opgeslagen.`:`De spelerslijst op ${personalDevice} is beschikbaar. Verbind eerst met de NUC om ook ${venueLabel()} bij te werken.`):nucScreen?`Beheer hier ${venueLabel()}. Mijn spelers is een alleen-lezen kopie van de Android-app.`:'De spelerslijsten zijn hier alleen beschikbaar om te kiezen.';
 }
 async function refresh(){
  try{
@@ -77,13 +79,13 @@ async function save(action,name,destination){
   if(android&&destination==='tablet'){
    let updated=nativePlayers();if(action==='add'&&!updated.some(n=>n.localeCompare(name,'nl',{sensitivity:'base'})===0))updated.push(name);if(action==='remove')updated=updated.filter(n=>n.localeCompare(name,'nl',{sensitivity:'base'})!==0);updated=sorted(updated);storeNative(updated);mobilePlayers=updated;
    response=await fetch('/api/mobile-players',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({players:updated}),signal:AbortSignal.timeout(5000)});
-   if(!response.ok){renderLists();if(action==='add')$('player-name').value='';$('players-message').textContent='Naam is op de tablet opgeslagen; synchronisatie met de NUC volgt zodra de verbinding terug is.';return;}
+   if(!response.ok){renderLists();if(action==='add')$('player-name').value='';$('players-message').textContent=`Naam is op ${personalDevice} opgeslagen; synchronisatie met de NUC volgt zodra de verbinding terug is.`;return;}
   }else{
    if(android&&(!nucConnected||destination!=='nuc'))throw Error('NUC niet verbonden');
    response=await fetch('/api/players',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,name}),signal:AbortSignal.timeout(5000)});
   }
   if(!response.ok)throw Error();lists(await response.json());if(action==='add')$('player-name').value='';$('players-message').textContent=action==='add'?'Naam opgeslagen.':'Naam verwijderd. Lopende partijen blijven behouden.';
- }catch{renderLists();$('players-message').textContent=android&&destination==='nuc'?'NUC-spelerslijst kon niet worden bijgewerkt. Controleer de verbinding.':android?'Naam blijft veilig op de tablet opgeslagen.':'Opslaan is niet bevestigd.';}finally{saving=false;renderLists();}
+ }catch{renderLists();$('players-message').textContent=android&&destination==='nuc'?'NUC-spelerslijst kon niet worden bijgewerkt. Controleer de verbinding.':android?`Naam blijft veilig op ${personalDevice} opgeslagen.`:'Opslaan is niet bevestigd.';}finally{saving=false;renderLists();}
 }
 $('players-list').onclick=()=>{$('players-message').textContent='';$('players-dialog').showModal();refresh();};
 $('players-close').onclick=()=>$('players-dialog').close();
