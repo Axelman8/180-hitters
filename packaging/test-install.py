@@ -73,7 +73,9 @@ else:
     subprocess.run(['sudo', 'apt-get', 'install', '--no-install-recommends', '-y', package], check=True)
     assert Path('/usr/local/sbin/darts-system').is_file()
     assert Path('/usr/lib/dartsapp/kiosk-control.py').is_file()
-    assert Path('/etc/sudoers.d/dartsapp-system').read_text().startswith('dartsapp ALL=')
+    sudoers = subprocess.run(['sudo', 'cat', '/etc/sudoers.d/dartsapp-system'],
+                             capture_output=True, text=True, check=True).stdout
+    assert sudoers.startswith('dartsapp ALL=')
     wait()
     write_and_check()
     subprocess.run(['sudo', 'dpkg', '-i', package], check=True)
