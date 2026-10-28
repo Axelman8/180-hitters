@@ -3,7 +3,7 @@ const localNuc = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname) &
 const open = document.createElement('button');
 open.id = 'bluetooth-open';
 open.type = 'button';
-open.textContent = 'Verbindingen';
+open.textContent = 'Wifi en Bluetooth aan/uit';
 document.getElementById('top-actions').append(open);
 
 const dialog = document.createElement('dialog');

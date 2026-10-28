@@ -180,6 +180,7 @@ body.remote-control #kiosk-status:not(:empty){display:block;margin:0;padding:10p
 
 #network-open{display:none}
 body.remote-control #network-open{display:block;min-height:44px;font-size:14px;padding:8px 12px}
+body.local-nuc #network-open{display:block;min-height:44px;font-size:14px;padding:8px 12px}
 #network-dialog{max-height:90dvh;overflow:auto}
 #network-dialog>label{margin-top:20px}
 #network-add-section{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:12px}

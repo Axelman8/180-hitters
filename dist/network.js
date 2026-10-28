@@ -5,6 +5,7 @@ let info = null, chosen = null, pending = false, polling = false;
 const controlToken = (() => { try { return window.DartsAndroid?.getControlToken?.() || ''; } catch { return ''; } })();
 const localNuc = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname) && !window.DartsAndroid?.isTabletShell;
 const canControl = localNuc || !!controlToken;
+if(localNuc)document.body.classList.add('local-nuc');
 
 function setBusy(busy) {
   $('network-hotspot').disabled = busy || !info;
