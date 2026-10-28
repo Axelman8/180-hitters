@@ -11,8 +11,7 @@ actions.before(menu);
 const definitions=[
  ['play','Spelen'],
  ['connections','Verbindingen'],
- ['application','Applicatie'],
- ['settings','Instellingen']
+ ['application','Applicatie']
 ];
 const groups={};
 for(const [key,label] of definitions){
@@ -31,8 +30,7 @@ for(const [key,label] of definitions){
 const order={
  play:['settings','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
  connections:['android-app-action','take-control','connection-health','mouse-control-open','bluetooth-open','network-open'],
- application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','desktop-update-action','android-update-action','camera-test'],
- settings:['venue-open']
+ application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','desktop-update-action','android-update-action','camera-test','venue-open']
 };
 
 function destination(node){
@@ -41,7 +39,7 @@ function destination(node){
  if(id==='android-app-action')return window.DartsAndroid?groups.connections:groups.application;
  if(order.connections.includes(id))return groups.connections;
  if(order.application.includes(id))return groups.application;
- return groups.settings;
+ return groups.application;
 }
 
 function arrange(panel,ids){

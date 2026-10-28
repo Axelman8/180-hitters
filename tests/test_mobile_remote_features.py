@@ -56,6 +56,7 @@ with tempfile.TemporaryDirectory() as tmp:
                 '#match-backups': 'play',                             # 7
                 '#android-update-action': 'application',              # 8
                 '#kiosk-mode-toggle': 'application',                  # 3
+                '#venue-open': 'application',
                 '#connection-health': 'connections',                  # 9
             }
             for selector, menu in expected.items():

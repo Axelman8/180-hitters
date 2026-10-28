@@ -12,7 +12,7 @@ with tempfile.TemporaryDirectory() as tmp:
     print('Testing',width,flush=True)
     page=b.new_page(viewport={'width':width,'height':height});page.goto('http://127.0.0.1:8788/'+query)
     expect(page.locator('#header-menu')).to_be_visible()
-    expect(page.locator('#header-menu summary')).to_have_text(['Spelen','Verbindingen','Applicatie','Instellingen'])
+    expect(page.locator('#header-menu summary')).to_have_text(['Spelen','Verbindingen','Applicatie'])
     expect(page.locator('#header-menu details[open]')).to_have_count(0)
     page.locator('summary',has_text='Spelen').click();expect(page.locator('#settings')).to_be_visible()
     assert page.locator('#edit-match').evaluate("e=>e.closest('details').dataset.menu")=='play'
@@ -21,7 +21,8 @@ with tempfile.TemporaryDirectory() as tmp:
     assert page.locator('#bluetooth-open').evaluate("e=>e.closest('details').dataset.menu")=='connections'
     page.locator('summary',has_text='Applicatie').click();expect(page.locator('#android-app-action')).to_be_visible()
     assert page.locator('#kiosk-mode-toggle').evaluate("e=>e.closest('details').dataset.menu")=='application'
-    page.locator('summary',has_text='Instellingen').click();expect(page.locator('#venue-open')).to_be_visible()
+    expect(page.locator('#venue-open')).to_be_visible()
+    assert page.locator('#venue-open').evaluate("e=>e.closest('details').dataset.menu")=='application'
     expect(page.locator('#settings')).to_be_hidden()
     expect(page.locator('#layout-open')).to_have_count(0)
     page.keyboard.press('Escape')
