@@ -135,6 +135,54 @@ def desktop_environment():
     return env
 
 
+def screen_orientation(orientation=None):
+    """Read or persist the dedicated desktop screen rotation."""
+    allowed = {'landscape': 'normal', 'portrait-left': 'left', 'portrait-right': 'right'}
+    if orientation is not None and orientation not in allowed:
+        raise ValueError('Kies landscape, portrait linksom of portrait rechtsom.')
+    if os.name != 'posix' or not shutil.which('xrandr'):
+        raise RuntimeError('Schermstand is alleen beschikbaar op de NUC.')
+    env = desktop_environment()
+    query = subprocess.run(['xrandr', '--query'], env=env, capture_output=True,
+                           text=True, timeout=5, check=True)
+    connected = [line for line in query.stdout.splitlines() if ' connected' in line]
+    if not connected:
+        raise RuntimeError('Er is geen aangesloten NUC-scherm gevonden.')
+    line = next((item for item in connected if ' connected primary ' in item), connected[0])
+    output = line.split()[0]
+    if not output or any(char not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._' for char in output):
+        raise RuntimeError('De schermnaam van de NUC is ongeldig.')
+    head = line.partition('(')[0].split()
+    rotation = next((value for value in ('left', 'right', 'inverted') if value in head), 'normal')
+    current = next((key for key, value in allowed.items() if value == rotation), 'landscape')
+    if orientation is not None:
+        rotation = allowed[orientation]
+        config = Path.home() / '.config' / 'oche-display.sh'
+        config.parent.mkdir(parents=True, exist_ok=True)
+        content = f'''#!/usr/bin/env bash
+set -u
+OUTPUT={output}
+xrandr --output "$OUTPUT" --rotate {rotation}
+if command -v xinput >/dev/null 2>&1; then
+  while read -r device_id; do
+    [ -z "$device_id" ] || xinput map-to-output "$device_id" "$OUTPUT" || true
+  done < <(xinput list --short | sed -n 's/.*id=\\([0-9][0-9]*\\).*\\[slave  pointer.*/\\1/p')
+fi
+'''
+        temporary = config.with_suffix('.next')
+        temporary.write_text(content, encoding='utf-8')
+        temporary.chmod(0o755)
+        temporary.replace(config)
+        result = subprocess.run(['/bin/bash', str(config)], env=env, capture_output=True,
+                                text=True, timeout=10)
+        if result.returncode:
+            raise RuntimeError('De NUC kon de gekozen schermstand niet toepassen.')
+        current = orientation
+    labels = {'landscape': 'Landscape', 'portrait-left': 'Portrait linksom',
+              'portrait-right': 'Portrait rechtsom'}
+    return {'orientation': current, 'label': labels[current], 'output': output}
+
+
 def kiosk_status(root):
     return {'kiosk': not (root / '.windowed-mode').exists(),
             'message': 'Kioskmodus actief.' if not (root / '.windowed-mode').exists()
@@ -401,6 +449,14 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     self.reply(403, {'error': 'Alleen beschikbaar op de NUC of vanuit de gekoppelde app.'})
                 else:
                     self.reply(200, kiosk_status(root))
+            elif route == '/api/display/orientation':
+                if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                    self.reply(403, {'error': 'Schermstand kan alleen op de NUC worden ingesteld.'})
+                else:
+                    try:
+                        self.reply(200, screen_orientation())
+                    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+                        self.reply(503, {'error': str(error)})
             elif route == '/api/update/status':
                 if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
                     self.reply(403, {'error': 'Alleen beschikbaar op de NUC of vanuit de gekoppelde app.'})
@@ -494,7 +550,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -738,6 +794,15 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         return self.reply(400, {'error': 'Ongeldige kioskstand.'})
                     try:
                         return self.reply(202, switch_kiosk(root, incoming['kiosk']))
+                    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+                        return self.reply(503, {'error': str(error)})
+                if self.path == '/api/display/orientation':
+                    if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                        return self.reply(403, {'error': 'Schermstand kan alleen op de NUC worden ingesteld.'})
+                    if not isinstance(incoming, dict) or set(incoming) != {'orientation'}:
+                        raise ValueError()
+                    try:
+                        return self.reply(200, screen_orientation(incoming['orientation']))
                     except (RuntimeError, OSError, subprocess.SubprocessError) as error:
                         return self.reply(503, {'error': str(error)})
                 if self.path == '/api/players':

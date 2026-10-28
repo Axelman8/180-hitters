@@ -3,7 +3,7 @@ plugins { id 'com.android.application' }
 def signingProperties = new Properties()
 def signingFile = rootProject.file('keystore.properties')
 if (signingFile.exists()) signingProperties.load(new FileInputStream(signingFile))
-def releaseVersion = providers.gradleProperty('releaseVersion').orElse('1.8.57').get()
+def releaseVersion = providers.gradleProperty('releaseVersion').orElse('1.8.58').get()
 def releaseParts = releaseVersion.tokenize('.').collect { value -> value.replaceAll('[^0-9].*$', '').toInteger() }
 while (releaseParts.size() < 3) releaseParts.add(0)
 def releaseCode = releaseParts[0] * 1000000 + releaseParts[1] * 1000 + releaseParts[2]

@@ -44,7 +44,7 @@ for(const [key,label] of definitions){
 const order={
  play:['settings','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
  connections:['android-app-action','take-control','connection-health','mouse-control-open','bluetooth-open','network-open'],
- application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','desktop-update-action','android-update-action','camera-test','venue-open']
+ application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','screen-orientation','desktop-update-action','android-update-action','camera-test','venue-open']
 };
 
 function destination(node){
@@ -88,6 +88,23 @@ new MutationObserver(collect).observe(actions,{childList:true});
 // De uitgebreide hardwaretest hoort alleen op het fysieke NUC-scherm. Mobiel
 // gebruikt de compacte knoppen Camera aan/herstart en Camera uit.
 const localNuc=['127.0.0.1','localhost','::1'].includes(location.hostname)&&!window.DartsAndroid;
+if(localNuc){
+ const orientationButton=document.createElement('button');orientationButton.id='screen-orientation';orientationButton.type='button';orientationButton.textContent='Schermstand';
+ const dialog=document.createElement('dialog');dialog.id='screen-orientation-dialog';dialog.innerHTML='<h2>Schermstand NUC</h2><p id="screen-orientation-current">Schermstand ophalen...</p><button class="wide" data-orientation="landscape">Landscape</button><button class="wide" data-orientation="portrait-left">Portrait linksom</button><button class="wide" data-orientation="portrait-right">Portrait rechtsom</button><p id="screen-orientation-status" role="status"></p><button id="screen-orientation-close" class="wide" type="button">Sluiten</button>';
+ document.body.append(dialog);groups.application.append(orientationButton);arrange(groups.application,order.application);
+ const current=dialog.querySelector('#screen-orientation-current'),status=dialog.querySelector('#screen-orientation-status');
+ async function refreshOrientation(){
+  try{const response=await fetch('/api/display/orientation',{cache:'no-store'}),data=await response.json();if(!response.ok)throw Error(data.error);current.textContent='Actief: '+data.label;for(const choice of dialog.querySelectorAll('[data-orientation]'))choice.classList.toggle('primary',choice.dataset.orientation===data.orientation);}
+  catch(error){current.textContent=error.message||'Schermstand kon niet worden opgehaald.';}
+ }
+ orientationButton.onclick=()=>{status.textContent='';dialog.showModal();void refreshOrientation();};
+ dialog.querySelector('#screen-orientation-close').onclick=()=>dialog.close();
+ for(const choice of dialog.querySelectorAll('[data-orientation]'))choice.onclick=async()=>{
+  status.textContent='Scherm draaien...';
+  try{const response=await fetch('/api/display/orientation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orientation:choice.dataset.orientation})}),data=await response.json();if(!response.ok)throw Error(data.error);status.textContent=data.label+' is ingesteld.';await refreshOrientation();}
+  catch(error){status.textContent=error.message||'Schermstand wijzigen is mislukt.';}
+ };
+}
 if(localNuc)fetch('/api/camera/status').then(response=>{
  if(!response.ok)return;
  const button=document.createElement('button');button.id='camera-test';
