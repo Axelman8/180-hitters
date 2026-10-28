@@ -11,7 +11,8 @@ import time
 
 
 SCRIPT = Path(__file__).resolve()
-ROOT = SCRIPT.parent.parent if SCRIPT.parent.name == 'dist' else SCRIPT.parent
+DEFAULT_ROOT = SCRIPT.parent.parent if SCRIPT.parent.name == 'dist' else SCRIPT.parent
+ROOT = Path(os.environ.get('DARTS_KIOSK_STATE', DEFAULT_ROOT))
 MARKER = ROOT / '.windowed-mode'
 LOCK = ROOT / '.kiosk-switch.lock'
 LAUNCHER = ROOT / 'start-kiosk.sh'
@@ -41,7 +42,8 @@ def disable_desktop_keyboard():
 
 
 def browser_processes():
-    profile_markers = ('oche-darts/browser-profile', 'snap/chromium/common/oche-profile')
+    profile_markers = (str(ROOT / 'browser-profile'), 'oche-darts/browser-profile',
+                       'snap/chromium/common/oche-profile')
     for process in Path('/proc').glob('[0-9]*'):
         try:
             command = (process / 'cmdline').read_bytes().decode().replace('\0', ' ')
@@ -56,7 +58,8 @@ def browser_processes():
 def install_launcher():
     helper = ROOT / 'kiosk-control.py'
     if not helper.is_file(): helper = SCRIPT
-    content = '#!/usr/bin/env bash\nexec /usr/bin/python3 ' + repr(str(helper)) + ' launch\n'
+    content = ('#!/usr/bin/env bash\nexport DARTS_KIOSK_STATE=' + repr(str(ROOT)) +
+               '\nexec /usr/bin/python3 ' + repr(str(helper)) + ' launch\n')
     temporary = LAUNCHER.with_suffix('.next')
     temporary.write_text(content, encoding='utf-8')
     temporary.chmod(0o755)

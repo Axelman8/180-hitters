@@ -110,9 +110,10 @@ def system_control(action):
     helper = '/usr/local/sbin/darts-system'
     if os.name != 'posix' or not Path(helper).is_file():
         raise RuntimeError('NUC-bediening is nog niet geïnstalleerd.')
-    if action not in ('status', 'bluetooth-on', 'bluetooth-off', 'wifi-on', 'wifi-off', 'restart', 'shutdown'):
+    if action not in ('status', 'bluetooth-on', 'bluetooth-off', 'wifi-on', 'wifi-off', 'restart', 'shutdown', 'kiosk', 'windowed', 'kiosk-open'):
         raise ValueError('Ongeldige NUC-actie.')
-    result = subprocess.run(['sudo', '-n', helper, action], capture_output=True, text=True, timeout=8)
+    result = subprocess.run(['sudo', '-n', helper, action], capture_output=True, text=True,
+                            timeout=15 if action in ('kiosk', 'windowed', 'kiosk-open') else 8)
     try:
         response = json.loads(result.stdout)
     except ValueError:
@@ -223,12 +224,21 @@ def mouse_orientation():
 
 
 def kiosk_status(root):
+    if root == Path('/usr/lib/dartsapp'):
+        states = sorted(Path('/var/lib/dartsapp').glob('kiosk-*/.windowed-mode'))
+        kiosk = not bool(states)
+        return {'kiosk': kiosk, 'message': 'Kioskmodus actief.' if kiosk
+                else 'Muisbediening met bureaublad actief.'}
     return {'kiosk': not (root / '.windowed-mode').exists(),
             'message': 'Kioskmodus actief.' if not (root / '.windowed-mode').exists()
             else 'Muisbediening met bureaublad actief.'}
 
 
 def switch_kiosk(root, kiosk):
+    if root == Path('/usr/lib/dartsapp'):
+        system_control('kiosk' if kiosk else 'windowed')
+        return {'kiosk': kiosk, 'message': 'Kioskmodus wordt gestart.' if kiosk
+                else 'Kioskmodus wordt verlaten; de browser opent opnieuw met muisbediening.'}
     helper = root / 'kiosk-control.py'
     if not helper.is_file(): helper = root / 'dist' / 'kiosk-control.py'
     if os.name != 'posix' or not helper.is_file():
@@ -243,6 +253,9 @@ def switch_kiosk(root, kiosk):
 
 def open_kiosk(root):
     """Open only our local launcher, or raise its existing Chrome window."""
+    if root == Path('/usr/lib/dartsapp'):
+        system_control('kiosk-open')
+        return 'De app wordt geopend op de NUC.'
     launcher = root / 'start-kiosk.sh'
     if os.name != 'posix' or not launcher.is_file():
         raise RuntimeError('Deze knop werkt alleen op de NUC.')

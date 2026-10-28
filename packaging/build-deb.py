@@ -20,8 +20,13 @@ with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
 
     shutil.copytree('dist', root / 'usr/lib/dartsapp/dist')
     shutil.copy2('server.py', root / 'usr/lib/dartsapp/server.py')
-    for name in ('autodarts_bridge.py', 'camera_research.py', 'bluetooth-bridge.py', 'nuc-update.py'):
+    for name in ('autodarts_bridge.py', 'camera_research.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py'):
         shutil.copy2(name, root / 'usr/lib/dartsapp' / name)
+    (root / 'usr/local/sbin').mkdir(parents=True, exist_ok=True)
+    shutil.copy2('system-control.py', root / 'usr/local/sbin/darts-system')
+    (root / 'usr/local/sbin/darts-system').chmod(0o755)
+    write('etc/sudoers.d/dartsapp-system', 'dartsapp ALL=(root) NOPASSWD: /usr/local/sbin/darts-system\n')
+    (root / 'etc/sudoers.d/dartsapp-system').chmod(0o440)
     shutil.copy2('packaging/camera-setup.py', root / 'usr/lib/dartsapp/camera-setup.py')
     shutil.copy2('camera-calibrate-gui.py', root / 'usr/lib/dartsapp/camera-calibrate-gui.py')
     (root / 'usr/sbin').mkdir(parents=True, exist_ok=True)
@@ -74,7 +79,7 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: Axelman8 <noreply@users.noreply.github.com>
-Depends: python3 (>= 3.10), python3-dbus, python3-gi, bluez, systemd, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center, v4l-utils, policykit-1
+Depends: python3 (>= 3.10), python3-dbus, python3-gi, bluez, systemd, sudo, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center, v4l-utils, policykit-1
 Recommends: firefox-esr | firefox | chromium | chromium-browser
 Homepage: https://github.com/Axelman8/180-hitters
 Description: 180 Hitters touchscreen darts scoreboard

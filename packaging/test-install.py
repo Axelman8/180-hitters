@@ -71,6 +71,9 @@ else:
     subprocess.run(['sudo', 'apt-get', 'update', '-qq'], check=True)
     package = './DartsApp-Ubuntu-Debian-amd64.deb'
     subprocess.run(['sudo', 'apt-get', 'install', '--no-install-recommends', '-y', package], check=True)
+    assert Path('/usr/local/sbin/darts-system').is_file()
+    assert Path('/usr/lib/dartsapp/kiosk-control.py').is_file()
+    assert Path('/etc/sudoers.d/dartsapp-system').read_text().startswith('dartsapp ALL=')
     wait()
     write_and_check()
     subprocess.run(['sudo', 'dpkg', '-i', package], check=True)
