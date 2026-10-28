@@ -14,6 +14,7 @@ cp "$APP_DIR/server.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/autodarts_bridge.py" "$APP_DIR/camera_research.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/bluetooth-bridge.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/nuc-update.py" "$HOME/.local/share/oche-darts/"
+cp "$APP_DIR/kiosk-control.py" "$HOME/.local/share/oche-darts/"
 [[ ! -f "$APP_DIR/.version" ]] || cp "$APP_DIR/.version" "$HOME/.local/share/oche-darts/.version"
 cat > "$HOME/.config/systemd/user/oche-darts.service" <<'SERVICE'
 [Unit]
@@ -37,14 +38,23 @@ for attempt in {1..30}; do
   sleep 1
 done
 if [[ "$BROWSER" == *firefox* ]]; then
-  exec "$BROWSER" --kiosk http://127.0.0.1:8765
+  if [[ -f "$HOME/.local/share/oche-darts/.windowed-mode" ]]; then
+    exec "$BROWSER" --new-window http://127.0.0.1:8765
+  else
+    exec "$BROWSER" --kiosk http://127.0.0.1:8765
+  fi
 else
   PROFILE="$HOME/.local/share/oche-darts/browser-profile"
   if [[ "$BROWSER" == *chromium* ]] && { [[ "$BROWSER" == /snap/* ]] || { command -v snap >/dev/null && snap list chromium >/dev/null 2>&1; }; }; then
     PROFILE="$HOME/snap/chromium/common/oche-profile"
   fi
   mkdir -p "$PROFILE"
-  exec "$BROWSER" --kiosk --no-first-run --no-default-browser-check --disable-features=Translate --lang=nl --password-store=basic --user-data-dir="$PROFILE" http://127.0.0.1:8765
+  if [[ -f "$HOME/.local/share/oche-darts/.windowed-mode" ]]; then
+    WINDOW_MODE=(--start-maximized)
+  else
+    WINDOW_MODE=(--kiosk)
+  fi
+  exec "$BROWSER" "${WINDOW_MODE[@]}" --no-first-run --no-default-browser-check --disable-features=Translate --lang=nl --password-store=basic --user-data-dir="$PROFILE" http://127.0.0.1:8765
 fi
 LAUNCH
 chmod +x "$LAUNCHER"

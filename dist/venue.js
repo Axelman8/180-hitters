@@ -33,6 +33,7 @@ if(android||local){
    <label>Wifi-naam<input name="hotspotName" maxlength="80" readonly></label>
    <label>Wachtwoord (via netwerkbeheer)<input name="hotspotPassword" maxlength="100" readonly></label>
   </fieldset>
+  <button type="button" id="venue-connections" class="wide">Wifi en Bluetooth beheren</button>
   <p id="venue-message" role="status"></p>
   <div class="venue-actions"><button type="button" id="venue-neutral">Neutraal profiel</button><button type="submit" class="primary">Opslaan</button><button type="button" id="venue-close">Sluiten</button></div>
  </form>`;
@@ -49,6 +50,7 @@ if(android||local){
  form.elements.removeBackground.onclick=()=>{working.backgroundData='';form.elements.backgroundFile.value='';message.textContent='Achtergrond wordt bij Opslaan verwijderd.';};
  dialog.querySelector('#venue-neutral').onclick=()=>{fill(defaults);message.textContent='Neutraal profiel klaar. Kies Opslaan om te bevestigen.';};
  dialog.querySelector('#venue-close').onclick=()=>dialog.close();
+ dialog.querySelector('#venue-connections').onclick=()=>{dialog.close();setTimeout(()=>document.getElementById('bluetooth-open')?.click(),0);};
  form.onsubmit=async event=>{
   event.preventDefault();message.textContent='Locatieprofiel opslaan…';
   try{

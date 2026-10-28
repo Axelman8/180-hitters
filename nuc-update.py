@@ -106,7 +106,7 @@ def install(bundle, version):
                 if extracted.resolve() not in target.parents and target != extracted.resolve():
                     raise ValueError('Onveilig pad in update')
             archive.extractall(extracted, filter='data')
-        required = ['dist', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py']
+        required = ['dist', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py']
         if any(not (extracted / item).exists() for item in required):
             raise ValueError('NUC-update is niet compleet')
         if not healthy_dist(extracted / 'dist'):
@@ -131,7 +131,7 @@ def install(bundle, version):
         shutil.rmtree(old_dist, ignore_errors=True)
         if (ROOT / 'dist').exists(): (ROOT / 'dist').replace(old_dist)
         next_dist.replace(ROOT / 'dist')
-        for name in ('autodarts_bridge.py', 'camera_research.py', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py'):
+        for name in ('autodarts_bridge.py', 'camera_research.py', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py'):
             if name in ('autodarts_bridge.py', 'camera_research.py') and not (extracted / name).exists(): continue
             temporary = ROOT / (name + '.next')
             durable_copy(extracted / name, temporary)

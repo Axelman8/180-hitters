@@ -11,6 +11,7 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import time
 import uuid
 
@@ -109,7 +110,7 @@ def system_control(action):
     helper = '/usr/local/sbin/darts-system'
     if os.name != 'posix' or not Path(helper).is_file():
         raise RuntimeError('NUC-bediening is nog niet geïnstalleerd.')
-    if action not in ('status', 'bluetooth-on', 'bluetooth-off', 'restart', 'shutdown'):
+    if action not in ('status', 'bluetooth-on', 'bluetooth-off', 'wifi-on', 'wifi-off', 'restart', 'shutdown'):
         raise ValueError('Ongeldige NUC-actie.')
     result = subprocess.run(['sudo', '-n', helper, action], capture_output=True, text=True, timeout=8)
     try:
@@ -121,11 +122,7 @@ def system_control(action):
     return response
 
 
-def open_kiosk(root):
-    """Open only our local launcher, or raise its existing Chrome window."""
-    launcher = root / 'start-kiosk.sh'
-    if os.name != 'posix' or not launcher.is_file():
-        raise RuntimeError('Deze knop werkt alleen op de NUC.')
+def desktop_environment():
     env = os.environ.copy()
     result = subprocess.run(['systemctl', '--user', 'show-environment'],
                             capture_output=True, text=True, timeout=3, check=True)
@@ -135,6 +132,35 @@ def open_kiosk(root):
             env[key] = value
     if not env.get('DISPLAY') or not Path(env.get('XAUTHORITY', '/nonexistent')).is_file():
         raise RuntimeError('Meld de NUC eerst aan op het bureaublad.')
+    return env
+
+
+def kiosk_status(root):
+    return {'kiosk': not (root / '.windowed-mode').exists(),
+            'message': 'Kioskmodus actief.' if not (root / '.windowed-mode').exists()
+            else 'Muisbediening met bureaublad actief.'}
+
+
+def switch_kiosk(root, kiosk):
+    helper = root / 'kiosk-control.py'
+    if not helper.is_file(): helper = root / 'dist' / 'kiosk-control.py'
+    launcher = root / 'start-kiosk.sh'
+    if os.name != 'posix' or not helper.is_file() or not launcher.is_file():
+        raise RuntimeError('Kioskbediening is nog niet ingesteld op deze NUC.')
+    env = desktop_environment()
+    subprocess.Popen([sys.executable, str(helper), 'kiosk' if kiosk else 'windowed'],
+                     env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+    return {'kiosk': kiosk, 'message': 'Kioskmodus wordt gestart.' if kiosk
+            else 'Kioskmodus wordt verlaten; de browser opent opnieuw met muisbediening.'}
+
+
+def open_kiosk(root):
+    """Open only our local launcher, or raise its existing Chrome window."""
+    launcher = root / 'start-kiosk.sh'
+    if os.name != 'posix' or not launcher.is_file():
+        raise RuntimeError('Deze knop werkt alleen op de NUC.')
+    env = desktop_environment()
     if not shutil.which('xdotool'):
         raise RuntimeError('Het hulpmiddel om het NUC-scherm te openen ontbreekt.')
     profile = '--user-data-dir=' + str(root / 'browser-profile')
@@ -329,13 +355,18 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     message = str(error) if isinstance(error, RuntimeError) else 'Netwerkbeheer is tijdelijk niet beschikbaar.'
                     self.reply(503, {'error': message})
             elif route == '/api/system/status':
-                if self.headers.get('X-Darts-Control') != 'd7c87006c31f4da2a4348eeb05b59c8b':
+                if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
                     self.reply(403, {'error': 'Alleen beschikbaar vanuit de Android-app.'})
                 else:
                     try:
                         self.reply(200, system_control('status'))
                     except (RuntimeError, OSError, subprocess.SubprocessError) as error:
                         self.reply(503, {'error': str(error)})
+            elif route == '/api/kiosk/status':
+                if self.client_address[0] not in ('127.0.0.1', '::1'):
+                    self.reply(403, {'error': 'Alleen beschikbaar op het NUC-scherm.'})
+                else:
+                    self.reply(200, kiosk_status(root))
             elif route == '/api/update/status':
                 if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
                     self.reply(403, {'error': 'Alleen beschikbaar op de NUC of vanuit de gekoppelde app.'})
@@ -429,7 +460,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/autoscoring', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/autoscoring', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -566,7 +597,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             return self.reply(503, {'error': 'NUC-update kon niet worden gestart.'})
                     return self.reply(202, {'message': 'NUC controleert GitHub op updates.', 'requestedAt': int(time.time())})
                 if self.path == '/api/system/action':
-                    if self.headers.get('X-Darts-Control') != 'd7c87006c31f4da2a4348eeb05b59c8b':
+                    if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
                         return self.reply(403, {'error': 'Alleen beschikbaar vanuit de Android-app.'})
                     if not isinstance(incoming, dict) or set(incoming) != {'action'}:
                         return self.reply(400, {'error': 'Ongeldige NUC-actie.'})
@@ -618,7 +649,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         return self.reply(503, {'error': message})
                     return self.reply(202, result)
                 if self.path == '/api/network/add':
-                    if self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                    if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
                         return self.reply(403, {'error': 'Voeg een netwerk toe vanuit de Android-app.'})
                     if not isinstance(incoming, dict) or set(incoming) != {'ssid', 'password'}:
                         return self.reply(400, {'error': 'Vul een netwerknaam en wachtwoord in.'})
@@ -649,6 +680,15 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             message = str(error) if isinstance(error, RuntimeError) else 'De app kon niet worden geopend op de NUC.'
                             return self.reply(503, {'error': message})
                         return self.reply(200, {'message': message})
+                if self.path == '/api/kiosk/mode':
+                    if self.client_address[0] not in ('127.0.0.1', '::1'):
+                        return self.reply(403, {'error': 'Alleen beschikbaar op het NUC-scherm.'})
+                    if not isinstance(incoming, dict) or set(incoming) != {'kiosk'} or type(incoming['kiosk']) is not bool:
+                        return self.reply(400, {'error': 'Ongeldige kioskstand.'})
+                    try:
+                        return self.reply(202, switch_kiosk(root, incoming['kiosk']))
+                    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+                        return self.reply(503, {'error': str(error)})
                 if self.path == '/api/players':
                     if self.client_address[0] not in ('127.0.0.1', '::1'):
                         return self.reply(403, {'error': f"De {venue['playerListName']}-lijst kan alleen op de NUC worden gewijzigd."})

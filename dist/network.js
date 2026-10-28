@@ -3,6 +3,8 @@ import './nuc-control.js';
 const dialog = $('network-dialog');
 let info = null, chosen = null, pending = false, polling = false;
 const controlToken = (() => { try { return window.DartsAndroid?.getControlToken?.() || ''; } catch { return ''; } })();
+const localNuc = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname) && !window.DartsAndroid?.isTabletShell;
+const canControl = localNuc || !!controlToken;
 
 function setBusy(busy) {
   $('network-hotspot').disabled = busy || !info;
@@ -18,7 +20,7 @@ async function loadNetwork() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Netwerkkeuze niet beschikbaar.');
     info = data;
-    $('network-add-section').hidden = !controlToken;
+    $('network-add-section').hidden = !canControl;
     const active = data.profiles.filter(p => p.active).map(p => p.name).join(', ');
     $('network-current').textContent = 'Huidige verbinding: ' + (active || 'geen opgeslagen wifi actief');
     const selected = $('network-select').value;
@@ -72,7 +74,8 @@ $('network-add-form').onsubmit = async event => {
   const ssid = $('network-ssid').value.trim(), password = $('network-password').value;
   $('network-status').textContent = 'Netwerk veilig opslaan…';
   try {
-    const response = await fetch('/api/network/add', {method:'POST', headers:{'Content-Type':'application/json','X-Darts-Control':controlToken}, body:JSON.stringify({ssid,password}), signal:AbortSignal.timeout(25000)});
+    const headers={'Content-Type':'application/json'};if(controlToken)headers['X-Darts-Control']=controlToken;
+    const response = await fetch('/api/network/add', {method:'POST', headers, body:JSON.stringify({ssid,password}), signal:AbortSignal.timeout(25000)});
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Netwerk opslaan is niet gelukt.');
     $('network-password').value = '';
