@@ -67,6 +67,15 @@ def write_status(**values):
     temporary.replace(STATUS)
 
 
+def ensure_kiosk_browser():
+    """Ask the desktop user manager to reopen the app after an update/crash."""
+    launcher = ROOT / 'start-kiosk.sh'
+    if ROOT != Path.home() / '.local/share/oche-darts' or not launcher.is_file():
+        return
+    subprocess.run(['systemd-run', '--user', '--quiet', '--collect', '--on-active=2s',
+                    '/bin/bash', str(launcher)], check=False, timeout=8)
+
+
 def version_parts(value):
     result = []
     for part in value.lstrip('vV').split('.'):
@@ -158,6 +167,7 @@ def main():
             current = VERSION.read_text(encoding='utf-8').strip() if VERSION.exists() else '0.0.0'
             if version_parts(latest) <= version_parts(current) and healthy_dist(ROOT / 'dist'):
                 write_status(state='current', version=current, message=f'NUC is actueel ({current}).')
+                ensure_kiosk_browser()
                 return
             assets = {asset['name']: asset['browser_download_url'] for asset in release['assets']}
             with tempfile.TemporaryDirectory(prefix='180-hitters-download-') as directory:
@@ -175,6 +185,7 @@ def main():
             else:
                 subprocess.run(['systemctl', '--user', 'restart', 'oche-darts-bluetooth.service'], check=False)
                 subprocess.run(['systemctl', '--user', 'restart', 'oche-darts.service'], check=False)
+                ensure_kiosk_browser()
         except Exception as error:
             write_status(state='error', message=f'NUC-update mislukt: {error}')
             raise
