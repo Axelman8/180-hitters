@@ -188,6 +188,40 @@ def open_kiosk(root):
     return 'De app wordt geopend op de NUC.'
 
 
+def control_mouse(incoming):
+    """Execute one bounded pointer action; never accept arbitrary keys or commands."""
+    if not isinstance(incoming, dict):
+        raise ValueError('Ongeldige muisopdracht.')
+    action = incoming.get('action')
+    executable = shutil.which('xdotool')
+    if not executable:
+        raise RuntimeError('Muisbediening is niet op deze NUC geïnstalleerd.')
+    if action == 'move' and set(incoming) == {'action', 'dx', 'dy'}:
+        dx, dy = incoming['dx'], incoming['dy']
+        if type(dx) is not int or type(dy) is not int or not -240 <= dx <= 240 or not -240 <= dy <= 240:
+            raise ValueError('Ongeldige muisbeweging.')
+        command = [executable, 'mousemove_relative', '--sync', '--', str(dx), str(dy)]
+    elif action == 'click' and set(incoming) == {'action', 'button'}:
+        button = incoming['button']
+        if button not in ('left', 'double', 'right'):
+            raise ValueError('Ongeldige muisknop.')
+        command = [executable, 'click']
+        if button == 'double': command += ['--repeat', '2', '--delay', '110']
+        command += ['3' if button == 'right' else '1']
+    elif action == 'scroll' and set(incoming) == {'action', 'amount'}:
+        amount = incoming['amount']
+        if type(amount) is not int or amount == 0 or not -8 <= amount <= 8:
+            raise ValueError('Ongeldige scrollbeweging.')
+        command = [executable, 'click', '--repeat', str(abs(amount)), '--delay', '35',
+                   '4' if amount < 0 else '5']
+    else:
+        raise ValueError('Ongeldige muisopdracht.')
+    subprocess.run(command, env=desktop_environment(), stdin=subprocess.DEVNULL,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                   timeout=3, check=True)
+    return {'ok': True}
+
+
 def serve(host='0.0.0.0', port=8765, data_file=None):
     from autodarts_bridge import AutoDartsBridge
     root = Path(__file__).parent
@@ -460,7 +494,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/autoscoring', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/autoscoring', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -472,6 +506,15 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 < length <= 10000000:
                     return self.reply(413, {'error': 'Partij te groot'})
                 incoming = json.loads(self.rfile.read(length))
+                if self.path == '/api/mouse':
+                    if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                        return self.reply(403, {'error': 'Muisbediening is alleen beschikbaar vanuit de gekoppelde app.'})
+                    try:
+                        return self.reply(200, control_mouse(incoming))
+                    except ValueError as error:
+                        return self.reply(400, {'error': str(error)})
+                    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+                        return self.reply(503, {'error': str(error) or 'Muisbediening is tijdelijk niet beschikbaar.'})
                 if self.path == '/api/autoscoring':
                     with lock:
                         if not self.may_edit(incoming): return

@@ -1,3 +1,5 @@
+import './mouse-control.js';
+
 const actions=document.getElementById('top-actions');
 const menu=document.createElement('nav');
 menu.id='header-menu';menu.setAttribute('aria-label','Hoofdmenu');
@@ -27,7 +29,7 @@ for(const [key,label] of definitions){
 
 const order={
  play:['settings','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
- connections:['android-app-action','take-control','bluetooth-open','network-open'],
+ connections:['android-app-action','take-control','mouse-control-open','bluetooth-open','network-open'],
  application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','desktop-update-action','android-update-action','camera-test'],
  settings:['venue-open']
 };

@@ -1,0 +1,10 @@
+#mouse-control-dialog{width:min(94vw,720px);max-width:720px}
+#mouse-touchpad{height:min(48vh,360px);min-height:220px;margin:18px 0;border:2px solid #526775;border-radius:18px;background:linear-gradient(145deg,#101c23,#203540);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);touch-action:none;user-select:none;cursor:crosshair}
+#mouse-touchpad span{font-size:22px;font-weight:800;letter-spacing:3px;color:var(--accent)}
+#mouse-touchpad small{font-size:13px}
+#mouse-touchpad.active{border-color:var(--accent);background:#263f3a}
+.mouse-actions,.mouse-scroll{display:grid;gap:10px;margin:10px 0}
+.mouse-actions{grid-template-columns:repeat(3,1fr)}
+.mouse-scroll{grid-template-columns:repeat(2,1fr)}
+#mouse-control-status{min-height:24px;color:#ffc38c;margin:10px 0}
+@media(max-width:520px){.mouse-actions{grid-template-columns:1fr}#mouse-touchpad{min-height:180px}}
