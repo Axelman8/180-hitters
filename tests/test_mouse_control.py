@@ -10,6 +10,12 @@ from playwright.sync_api import expect, sync_playwright
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import server as darts_server
 
+darts_server.CURRENT_SCREEN_ORIENTATION = 'portrait-left'
+assert darts_server.mouse_orientation() == 'portrait-left'
+darts_server.CURRENT_SCREEN_ORIENTATION = 'portrait-right'
+assert darts_server.mouse_orientation() == 'portrait-right'
+darts_server.CURRENT_SCREEN_ORIENTATION = None
+
 
 with patch.object(darts_server.shutil, 'which', return_value='/usr/bin/xdotool'), \
      patch.object(darts_server, 'desktop_environment', return_value={'DISPLAY': ':0'}), \

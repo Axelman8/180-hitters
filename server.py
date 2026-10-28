@@ -18,6 +18,7 @@ import uuid
 BACKUP_COUNT = 30
 BACKUP_BYTES = 100 * 1024 * 1024
 STORAGE_RESERVE = 50 * 1024 * 1024
+CURRENT_SCREEN_ORIENTATION = None
 
 
 def prune_backups(directory, max_count=BACKUP_COUNT, max_bytes=BACKUP_BYTES):
@@ -174,6 +175,7 @@ def desktop_environment():
 
 def screen_orientation(orientation=None):
     """Read or persist the dedicated desktop screen rotation."""
+    global CURRENT_SCREEN_ORIENTATION
     allowed = {'landscape': 'normal', 'portrait-left': 'left', 'portrait-right': 'right'}
     if orientation is not None and orientation not in allowed:
         raise ValueError('Kies landscape, portrait linksom of portrait rechtsom.')
@@ -215,6 +217,7 @@ fi
         if result.returncode:
             raise RuntimeError('De NUC kon de gekozen schermstand niet toepassen.')
         current = orientation
+    CURRENT_SCREEN_ORIENTATION = current
     labels = {'landscape': 'Landscape', 'portrait-left': 'Portrait linksom',
               'portrait-right': 'Portrait rechtsom'}
     return {'orientation': current, 'label': labels[current], 'output': output}
@@ -222,6 +225,8 @@ fi
 
 def mouse_orientation():
     """Read the persisted xrandr rotation without querying xrandr for every drag event."""
+    if CURRENT_SCREEN_ORIENTATION in ('landscape', 'portrait-left', 'portrait-right'):
+        return CURRENT_SCREEN_ORIENTATION
     config = Path.home() / '.config' / 'oche-display.sh'
     try:
         content = config.read_text(encoding='utf-8')
