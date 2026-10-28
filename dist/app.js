@@ -332,7 +332,7 @@ function render(){
   if(p.members?.length){
    const members=document.createElement('div');members.className='team-members';
    const activeMember=teamMemberIndex(state,p);
-   members.replaceChildren(...p.members.map((name,memberIndex)=>{const member=document.createElement('span');member.textContent=name;if(state.active===i&&memberIndex===activeMember){member.className='current';member.dataset.turnOrder='NU';}return member;}));
+   members.replaceChildren(...p.members.map((name,memberIndex)=>{const member=document.createElement('span');member.textContent=name;if(state.active===i&&memberIndex===activeMember)member.className='current';return member;}));
    card.querySelector('.player-top').after(members);
   }
   const matchScores=state.game==='bobs27'?[]:state.training121?[[p.trainingLevel||state.start,'NIVEAU'],[p.trainingBest||state.trainingBest,'BESTE']]:state.matchMode==='sets'?[[p.sets,'SETS'],[p.setLegs,'LEGS (SET)']]:[[p.legs,'LEGS']];
@@ -654,7 +654,7 @@ function renderTeamManager(){
   members.forEach((name,memberIndex)=>{
    const row=document.createElement('div');row.className='team-manager-row';
    const input=document.createElement('input');input.value=name;input.maxLength=24;input.setAttribute('aria-label',`Naam ${memberIndex+1}`);
-   if(state.active===teamIndex&&memberIndex===activeIndex){input.className='current-member-input';input.setAttribute('data-turn-order','NU');}
+   if(state.active===teamIndex&&memberIndex===activeIndex)input.className='current-member-input';
    input.oninput=()=>{members[memberIndex]=input.value;};
    const up=document.createElement('button');up.type='button';up.textContent='Omhoog';up.disabled=memberIndex===0;up.onclick=()=>{[members[memberIndex-1],members[memberIndex]]=[members[memberIndex],members[memberIndex-1]];renderTeamManager();};
    const down=document.createElement('button');down.type='button';down.textContent='Omlaag';down.disabled=memberIndex===members.length-1;down.onclick=()=>{[members[memberIndex+1],members[memberIndex]]=[members[memberIndex],members[memberIndex+1]];renderTeamManager();};

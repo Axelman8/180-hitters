@@ -60,6 +60,11 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator("#players .player").first.locator("strong").first).to_have_text("Rood")
             expect(page.locator("#players .player").first.locator(".team-members span")).to_have_text(["Anita", "Bert", "Dylan", "Judith", "Leen"])
             expect(page.locator("#players .player").first.locator(".team-members .current")).to_have_text("Anita")
+            assert page.locator("#players .team-members [data-turn-order]").count() == 0
+            current_marker = page.locator("#players .player").first.locator(".team-members .current").evaluate(
+                "element => getComputedStyle(element, '::before').content"
+            )
+            assert current_marker in ("none", '""'), current_marker
             member_size = page.locator("#players .player").first.locator(".team-members span").first.evaluate(
                 "element => parseFloat(getComputedStyle(element).fontSize)"
             )
