@@ -23,7 +23,7 @@ function paint(){
  const own=canControl();
  button.textContent=own?(tabletShell?'Bediening gekoppeld':'Bediening op deze telefoon'):'Bediening overnemen';
  button.disabled=claiming||own;
- note.textContent=errorText||(own?'Scorebediening actief':status?(tabletShell?'Meekijken - kies Bediening overnemen via Verbindingsmodus':'Meekijken - kies Bediening overnemen via Verbindingen'):'Bediening controleren...');
+ note.textContent=errorText||(own?'Scorebediening actief':status?'Meekijken - kies Bediening overnemen via Verbindingen':'Bediening controleren...');
  document.body.classList.toggle('controller-viewer',!own);
  const mode=document.getElementById('mode-status');
  if(mode&&mode.classList.contains('nuc')){
@@ -51,18 +51,13 @@ async function claim(takeover){
    refreshing=true;
    document.dispatchEvent(new Event('controller-refresh'));
   }
- }catch{failedAutoClaim=true;errorText=tabletShell?'Overname niet bevestigd; probeer opnieuw via Verbindingsmodus.':'Overname niet bevestigd; probeer opnieuw via Verbindingen.';}
+ }catch{failedAutoClaim=true;errorText='Overname niet bevestigd; probeer opnieuw via Verbindingen.';}
  finally{claiming=false;paint();}
 }
 export function controllerRefreshed(){refreshing=false;paint();}
 if(remote){
- if(tabletShell){
-  // Verbindingsmodus haalt deze verborgen houder naar zijn eigen paneel.
-  const host=document.createElement('div');host.id='tablet-control-host';host.hidden=true;host.append(button,note);document.body.append(host);
- }else{
-  document.getElementById('top-actions').append(button);
-  document.getElementById('connection-status').after(note);
- }
+ document.getElementById('top-actions').append(button);
+ document.getElementById('connection-status').after(note);
  note.style.cssText='display:block;text-align:center;font-size:12px;padding:3px 8px;color:#82d7e6';
  button.onclick=()=>void claim(true);
  paint();
