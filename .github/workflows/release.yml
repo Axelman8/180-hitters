@@ -78,13 +78,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/downloads release-payload linux-package windows-package
+          cp camera-calibrate-gui.py dist/camera-calibrate-gui.py
           cp android/app/build/outputs/apk/release/app-release.apk dist/downloads/180-Hitters.apk
           sha256sum dist/downloads/180-Hitters.apk > 180-Hitters.apk.sha256
-          cp -a dist server.py autodarts_bridge.py camera_research.py bluetooth-bridge.py nuc-update.py kiosk-control.py calibreer-cameras.py install-calibreer-cameras.sh release-payload/
+          cp -a dist server.py autodarts_bridge.py camera_research.py bluetooth-bridge.py nuc-update.py kiosk-control.py camera-calibrate-gui.py calibreer-cameras.py install-calibreer-cameras.sh release-payload/
           printf '%s\n' "${GITHUB_REF_NAME#v}" > release-payload/.version
           tar -C release-payload -czf 180-hitters-nuc.tar.gz .
           sha256sum 180-hitters-nuc.tar.gz > 180-hitters-nuc.tar.gz.sha256
-          cp -a dist server.py autodarts_bridge.py camera_research.py bluetooth-bridge.py nuc-update.py kiosk-control.py network-control.py system-control.py calibreer-cameras.py install-calibreer-cameras.sh install-linux.sh install-network-control.sh install-system-control.sh setup-linux.sh INSTALLATION.txt linux-package/
+          cp -a dist server.py autodarts_bridge.py camera_research.py bluetooth-bridge.py nuc-update.py kiosk-control.py network-control.py system-control.py camera-calibrate-gui.py calibreer-cameras.py install-calibreer-cameras.sh install-linux.sh install-network-control.sh install-system-control.sh setup-linux.sh INSTALLATION.txt linux-package/
           printf '%s\n' "${GITHUB_REF_NAME#v}" > linux-package/.version
           tar -C linux-package -czf 180-Hitters-Linux-x64.tar.gz .
           sha256sum 180-Hitters-Linux-x64.tar.gz > 180-Hitters-Linux-x64.tar.gz.sha256
@@ -101,6 +102,7 @@ jobs:
           python3 tests/test_camera_calibrator.py
           python3 packaging/test-install.py linux
           xvfb-run -a /usr/bin/python3 packaging/test-camera-wizard-ui.py
+          xvfb-run -a /usr/bin/python3 packaging/test-camera-calibrate-gui.py
           sha256sum 180-Hitters-NUC-Cameras-Ubuntu-amd64.deb > 180-Hitters-NUC-Cameras-Ubuntu-amd64.deb.sha256
           sha256sum DartsApp-Ubuntu-Debian-amd64.deb > DartsApp-Ubuntu-Debian-amd64.deb.sha256
 

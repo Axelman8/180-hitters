@@ -23,8 +23,13 @@ with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
     for name in ('autodarts_bridge.py', 'camera_research.py', 'bluetooth-bridge.py', 'nuc-update.py'):
         shutil.copy2(name, root / 'usr/lib/dartsapp' / name)
     shutil.copy2('packaging/camera-setup.py', root / 'usr/lib/dartsapp/camera-setup.py')
+    shutil.copy2('camera-calibrate-gui.py', root / 'usr/lib/dartsapp/camera-calibrate-gui.py')
+    (root / 'usr/sbin').mkdir(parents=True, exist_ok=True)
+    shutil.copy2('calibreer-cameras.py', root / 'usr/sbin/calibreer-cameras')
+    (root / 'usr/sbin/calibreer-cameras').chmod(0o755)
     write('usr/share/icons/hicolor/scalable/apps/dartsapp.svg', Path('packaging/dartsapp.svg').read_text())
     write('usr/bin/dartsapp-camera', '#!/bin/sh\nexec python3 /usr/lib/dartsapp/camera-setup.py "$@"\n', True)
+    write('usr/bin/dartsapp-camera-calibrate', '#!/bin/sh\nexec python3 /usr/lib/dartsapp/camera-calibrate-gui.py "$@"\n', True)
     write('etc/xdg/autostart/dartsapp-camera.desktop', '''[Desktop Entry]
 Type=Application
 Name=180 Hitters camera-opstart
@@ -40,6 +45,15 @@ Exec=dartsapp-camera
 Icon=dartsapp
 Terminal=false
 Categories=Game;Sports;
+''')
+    write('usr/share/applications/dartsapp-camera-calibrate.desktop', '''[Desktop Entry]
+Type=Application
+Name=Camera's 50 Hz + kalibreren
+Comment=USB-camera's detecteren en AutoDarts opnieuw kalibreren
+Exec=dartsapp-camera-calibrate
+Icon=dartsapp
+Terminal=false
+Categories=Settings;Utility;
 ''')
     write('usr/share/doc/dartsapp/CAMERA-INSTALLATIE.txt', Path('packaging/CAMERA-INSTALLATIE.txt').read_text())
     write('usr/share/applications/dartsapp-display.desktop', '''[Desktop Entry]
@@ -60,7 +74,7 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: Axelman8 <noreply@users.noreply.github.com>
-Depends: python3 (>= 3.10), python3-dbus, python3-gi, bluez, systemd, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center
+Depends: python3 (>= 3.10), python3-dbus, python3-gi, bluez, systemd, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center, v4l-utils, policykit-1
 Recommends: firefox-esr | firefox | chromium | chromium-browser
 Homepage: https://github.com/Axelman8/180-hitters
 Description: 180 Hitters touchscreen darts scoreboard
@@ -120,6 +134,17 @@ Unit=dartsapp-update.service
 [Install]
 WantedBy=multi-user.target
 ''')
+    write('lib/systemd/system/180-hitters-camera-50hz.service', '''[Unit]
+Description=180 Hitters camera anti-flicker 50 Hz
+After=systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/calibreer-cameras --frequency-only
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target
+''')
     write('DEBIAN/postinst', ('''#!/bin/sh
 set -e
 if [ "$1" = configure ]; then
@@ -129,7 +154,7 @@ if [ "$1" = configure ]; then
   @CAMERA_ENABLE@
   if [ -d /run/systemd/system ]; then
     systemctl daemon-reload
-    systemctl enable dartsapp.service dartsapp-bluetooth.service dartsapp-update.path
+    systemctl enable dartsapp.service dartsapp-bluetooth.service dartsapp-update.path @CAMERA_SERVICE@
     systemctl restart dartsapp.service
     # A missing or temporarily unavailable Bluetooth adapter must not block
     # package installation; systemd retries the bridge when hardware appears.
@@ -137,11 +162,12 @@ if [ "$1" = configure ]; then
     systemctl restart dartsapp-update.path
   fi
 fi
-''').replace('@CAMERA_ENABLE@', 'mkdir -p /etc/dartsapp; touch /etc/dartsapp/camera-enabled' if camera_bundle else ':'), True)
+''').replace('@CAMERA_ENABLE@', 'mkdir -p /etc/dartsapp; touch /etc/dartsapp/camera-enabled' if camera_bundle else ':').replace('@CAMERA_SERVICE@', '180-hitters-camera-50hz.service' if camera_bundle else ''), True)
     write('DEBIAN/prerm', '''#!/bin/sh
 set -e
 if [ -d /run/systemd/system ]; then
   case "$1" in remove|deconfigure)
+    systemctl disable --now 180-hitters-camera-50hz.service 2>/dev/null || true
     systemctl stop dartsapp-update.path dartsapp-bluetooth.service dartsapp.service
     systemctl disable dartsapp-update.path dartsapp-bluetooth.service dartsapp.service
   ;; esac

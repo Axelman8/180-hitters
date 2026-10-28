@@ -15,6 +15,7 @@ cp "$APP_DIR/autodarts_bridge.py" "$APP_DIR/camera_research.py" "$HOME/.local/sh
 cp "$APP_DIR/bluetooth-bridge.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/nuc-update.py" "$HOME/.local/share/oche-darts/"
 cp "$APP_DIR/kiosk-control.py" "$HOME/.local/share/oche-darts/"
+cp "$APP_DIR/camera-calibrate-gui.py" "$HOME/.local/share/oche-darts/"
 [[ ! -f "$APP_DIR/.version" ]] || cp "$APP_DIR/.version" "$HOME/.local/share/oche-darts/.version"
 cat > "$HOME/.config/systemd/user/oche-darts.service" <<'SERVICE'
 [Unit]
@@ -58,6 +59,27 @@ else
 fi
 LAUNCH
 chmod +x "$LAUNCHER"
+APPLICATIONS="$HOME/.local/share/applications"
+mkdir -p "$APPLICATIONS"
+CALIBRATE_DESKTOP="$APPLICATIONS/180-hitters-camera-calibrate.desktop"
+cat > "$CALIBRATE_DESKTOP" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Camera's 50 Hz + kalibreren
+Comment=USB-camera's detecteren en AutoDarts opnieuw kalibreren
+Exec=/usr/bin/python3 "$HOME/.local/share/oche-darts/camera-calibrate-gui.py"
+Icon=$HOME/.local/share/oche-darts/dist/avatar.jpg
+Terminal=false
+Categories=Settings;Utility;
+DESKTOP
+chmod +x "$CALIBRATE_DESKTOP"
+DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || true)"
+if [[ -n "$DESKTOP_DIR" && "$DESKTOP_DIR" != "$HOME" ]]; then
+  mkdir -p "$DESKTOP_DIR"
+  cp "$CALIBRATE_DESKTOP" "$DESKTOP_DIR/Camera's 50 Hz + kalibreren.desktop"
+  chmod +x "$DESKTOP_DIR/Camera's 50 Hz + kalibreren.desktop"
+  gio set "$DESKTOP_DIR/Camera's 50 Hz + kalibreren.desktop" metadata::trusted true >/dev/null 2>&1 || true
+fi
 cat > "$HOME/.config/autostart/oche-darts.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application

@@ -239,6 +239,10 @@ Then empty the dartboard and run:
 sudo calibreer-cameras
 ```
 
+The Linux camera installer also places **Camera's 50 Hz + kalibreren** on the
+desktop. It provides the same operation through a confirmation dialog and the
+standard graphical administrator-password prompt, without opening a terminal.
+
 The helper requires exactly three USB capture cameras. It backs up the current
 AutoDarts configuration and calibration, refreshes stale USB locations, sets
 all cameras to the European 50 Hz anti-flicker mode, restarts the per-user

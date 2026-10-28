@@ -76,6 +76,41 @@ def ensure_kiosk_browser():
                     '/bin/bash', str(launcher)], check=False, timeout=8)
 
 
+def ensure_camera_launcher():
+    """Keep a clickable calibration launcher on the signed-in user's desktop."""
+    script = ROOT / 'camera-calibrate-gui.py'
+    if not script.is_file():
+        script = ROOT / 'dist/camera-calibrate-gui.py'
+    if ROOT != Path.home() / '.local/share/oche-darts' or not script.is_file():
+        return
+    applications = Path.home() / '.local/share/applications'
+    applications.mkdir(parents=True, exist_ok=True)
+    content = f'''[Desktop Entry]
+Type=Application
+Name=Camera's 50 Hz + kalibreren
+Comment=USB-camera's detecteren en AutoDarts opnieuw kalibreren
+Exec=/usr/bin/python3 "{script}"
+Icon={ROOT / 'dist/avatar.jpg'}
+Terminal=false
+Categories=Settings;Utility;
+'''
+    launcher = applications / '180-hitters-camera-calibrate.desktop'
+    launcher.write_text(content, encoding='utf-8')
+    launcher.chmod(0o755)
+    result = subprocess.run(['xdg-user-dir', 'DESKTOP'], capture_output=True, text=True,
+                            check=False, timeout=5)
+    desktop = Path(result.stdout.strip()) if result.returncode == 0 and result.stdout.strip() else None
+    if not desktop or not desktop.is_absolute() or desktop == Path.home():
+        return
+    desktop.mkdir(parents=True, exist_ok=True)
+    target = desktop / "Camera's 50 Hz + kalibreren.desktop"
+    target.write_text(content, encoding='utf-8')
+    target.chmod(0o755)
+    subprocess.run(['gio', 'set', str(target), 'metadata::trusted', 'true'],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                   check=False, timeout=5)
+
+
 def version_parts(value):
     result = []
     for part in value.lstrip('vV').split('.'):
@@ -115,7 +150,7 @@ def install(bundle, version):
                 if extracted.resolve() not in target.parents and target != extracted.resolve():
                     raise ValueError('Onveilig pad in update')
             archive.extractall(extracted, filter='data')
-        required = ['dist', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py']
+        required = ['dist', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py', 'camera-calibrate-gui.py']
         if any(not (extracted / item).exists() for item in required):
             raise ValueError('NUC-update is niet compleet')
         if not healthy_dist(extracted / 'dist'):
@@ -140,7 +175,7 @@ def install(bundle, version):
         shutil.rmtree(old_dist, ignore_errors=True)
         if (ROOT / 'dist').exists(): (ROOT / 'dist').replace(old_dist)
         next_dist.replace(ROOT / 'dist')
-        for name in ('autodarts_bridge.py', 'camera_research.py', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py'):
+        for name in ('autodarts_bridge.py', 'camera_research.py', 'server.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py', 'camera-calibrate-gui.py'):
             if name in ('autodarts_bridge.py', 'camera_research.py') and not (extracted / name).exists(): continue
             temporary = ROOT / (name + '.next')
             durable_copy(extracted / name, temporary)
@@ -167,6 +202,7 @@ def main():
             current = VERSION.read_text(encoding='utf-8').strip() if VERSION.exists() else '0.0.0'
             if version_parts(latest) <= version_parts(current) and healthy_dist(ROOT / 'dist'):
                 write_status(state='current', version=current, message=f'NUC is actueel ({current}).')
+                ensure_camera_launcher()
                 ensure_kiosk_browser()
                 return
             assets = {asset['name']: asset['browser_download_url'] for asset in release['assets']}
@@ -179,6 +215,7 @@ def main():
                 write_status(state='installing', version=latest, message=f'NUC-versie {latest} installeren…')
                 install(bundle, latest)
             write_status(state='updated', version=latest, message=f'NUC is bijgewerkt naar {latest}.')
+            ensure_camera_launcher()
             if ROOT == Path('/usr/lib/dartsapp') and Path('/run/systemd/system').is_dir():
                 subprocess.run(['systemctl', 'restart', 'dartsapp-bluetooth.service'], check=False)
                 subprocess.run(['systemctl', 'restart', 'dartsapp.service'], check=False)

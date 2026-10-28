@@ -32,7 +32,7 @@ def shortcuts():
     if not desktop or not desktop.is_absolute() or desktop == HOME:
         return
     desktop.mkdir(parents=True, exist_ok=True)
-    for name in ('dartsapp', 'dartsapp-camera', 'dartsapp-display'):
+    for name in ('dartsapp', 'dartsapp-camera', 'dartsapp-camera-calibrate', 'dartsapp-display'):
         target = desktop / (name + '.desktop')
         shutil.copy2('/usr/share/applications/' + name + '.desktop', target)
         target.chmod(0o755)
