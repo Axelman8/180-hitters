@@ -79,6 +79,7 @@ jobs:
         run: |
           mkdir -p dist/downloads release-payload linux-package windows-package
           cp camera-calibrate-gui.py dist/camera-calibrate-gui.py
+          cp system-control.py dist/system-control.py
           cp android/app/build/outputs/apk/release/app-release.apk dist/downloads/180-Hitters.apk
           sha256sum dist/downloads/180-Hitters.apk > 180-Hitters.apk.sha256
           cp -a dist server.py autodarts_bridge.py camera_research.py bluetooth-bridge.py nuc-update.py kiosk-control.py camera-calibrate-gui.py calibreer-cameras.py install-calibreer-cameras.sh release-payload/

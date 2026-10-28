@@ -48,4 +48,7 @@ with tempfile.TemporaryDirectory() as tmp, patch.object(updater.os,'sync',create
  with patch.object(updater.tempfile,'gettempdir',return_value=str(scratch)),patch.object(updater.os,'getuid',return_value=stale.stat().st_uid,create=True):
   updater.cleanup_stale_updates()
  assert not stale.exists() and fresh.exists() and unrelated.exists()
+ source=(Path(__file__).resolve().parents[1]/'nuc-update.py').read_text(encoding='utf-8')
+ assert "dist' / 'system-control.py'" in source
+ assert 'dartsapp ALL=(root) NOPASSWD' in source
  print('PASS: staged update verified, backup retained, venue preserved, empty bundle rejected and damaged installation detected')

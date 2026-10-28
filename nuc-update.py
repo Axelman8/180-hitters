@@ -81,6 +81,27 @@ def ensure_kiosk_browser():
                     '/bin/bash', str(launcher)], check=False, timeout=8)
 
 
+def ensure_system_helper():
+    """Install the allowlisted broker used by packaged NUC installations."""
+    if ROOT != Path('/usr/lib/dartsapp') or not hasattr(os, 'geteuid') or os.geteuid() != 0:
+        return
+    source = ROOT / 'dist' / 'system-control.py'
+    if not source.is_file(): source = ROOT / 'system-control.py'
+    if not source.is_file(): return
+    target = Path('/usr/local/sbin/darts-system')
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix('.next')
+    durable_copy(source, temporary)
+    temporary.chmod(0o755)
+    temporary.replace(target)
+    sudoers = Path('/etc/sudoers.d/dartsapp-system')
+    sudoers.parent.mkdir(parents=True, exist_ok=True)
+    next_sudoers = sudoers.with_suffix('.next')
+    next_sudoers.write_text('dartsapp ALL=(root) NOPASSWD: /usr/local/sbin/darts-system\n', encoding='utf-8')
+    next_sudoers.chmod(0o440)
+    next_sudoers.replace(sudoers)
+
+
 def ensure_camera_launcher():
     """Keep a clickable calibration launcher on the signed-in user's desktop."""
     script = ROOT / 'camera-calibrate-gui.py'
@@ -207,6 +228,7 @@ def main():
             current = VERSION.read_text(encoding='utf-8').strip() if VERSION.exists() else '0.0.0'
             if version_parts(latest) <= version_parts(current) and healthy_dist(ROOT / 'dist'):
                 write_status(state='current', version=current, message=f'NUC is actueel ({current}).')
+                ensure_system_helper()
                 ensure_camera_launcher()
                 ensure_kiosk_browser()
                 return
@@ -220,6 +242,7 @@ def main():
                 write_status(state='installing', version=latest, message=f'NUC-versie {latest} installeren…')
                 install(bundle, latest)
             write_status(state='updated', version=latest, message=f'NUC is bijgewerkt naar {latest}.')
+            ensure_system_helper()
             ensure_camera_launcher()
             if ROOT == Path('/usr/lib/dartsapp') and Path('/run/systemd/system').is_dir():
                 subprocess.run(['systemctl', 'restart', 'dartsapp-bluetooth.service'], check=False)
