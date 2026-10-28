@@ -1,7 +1,9 @@
-body>header{position:relative;z-index:20;height:auto;min-height:64px;padding-top:6px;padding-bottom:6px;gap:12px}
-body #toggle-toolbar{display:none!important}
+body>header{position:relative;z-index:20;height:auto;min-height:64px;padding-top:6px;padding-bottom:6px;gap:12px;flex-wrap:wrap}
+body #toggle-toolbar{display:block!important;min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:#182a33;color:#fff;font-size:13px;font-weight:750;white-space:nowrap;order:0}
 body>header #top-actions{display:none!important}
 #header-menu{display:flex;gap:8px;margin-left:auto;flex-shrink:0}
+body.toolbar-collapsed #header-menu{display:none}
+body.toolbar-collapsed>header{min-height:56px}
 #header-menu details{position:relative}
 #header-menu summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#20313b;font-size:14px;font-weight:650;touch-action:manipulation}
 #header-menu summary::-webkit-details-marker{display:none}
@@ -10,8 +12,9 @@ body>header #top-actions{display:none!important}
 #header-menu summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 #header-menu .menu-panel{position:absolute;right:0;top:calc(100% + 8px);width:260px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 100px);overflow:auto;padding:8px;display:grid;gap:6px;border:1px solid #526775;border-radius:14px;background:#142129;box-shadow:0 12px 32px #0009}
 #header-menu .menu-panel button{width:100%;position:static!important;min-height:44px;font-size:14px;text-align:left;padding:12px;white-space:normal}
-body.remote-control>header{flex-direction:row;flex-wrap:nowrap;min-height:56px}
+body.remote-control>header{flex-direction:row;flex-wrap:wrap!important;min-height:56px}
 @media(max-width:600px){body>header{padding-left:10px;padding-right:10px;flex-wrap:wrap}body>header .brand{font-size:17px;letter-spacing:1px}#header-menu details{position:static}#header-menu .menu-panel{right:10px;top:calc(100% + 4px)}#header-menu summary{padding:10px 12px}}
+@media(max-width:1000px){body>header #header-menu{flex-basis:100%;width:100%;margin-left:0;justify-content:flex-end}}
 
 #header-menu #settings{color:#ffad66}
 #header-menu #android-update-action{color:#ff7777}
@@ -28,5 +31,5 @@ body.remote-control>header{flex-direction:row;flex-wrap:nowrap;min-height:56px}
 
 /* De oude 600px-tablet gebruikt de hele kopregel voor de vier hoofdknoppen. */
 html.tablet-shell body>header .brand{display:none}
-html.tablet-shell #header-menu{width:100%;margin-left:0;justify-content:flex-end;flex-wrap:nowrap}
+html.tablet-shell #header-menu{margin-left:0;justify-content:flex-end}
 html.tablet-shell #header-menu summary,html.tablet-shell #camera-game-controls button{padding-left:9px;padding-right:9px}

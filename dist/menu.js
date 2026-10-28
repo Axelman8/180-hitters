@@ -4,9 +4,23 @@ import './mobile-diagnostics.js';
 const actions=document.getElementById('top-actions');
 const menu=document.createElement('nav');
 menu.id='header-menu';menu.setAttribute('aria-label','Hoofdmenu');
-document.getElementById('toggle-toolbar').hidden=true;
-document.body.classList.remove('toolbar-collapsed');
+const menuToggle=document.getElementById('toggle-toolbar');
+menuToggle.hidden=false;menuToggle.setAttribute('aria-controls','header-menu');
+let menuCollapsed=false;
+try{menuCollapsed=localStorage.getItem('180hitters.menuCollapsed')==='true';}catch{}
+function renderMenuToggle(){
+ document.body.classList.toggle('toolbar-collapsed',menuCollapsed);
+ menuToggle.setAttribute('aria-expanded',String(!menuCollapsed));
+ menuToggle.textContent=menuCollapsed?'Menu openen':'Menu inklappen';
+ if(menuCollapsed)for(const group of menu.children)group.open=false;
+}
+menuToggle.onclick=()=>{
+ menuCollapsed=!menuCollapsed;
+ try{localStorage.setItem('180hitters.menuCollapsed',String(menuCollapsed));}catch{}
+ renderMenuToggle();
+};
 actions.before(menu);
+renderMenuToggle();
 
 const definitions=[
  ['play','Spelen'],

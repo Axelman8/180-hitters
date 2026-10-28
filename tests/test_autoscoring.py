@@ -212,9 +212,10 @@ with tempfile.TemporaryDirectory() as tmp:
                 for width in (320,393,768,1080):
                     view.set_viewport_size({'width':width,'height':900})
                     view.wait_for_timeout(250)
-                    boxes=[view.locator(selector).bounding_box() for selector in ('#header-menu details:first-child summary','#header-menu details:nth-child(2) summary','#camera-game-on','#camera-game-off')]
+                    boxes=[view.locator(selector).bounding_box() for selector in ('#header-menu details:first-child summary','#header-menu details:nth-child(2) summary','#header-menu details:nth-child(3) summary','#camera-game-on','#camera-game-off')]
                     assert all(box and box['x']>=0 and box['x']+box['width']<=width+1 for box in boxes),(width,boxes)
-                    assert max(box['y'] for box in boxes)-min(box['y'] for box in boxes)<2,(width,boxes)
+                    assert abs(boxes[-1]['y']-boxes[-2]['y'])<2,(width,boxes)
+                    assert boxes[-2]['y']>=boxes[2]['y'],(width,boxes)
                 colors=view.evaluate("[...document.querySelectorAll('#camera-game-controls button')].map(b=>getComputedStyle(b).backgroundColor)")
                 assert colors[0]!=colors[1],colors
             phone.locator('#camera-game-off').click()
