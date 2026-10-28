@@ -192,8 +192,7 @@ def kiosk_status(root):
 def switch_kiosk(root, kiosk):
     helper = root / 'kiosk-control.py'
     if not helper.is_file(): helper = root / 'dist' / 'kiosk-control.py'
-    launcher = root / 'start-kiosk.sh'
-    if os.name != 'posix' or not helper.is_file() or not launcher.is_file():
+    if os.name != 'posix' or not helper.is_file():
         raise RuntimeError('Kioskbediening is nog niet ingesteld op deze NUC.')
     env = desktop_environment()
     subprocess.Popen([sys.executable, str(helper), 'kiosk' if kiosk else 'windowed'],

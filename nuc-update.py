@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -70,8 +71,12 @@ def write_status(**values):
 def ensure_kiosk_browser():
     """Ask the desktop user manager to reopen the app after an update/crash."""
     launcher = ROOT / 'start-kiosk.sh'
-    if ROOT != Path.home() / '.local/share/oche-darts' or not launcher.is_file():
+    helper = ROOT / 'kiosk-control.py'
+    if ROOT != Path.home() / '.local/share/oche-darts' or not helper.is_file():
         return
+    if not launcher.is_file():
+        subprocess.run([sys.executable, str(helper), 'install'], check=False, timeout=8)
+    if not launcher.is_file(): return
     subprocess.run(['systemd-run', '--user', '--quiet', '--collect', '--on-active=2s',
                     '/bin/bash', str(launcher)], check=False, timeout=8)
 

@@ -111,6 +111,8 @@ def switch(mode):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2 or sys.argv[1] not in ('kiosk', 'windowed', 'launch'):
-        raise SystemExit('Gebruik kiosk, windowed of launch.')
-    launch() if sys.argv[1] == 'launch' else switch(sys.argv[1])
+    if len(sys.argv) != 2 or sys.argv[1] not in ('kiosk', 'windowed', 'launch', 'install'):
+        raise SystemExit('Gebruik kiosk, windowed, launch of install.')
+    if sys.argv[1] == 'install': install_launcher()
+    elif sys.argv[1] == 'launch': launch()
+    else: switch(sys.argv[1])
