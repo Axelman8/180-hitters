@@ -124,13 +124,39 @@ def system_control(action):
 
 def desktop_environment():
     env = os.environ.copy()
-    result = subprocess.run(['systemctl', '--user', 'show-environment'],
-                            capture_output=True, text=True, timeout=3, check=True)
-    for line in result.stdout.splitlines():
+    # A manually started server and some older Linux installations do not have
+    # a reachable per-user systemd manager.  Kiosk control should still use the
+    # active graphical session instead of exposing systemctl's raw error.
+    try:
+        result = subprocess.run(['systemctl', '--user', 'show-environment'],
+                                capture_output=True, text=True, timeout=3)
+        lines = result.stdout.splitlines() if result.returncode == 0 else ()
+    except (OSError, subprocess.SubprocessError):
+        lines = ()
+    for line in lines:
         key, _, value = line.partition('=')
         if key in ('DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'):
             env[key] = value
-    if not env.get('DISPLAY') or not Path(env.get('XAUTHORITY', '/nonexistent')).is_file():
+
+    runtime = Path('/run/user') / str(os.getuid() if hasattr(os, 'getuid') else -1)
+    if runtime.is_dir():
+        env.setdefault('XDG_RUNTIME_DIR', str(runtime))
+        if (runtime / 'bus').exists():
+            env.setdefault('DBUS_SESSION_BUS_ADDRESS', f'unix:path={runtime}/bus')
+    if not env.get('DISPLAY'):
+        sockets = sorted(Path('/tmp/.X11-unix').glob('X[0-9]*'))
+        if sockets:
+            env['DISPLAY'] = ':' + sockets[0].name[1:]
+
+    authority = Path(env.get('XAUTHORITY', '/nonexistent'))
+    if not authority.is_file():
+        candidates = [runtime / 'gdm' / 'Xauthority', Path.home() / '.Xauthority']
+        if runtime.is_dir():
+            candidates.extend(sorted(runtime.glob('.mutter-Xwaylandauth.*')))
+        authority = next((candidate for candidate in candidates if candidate.is_file()), authority)
+        if authority.is_file():
+            env['XAUTHORITY'] = str(authority)
+    if not env.get('DISPLAY') or not authority.is_file():
         raise RuntimeError('Meld de NUC eerst aan op het bureaublad.')
     return env
 
