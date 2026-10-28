@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from unittest.mock import patch
 
 
 path = Path(__file__).parents[1] / 'calibreer-cameras.py'
@@ -34,8 +35,25 @@ def test_usb_location_supports_hub_paths():
     assert calibrator.usb_location(properties) == '1-2.3'
 
 
+def test_calibration_uses_bodyless_post():
+    seen = []
+    class Response:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+    def open_request(request, timeout):
+        seen.append(request)
+        return Response()
+    with patch.object(calibrator.urllib.request, 'urlopen', side_effect=open_request):
+        calibrator.start_calibration()
+    assert seen[0].method == 'POST'
+    assert seen[0].data is None
+    assert seen[0].get_header('Content-type') is None
+
+
 if __name__ == '__main__':
     test_replace_and_parse_devices()
     test_map_slots_prefers_native_then_old_port()
     test_usb_location_supports_hub_paths()
+    test_calibration_uses_bodyless_post()
     print('camera calibrator tests: OK')

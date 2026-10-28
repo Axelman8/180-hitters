@@ -176,13 +176,17 @@ def wait_for_api(seconds: int = 45) -> dict[str, object]:
 
 
 def start_calibration() -> None:
-    request = urllib.request.Request(API + "/api/config/calibration/auto", method="POST", data=b"")
+    # AutoDarts 2.x rejects an empty form body/content-type with HTTP 400.
+    # A bodyless POST is the API's expected calibration command.
+    request = urllib.request.Request(API + "/api/config/calibration/auto", method="POST")
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             if response.status not in (200, 202, 204):
                 raise CameraError(f"AutoDarts weigerde kalibratie (HTTP {response.status}).")
     except urllib.error.HTTPError as error:
-        raise CameraError(f"Automatische kalibratie starten mislukt (HTTP {error.code}).") from error
+        detail = error.read(1000).decode('utf-8', errors='replace').strip()
+        suffix = f": {detail}" if detail else ""
+        raise CameraError(f"Automatische kalibratie starten mislukt (HTTP {error.code}){suffix}.") from error
 
 
 def backup_files(config: Path, uid: int, gid: int) -> Path:
