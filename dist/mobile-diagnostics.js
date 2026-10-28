@@ -28,7 +28,7 @@ if (phone) {
     try { return JSON.parse(android.getConnectionInfo?.() || '{}'); } catch { return {}; }
   }
   function label(mode) {
-    return mode === 'bluetooth' ? 'NUC via Bluetooth' : mode === 'nuc' ? 'NUC via wifi' : 'Lokaal op mobiel';
+    return mode === 'bluetooth' ? 'NUC via Bluetooth' : 'Lokaal op mobiel';
   }
   function render(info, nucReachable) {
     const connected = info.mode === 'local' ? true : nucReachable;
@@ -37,9 +37,8 @@ if (phone) {
     const rows = [
       ['Appversie', info.versionName || 'onbekend'],
       ['Modus', label(info.mode)],
-      ['Telefoonnetwerk', info.networkAvailable === false ? 'niet beschikbaar' : 'beschikbaar'],
       ['Bluetooth', info.bluetoothAvailable === false ? 'niet aanwezig' : info.bluetoothEnabled === false ? 'uit' : info.bluetoothConnected ? 'verbonden' : 'gereed voor verbinding'],
-      ['Gekozen NUC', info.bluetoothName || info.nucUrl || 'niet gekozen'],
+      ['Gekozen NUC', info.bluetoothName || info.bluetoothAddress || 'niet gekozen'],
       ['NUC', connected ? 'bereikbaar' : 'niet bereikbaar']
     ];
     details.replaceChildren(...rows.flatMap(([key, value]) => {

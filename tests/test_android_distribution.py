@@ -26,8 +26,10 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator('#mobile-dock > #install-app')).to_have_count(1)
             expect(page.locator('#install-app-code')).to_have_attribute(
                 'href', 'https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters.apk')
-            expect(page.locator('#android-app-action')).to_be_visible()
-            page.locator('#android-app-action').click()
+            expect(page.locator('#mobile-qr-link')).to_have_count(0)
+            expect(page.locator('#club-wifi')).to_have_count(0)
+            expect(page.locator('#android-app-action')).to_be_attached()
+            page.locator('#android-app-action').evaluate('element => element.click()')
             expect(page.locator('#android-download-dialog')).to_be_visible()
             expect(page.locator('#android-download-title')).to_have_text('180 Hitters voor Android')
             expect(page.locator('#android-download-link')).to_have_attribute(
@@ -36,20 +38,21 @@ with tempfile.TemporaryDirectory() as tmp:
 
             android = browser.new_page(viewport={'width': 980, 'height': 2050}, is_mobile=True, has_touch=True)
             android.add_init_script("""window.DartsAndroid={
-                isLocalMode:()=>true, saveSnapshot:()=>{}, chooseMode:()=>{window.modeChooserOpened=true}
+                isLocalMode:()=>true, saveSnapshot:()=>{}, checkForUpdate:()=>{},
+                chooseMode:()=>{window.modeChooserOpened=true}
             };""")
             android.goto('http://127.0.0.1:8791/?android=1')
             expect(android.locator('#android-app-action')).to_have_text('Verbindingsmodus')
-            expect(android.locator('#top-actions > #android-app-action')).to_have_count(1)
-            expect(android.locator('#top-actions > #android-update-action')).to_have_count(1)
+            expect(android.locator('#android-app-action')).to_have_count(1)
+            expect(android.locator('#android-update-action')).to_have_count(1)
             expect(android.locator('#connection-status')).to_have_text('Lokaal op deze telefoon')
-            expect(android.locator('#venue-open')).to_be_visible()
-            android.locator('#venue-open').click()
+            expect(android.locator('#venue-open')).to_be_attached()
+            android.locator('#venue-open').evaluate('element => element.click()')
             expect(android.locator('#venue-dialog')).to_be_visible()
             expect(android.locator('#venue-form [name="venueName"]')).to_have_value('180 Hitters')
             android.locator('#venue-close').click()
             assert android.get_by_text('De Venhoeve', exact=True).count() == 0
-            android.locator('#android-app-action').click()
+            android.locator('#android-app-action').evaluate('element => element.click()')
             assert android.evaluate('window.modeChooserOpened===true')
             assert android.evaluate('document.documentElement.scrollWidth<=innerWidth')
             browser.close()

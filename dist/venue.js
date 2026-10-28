@@ -25,15 +25,13 @@ if(android||local){
   <button name="removeLogo" type="button">Logo verwijderen</button>
   <label>Achtergrond (PNG, JPG of WebP)<input name="backgroundFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
   <button name="removeBackground" type="button">Achtergrond verwijderen</button>
-  <fieldset><legend>Optionele wifi van de locatie</legend>
-   <label>Wifi-naam<input name="clubWifiName" maxlength="80"></label>
-   <label>Wifi-QR-tekst<input name="clubWifiQr" maxlength="500" placeholder="WIFI:T:WPA;S:naam;P:wachtwoord;;"></label>
-  </fieldset>
-  <fieldset><legend>180 Hitters-hotspot</legend>
+  <input name="clubWifiName" type="hidden"><input name="clubWifiQr" type="hidden">
+  <fieldset><legend>Wifi voor internet en updates</legend>
    <label>Wifi-naam<input name="hotspotName" maxlength="80" readonly></label>
    <label>Wachtwoord (via netwerkbeheer)<input name="hotspotPassword" maxlength="100" readonly></label>
+   <p>Scorebediening en synchronisatie met de NUC werken uitsluitend via Bluetooth.</p>
   </fieldset>
-  <button type="button" id="venue-connections" class="wide">Wifi en Bluetooth beheren</button>
+  <button type="button" id="venue-connections" class="wide">Internet-wifi en Bluetooth beheren</button>
   <p id="venue-message" role="status"></p>
   <div class="venue-actions"><button type="button" id="venue-neutral">Neutraal profiel</button><button type="submit" class="primary">Opslaan</button><button type="button" id="venue-close">Sluiten</button></div>
  </form>`;

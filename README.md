@@ -29,7 +29,7 @@ authentication. Update both the NUC and Android clients to 1.8.6 or later.
 Standalone Android matches are unaffected.
 
 From a local Android match, **Spelen → Partij overzetten naar NUC** stages a
-snapshot and asks for wifi or Bluetooth. After connecting and obtaining phone
+snapshot and connects over Bluetooth. After connecting and obtaining phone
 control, review both match names and confirm the transfer. The NUC durably saves
 its existing match under `match-backups/` before replacement. **Spelen →
 Opgeslagen NUC-partijen** restores a selected backup, first backing up the active
@@ -95,8 +95,10 @@ Install `180-Hitters.apk` from the latest release. Android may ask for one-time 
 
 The Android app supports two modes:
 
-- **Connected mode:** control the match running on a Linux NUC over Bluetooth or Wi-Fi.
+- **Connected mode:** control the match running on a Linux NUC over Bluetooth.
 - **Standalone mode:** run a complete local match on the phone without a NUC or network.
+
+Wi-Fi on the NUC is reserved for internet access, GitHub updates, and maintenance. It is not used as an Android/tablet score-control transport.
 
 The app checks GitHub for newer releases. NUC releases are updated independently by the NUC update service.
 
@@ -124,7 +126,7 @@ All connected devices operate on the match hosted by the NUC. Confirmed turns, u
 
 When connectivity is lost, input is blocked until the current state can be verified. Match data is written atomically to `match.json`. The first match should be started on the NUC display so it becomes the authoritative shared state.
 
-On the fallback hotspot, open <http://10.42.0.1:8765/?remote=1>. On a venue network, scan the control QR code shown on the NUC display.
+Android phones and the dedicated tablet connect to the NUC exclusively through Bluetooth. The NUC screen shows only the Android installation QR code; the former Wi-Fi and browser-control QR codes are removed.
 
 ## Bluetooth
 
@@ -137,9 +139,8 @@ The app can request the NUC to enable or disable Bluetooth, restart, or shut dow
 From the connected Android app, open **Wi-Fi / hotspot** and enter the venue SSID and WPA2 password. The Linux NUC then:
 
 1. creates or updates a NetworkManager profile;
-2. generates a standard Wi-Fi QR payload;
-3. displays that QR code on the main NUC screen;
-4. adds the network to the selectable saved-network list.
+2. uses that connection for internet access and GitHub updates;
+3. adds the network to the selectable saved-network list.
 
 Network switching runs as an independent systemd task. If the selected network cannot be activated, the NUC attempts to restore `180 Hitters wifi`, followed by the previous connection. The match remains stored during network changes.
 
@@ -153,7 +154,6 @@ The same build can be reused at home or by different venues. Open **Menu → Ven
 - player-list label and slogan;
 - screensaver availability;
 - logo and background image;
-- optional venue Wi-Fi QR information;
 - fallback hotspot instructions.
 
 The profile is stored in `venue.json` next to `server.py` and is not included in public releases or replaced during updates. Large background images are omitted from Bluetooth synchronization to keep transfers responsive; the logo and text branding still synchronize.

@@ -29,8 +29,8 @@ function paint(){
 export function updateControl(value){
  if(!remote||!value)return;
  status=value;paint();
- // De dedicated tablet neemt de bediening over zodra Bluetooth of wifi de
- // NUC werkelijk bereikt. Een korte wachttijd voorkomt herhaalde claims.
+ // De dedicated tablet neemt de bediening over zodra Bluetooth de NUC
+ // werkelijk bereikt. Een korte wachttijd voorkomt herhaalde claims.
  if(tabletShell&&status.owner!==id&&!claiming&&Date.now()-lastTabletAutoClaim>5000){lastTabletAutoClaim=Date.now();void claim(true);}
  else if(!status.owner&&!claiming&&!failedAutoClaim)void claim(false);
 }

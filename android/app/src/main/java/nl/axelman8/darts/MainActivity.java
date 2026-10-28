@@ -7,8 +7,6 @@ import android.bluetooth.BluetoothDevice;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
@@ -20,11 +18,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import java.net.URI;
 import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -78,6 +73,12 @@ public final class MainActivity extends Activity {
             }
         }
         mode = preferences.getString("mode", null);
+        // Older versions could control the NUC over wifi. Migrate that saved
+        // choice so NUC control can only run through Bluetooth.
+        if ("nuc".equals(mode)) {
+            preferences.edit().remove("mode").remove("nuc_url").apply();
+            mode = null;
+        }
         if (mode == null) showModeChooser(); else loadMode(mode);
         updater.check(false);
     }
@@ -85,14 +86,13 @@ public final class MainActivity extends Activity {
     private boolean trusted(Uri target) {
         String host=target.getHost(); if (host==null) return false;
         if ("127.0.0.1".equals(host) || "localhost".equals(host)) return true;
-        try { return host.equalsIgnoreCase(URI.create(preferences.getString("nuc_url","http://10.42.0.1:8765")).getHost()); }
-        catch(Exception ignored){ return false; }
+        return false;
     }
 
     private void showModeChooser() {
         new AlertDialog.Builder(this).setTitle("Waar wil je spelen?")
-                .setItems(new String[]{"Lokaal op deze telefoon", "NUC via Bluetooth", "NUC via wifi"}, (dialog, which)->{
-                    if(which==0) chooseLocal(); else if(which==1) chooseBluetooth(); else askNucAddress();
+                .setItems(new String[]{"Lokaal op deze telefoon", "NUC via Bluetooth"}, (dialog, which)->{
+                    if(which==0) chooseLocal(); else chooseBluetooth();
                 }).setNegativeButton("Annuleren", null).show();
     }
 
@@ -130,34 +130,22 @@ public final class MainActivity extends Activity {
 
     private void chooseLocal() {
         String snapshot=preferences.getString("last_snapshot","");
-        if("nuc".equals(mode)&&!snapshot.isEmpty()) {
+        if("bluetooth".equals(mode)&&!snapshot.isEmpty()) {
             new AlertDialog.Builder(this).setTitle("Laatste NUC-stand meenemen?")
-                    .setMessage("Kies Overnemen om bij wifi-uitval lokaal verder te spelen vanaf de laatst bevestigde stand.")
+                    .setMessage("Kies Overnemen om na verlies van Bluetooth lokaal verder te spelen vanaf de laatst bevestigde stand.")
                     .setPositiveButton("Overnemen",(d,w)->{try{localServer.importSnapshot(snapshot);}catch(Exception e){Toast.makeText(this,"Stand kon niet worden overgenomen.",Toast.LENGTH_LONG).show();}loadMode("local");})
                     .setNegativeButton("Lokale partij openen",(d,w)->loadMode("local")).show();
         } else loadMode("local");
     }
 
-    private void askNucAddress() {
-        EditText input=new EditText(this); input.setSingleLine(true); input.setText(preferences.getString("nuc_url","http://10.42.0.1:8765")); input.setSelectAllOnFocus(true);
-        int pad=dp(22); FrameLayout box=new FrameLayout(this); box.setPadding(pad,0,pad,0); box.addView(input,new FrameLayout.LayoutParams(-1,-2));
-        new AlertDialog.Builder(this).setTitle("Adres van de NUC").setMessage("Het standaardadres van de 180 Hitters wifi-hotspot is al ingevuld.")
-                .setView(box).setPositiveButton("Verbinden",(d,w)->{
-                    String value=input.getText().toString().trim(); if(!value.startsWith("http://")&&!value.startsWith("https://"))value="http://"+value;
-                    while(value.endsWith("/"))value=value.substring(0,value.length()-1);
-                    preferences.edit().putString("nuc_url",value).apply(); loadMode("nuc");
-                }).setNegativeButton("Annuleren",null).show();
-    }
-
     private void loadMode(String selected) {
+        if (!"local".equals(selected) && !"bluetooth".equals(selected)) selected="bluetooth";
         mode=selected; preferences.edit().putString("mode",selected).apply();
         if(localServer!=null)localServer.setBluetoothMode("bluetooth".equals(selected));
         if("local".equals(selected)) web.loadUrl("http://127.0.0.1:8765/?android=1");
-        else if("bluetooth".equals(selected)) web.loadUrl("http://127.0.0.1:8765/?remote=1&android=1&transport=bluetooth");
-        else web.loadUrl(preferences.getString("nuc_url","http://10.42.0.1:8765")+"/?remote=1&android=1&transport=wifi");
+        else web.loadUrl("http://127.0.0.1:8765/?remote=1&android=1&transport=bluetooth");
     }
 
-    private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     @Override public void onBackPressed(){if(web.canGoBack())web.goBack();else super.onBackPressed();}
     @Override protected void onResume(){
         super.onResume();
@@ -186,9 +174,8 @@ public final class MainActivity extends Activity {
                 String pending=localServer.exportTransfer();
                 if(!preferences.edit().putString("pending_nuc_transfer",pending).commit())throw new java.io.IOException("Overdracht niet opgeslagen");
                 new AlertDialog.Builder(MainActivity.this).setTitle("Partij overzetten naar NUC")
-                    .setMessage("Kies de verbinding. Op de NUC bevestig je het overzetten; de bestaande partij wordt eerst als herstelkopie opgeslagen.")
-                    .setPositiveButton("Via wifi",(d,w)->askNucAddress())
-                    .setNeutralButton("Via Bluetooth",(d,w)->chooseBluetooth())
+                    .setMessage("De partij wordt via Bluetooth overgezet. Op de NUC bevestig je het overzetten; de bestaande partij wordt eerst als herstelkopie opgeslagen.")
+                    .setPositiveButton("Verbinden via Bluetooth",(d,w)->chooseBluetooth())
                     .setNegativeButton("Annuleren",(d,w)->preferences.edit().remove("pending_nuc_transfer").apply()).show();
             } catch(Exception e){Toast.makeText(MainActivity.this,"Geen lokale partij beschikbaar om over te zetten.",Toast.LENGTH_LONG).show();}
         });}
@@ -199,18 +186,14 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public String getConnectionMode(){return mode==null?"local":mode;}
         @JavascriptInterface public String getConnectionInfo(){
             try {
-                ConnectivityManager manager=(ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
-                NetworkInfo network=manager==null?null:manager.getActiveNetworkInfo();
                 return new JSONObject()
                         .put("versionName",BuildConfig.VERSION_NAME)
                         .put("mode",mode==null?"local":mode)
-                        .put("networkAvailable",network!=null&&network.isConnected())
                         .put("bluetoothAvailable",bluetooth!=null&&bluetooth.isAvailable())
                         .put("bluetoothEnabled",bluetooth!=null&&bluetooth.isEnabled())
                         .put("bluetoothConnected",bluetooth!=null&&bluetooth.isConnected())
                         .put("bluetoothAddress",bluetooth==null?"":bluetooth.selectedAddress())
                         .put("bluetoothName",bluetooth==null?"":bluetooth.selectedName())
-                        .put("nucUrl",preferences.getString("nuc_url","http://10.42.0.1:8765"))
                         .toString();
             } catch(Exception error){return "{}";}
         }

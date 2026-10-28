@@ -6,6 +6,10 @@ const controlToken = (() => { try { return window.DartsAndroid?.getControlToken?
 const localNuc = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname) && !window.DartsAndroid?.isTabletShell;
 const canControl = localNuc || !!controlToken;
 if(localNuc)document.body.classList.add('local-nuc');
+const addNote = document.querySelector('#network-add-section > p');
+const switchNote = document.querySelector('#network-confirmation > p');
+if(addNote)addNote.textContent='Voeg een netwerk toe voor internet en GitHub-updates. De bediening blijft via Bluetooth werken.';
+if(switchNote)switchNote.textContent='Wifi wordt alleen voor internet en updates gebruikt. De Bluetooth-bediening blijft actief.';
 
 function setBusy(busy) {
   $('network-hotspot').disabled = busy || !info;
@@ -37,8 +41,8 @@ async function loadNetwork() {
     $('network-status').textContent = data.busy ? 'De NUC schakelt van netwerk. Dit kan ongeveer een minuut duren.' : (data.operation?.message || '');
   } catch (error) {
     $('network-status').textContent = pending
-      ? 'De verbinding is weg tijdens het omschakelen. Verbind je telefoon met het gekozen netwerk. Bij mislukken van wifi probeert de NUC automatisch 180 Hitters wifi.'
-      : (error.name === 'TimeoutError' || error instanceof TypeError ? 'De NUC is niet bereikbaar. Controleer je wifi-verbinding.' : error.message);
+      ? 'De NUC schakelt het internetnetwerk om. De Bluetooth-bediening blijft beschikbaar.'
+      : (error.name === 'TimeoutError' || error instanceof TypeError ? 'De NUC reageert niet. Controleer de Bluetooth-verbinding.' : error.message);
     if (!pending) { info = null; setBusy(true); }
   } finally { polling = false; }
 }
@@ -47,10 +51,9 @@ function choose(target) {
   chosen = info?.profiles.find(p => p.uuid === target);
   if (!chosen) return;
   $('network-target').textContent = chosen.name;
-  const profile=window.venueProfile||{},hotspot=profile.hotspotName||'180 Hitters wifi',password=profile.hotspotPassword?` Wachtwoord: ${profile.hotspotPassword}.`:'';
   $('network-instructions').textContent = chosen.mode === 'hotspot'
-    ? `Verbind daarna je telefoon met ${chosen.name}.${password} Open vervolgens http://10.42.0.1:8765/?remote=1.`
-    : `Verbind daarna je telefoon met ${chosen.name}. Scan de QR-code op het NUC-scherm voor het nieuwe adres. Lukt verbinden niet, dan gaat de NUC terug naar ${hotspot}.${password}`;
+    ? 'Deze hotspot is alleen beschikbaar voor onderhoud. Scorebediening blijft via Bluetooth lopen.'
+    : 'Dit netwerk wordt alleen gebruikt voor internet en updates. Scorebediening blijft via Bluetooth lopen.';
   $('network-confirmation').hidden = false;
   $('network-confirm').disabled = false;
   $('network-back').hidden = false;
