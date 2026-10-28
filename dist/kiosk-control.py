@@ -30,6 +30,16 @@ def profile(executable):
     return ROOT / 'browser-profile'
 
 
+def disable_desktop_keyboard():
+    """Keep the dedicated NUC screen free of the GNOME popup keyboard."""
+    executable = shutil.which('gsettings')
+    if not executable:
+        return
+    subprocess.run([executable, 'set', 'org.gnome.desktop.a11y.applications',
+                    'screen-keyboard-enabled', 'false'], check=False,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+
+
 def browser_processes():
     profile_markers = ('oche-darts/browser-profile', 'snap/chromium/common/oche-profile')
     for process in Path('/proc').glob('[0-9]*'):
@@ -55,6 +65,7 @@ def install_launcher():
 
 def launch():
     executable = browser()
+    disable_desktop_keyboard()
     for _ in range(30):
         try:
             from urllib.request import urlopen
@@ -70,6 +81,7 @@ def launch():
         browser_profile.mkdir(parents=True, exist_ok=True)
         arguments = [executable, '--start-maximized' if MARKER.exists() else '--kiosk',
                      '--no-first-run', '--no-default-browser-check', '--disable-features=Translate',
+                     '--disable-virtual-keyboard',
                      '--lang=nl', '--password-store=basic',
                      '--user-data-dir=' + str(browser_profile), 'http://127.0.0.1:8765']
     os.execvpe(executable, arguments, os.environ.copy())

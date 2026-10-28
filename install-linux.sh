@@ -34,6 +34,7 @@ cat >> "$LAUNCHER" <<'LAUNCH'
 if [[ -f "$HOME/.config/oche-display.sh" ]]; then
   bash "$HOME/.config/oche-display.sh"
 fi
+gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled false >/dev/null 2>&1 || true
 for attempt in {1..30}; do
   if /usr/bin/python3 -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8765", timeout=1)' >/dev/null 2>&1; then break; fi
   sleep 1
@@ -55,7 +56,7 @@ else
   else
     WINDOW_MODE=(--kiosk)
   fi
-  exec "$BROWSER" "${WINDOW_MODE[@]}" --no-first-run --no-default-browser-check --disable-features=Translate --lang=nl --password-store=basic --user-data-dir="$PROFILE" http://127.0.0.1:8765
+  exec "$BROWSER" "${WINDOW_MODE[@]}" --no-first-run --no-default-browser-check --disable-features=Translate --disable-virtual-keyboard --lang=nl --password-store=basic --user-data-dir="$PROFILE" http://127.0.0.1:8765
 fi
 LAUNCH
 chmod +x "$LAUNCHER"
