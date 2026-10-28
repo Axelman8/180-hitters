@@ -60,7 +60,7 @@ if(remote){
  note.style.cssText='display:block;text-align:center;font-size:12px;padding:3px 8px;color:#82d7e6';
  button.onclick=()=>void claim(true);
  paint();
- const protectedPaths=new Set(['/api/autoscoring','/api/autoscoring/apply','/api/state','/api/draft','/api/setup','/api/display','/api/match-transfer','/api/match-restore']);
+ const protectedPaths=new Set(['/api/autoscoring','/api/autoscoring/reset','/api/autoscoring/apply','/api/state','/api/draft','/api/setup','/api/display','/api/match-transfer','/api/match-restore']);
  window.fetch=async(input,options)=>{
   const url=new URL(typeof input==='string'?input:input.url,location.href);
   if(url.origin===location.origin&&options?.method?.toUpperCase()==='POST'&&protectedPaths.has(url.pathname)){

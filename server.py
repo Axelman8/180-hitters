@@ -494,7 +494,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/autoscoring', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -506,6 +506,14 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 < length <= 10000000:
                     return self.reply(413, {'error': 'Partij te groot'})
                 incoming = json.loads(self.rfile.read(length))
+                if self.path == '/api/autoscoring/reset':
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        try:
+                            camera.reset_detector()
+                            return self.reply(200, camera.status())
+                        except (OSError, TimeoutError, URLError) as error:
+                            return self.reply(503, {'error': 'AutoDarts-reset mislukt: ' + str(error)})
                 if self.path == '/api/mouse':
                     if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
                         return self.reply(403, {'error': 'Muisbediening is alleen beschikbaar vanuit de gekoppelde app.'})

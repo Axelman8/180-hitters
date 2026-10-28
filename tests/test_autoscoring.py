@@ -30,6 +30,7 @@ def state(hits):
 
 class Mock(BaseHTTPRequestHandler):
     value=state([])
+    reset_count=0
     def log_message(self,*a): pass
     def do_GET(self):
         data=json.dumps(self.value if self.path=='/api/state' else {}).encode()
@@ -37,6 +38,10 @@ class Mock(BaseHTTPRequestHandler):
     def do_PUT(self):
         assert self.path=='/api/start'
         Mock.value=state([])
+        self.send_response(200);self.end_headers()
+    def do_POST(self):
+        assert self.path=='/api/reset'
+        Mock.reset_count+=1;Mock.value=state([])
         self.send_response(200);self.end_headers()
 
 
@@ -70,7 +75,7 @@ with tempfile.TemporaryDirectory() as tmp:
         time.sleep(.8)
         with sync_playwright() as p:
             b=p.chromium.launch();page=b.new_page();phone=b.new_page(viewport={'width':393,'height':850})
-            errors=[];page.on('pageerror',lambda e:errors.append(str(e)));phone.on('pageerror',lambda e:errors.append(str(e)))
+            errors=[];page.on('pageerror',lambda e:errors.append(getattr(e,'stack',str(e))));phone.on('pageerror',lambda e:errors.append(getattr(e,'stack',str(e))))
             url='http://127.0.0.1:8796';page.goto(url);phone.goto(url+'/?remote=1')
             api=page.request
             get=lambda:api.get(url+'/api/state').json()
@@ -89,6 +94,12 @@ with tempfile.TemporaryDirectory() as tmp:
                 phone.locator('#camera-game-on').wait_for(state='visible')
                 return s
             setup()
+            page.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
+            phone.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
+            assert page.locator('#camera-game-on').get_attribute('aria-label')== 'Camera aan / herstart'
+            assert phone.locator('#camera-game-on').get_attribute('aria-label')== 'Camera aan / herstart'
+            assert api.post(url+'/api/autoscoring/reset',data={}).ok
+            wait(lambda:Mock.reset_count==1 and cam()['armed'])
             Mock.value=state([(20,3)])
             wait(lambda:len((get().get('draft') or {}).get('hits',[]))==1)
             assert get()['match']['state']['players'][0]['remaining']==501

@@ -109,6 +109,17 @@ class AutoDartsBridge:
         self.blocked = ''
         self.message = 'Haal alle darts uit het bord om te beginnen.' if enabled else 'Handmatige invoer'
 
+    def reset_detector(self):
+        """Clear Detection's current visit without changing calibration or cameras."""
+        with urlopen(Request(self.base + '/api/reset', method='POST'), timeout=4) as response:
+            response.read(1024)
+        self.pending.clear()
+        self.armed = False
+        self.closed = False
+        self.seen = []
+        self.blocked = ''
+        self.message = "Camera's gereset; wacht op een leeg bord."
+
     def push(self, kind, hit=None):
         if len(self.pending) >= 8:
             self.pause('Te veel onverwerkte cameraworpen. Controleer de stand en hervat.')

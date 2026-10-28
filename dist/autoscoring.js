@@ -8,7 +8,7 @@ export function cameraControls(consume){
  document.getElementById('connection-status').after(note);note.hidden=true;
  const quick=document.createElement('div');quick.id='camera-game-controls';
  quick.setAttribute('role','group');quick.setAttribute('aria-label','Camera-invoer');
- quick.innerHTML='<button type="button" id="camera-game-on" aria-pressed="false">Camera aan</button><button type="button" id="camera-game-off" aria-pressed="false">Camera uit</button>';
+ quick.innerHTML='<button type="button" id="camera-game-on" aria-label="Camera aan / herstart" aria-pressed="false"><span class="camera-on-full">Camera aan / herstart</span><span class="camera-on-short">Aan/herstart</span></button><button type="button" id="camera-game-off" aria-pressed="false">Camera uit</button>';
  document.getElementById('top-actions').append(quick);
  const bind=(element,handler)=>{
   if(window.DartsAndroid?.isTabletShell&&typeof window.DartsAndroid.bindAction==='function')window.DartsAndroid.bindAction(element,handler);
@@ -30,7 +30,11 @@ export function cameraControls(consume){
     note.textContent='Bediening overnemen en huidige NUC-stand ophalen...';
     if(!await takeControl())throw Error('Bediening kon niet worden overgenomen. Probeer het nogmaals.');
    }
-   await configure(enabled);
+   if(enabled&&latest?.enabled){
+    if(!confirm("Alle nog niet verwerkte cameradarts worden gewist. Zorg dat het bord leeg is. Camera's nu herstarten?"))return;
+    const r=await fetch('/api/autoscoring/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(requestTimeout)});
+    const data=await r.json();if(!r.ok)throw Error(data.error||"Camera's herstarten is mislukt");paint(data);
+   }else await configure(enabled);
   }catch(e){actionError=e.message;note.textContent=actionError;}
   finally{changing=false;if(latest)paint(latest);}
  }

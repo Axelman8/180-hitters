@@ -243,7 +243,7 @@ function chooseCategory(training){
  $('setup-form').hidden=false;$('category-cancel').hidden=true;
  $('category-match').setAttribute('aria-pressed',String(!training));$('category-training').setAttribute('aria-pressed',String(training));
  settings();
- document.dispatchEvent(new CustomEvent('tablet-edit-match-open',{detail:{selected:training?(state.training121?'121':state.game):state.game}}));
+ document.dispatchEvent(new CustomEvent('tablet-edit-match-open',{detail:{selected:training?(state?.training121?'121':state?.game||'x01'):state?.game||'x01'}}));
 }
 $('category-match').onclick=()=>chooseCategory(false);$('category-training').onclick=()=>chooseCategory(true);$('category-cancel').onclick=()=>render();
 function buildKeys(){

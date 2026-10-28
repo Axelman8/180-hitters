@@ -19,10 +19,12 @@ body.remote-control>header{flex-direction:row;flex-wrap:nowrap;min-height:56px}
 /* Camera choice stays next to the two menus on display and phone. */
 #header-menu{flex-wrap:wrap;max-width:100%}
 #camera-game-controls{display:flex;gap:6px;align-items:center}
+#header-menu details:nth-child(1){order:0}#header-menu details:nth-child(2){order:1}#camera-game-controls{order:2}#header-menu details:nth-child(3){order:3}#header-menu details:nth-child(4){order:4}
 #camera-game-controls button{min-height:44px;padding:10px 12px;font-size:14px;white-space:nowrap;background:#20313b;color:#fff;border:1px solid var(--line);border-radius:12px}
 #camera-game-controls button[aria-pressed="true"],#autoscoring-dialog button[aria-pressed="true"]{background:#42752e!important;color:#fff!important;border-color:#a6df71!important;box-shadow:inset 0 0 0 1px #a6df71}
-@media(max-width:600px){#header-menu{gap:6px}#header-menu summary,#camera-game-controls button{font-size:12px;padding:10px 8px}#header-menu summary{gap:4px}}
-@media(max-width:360px){#header-menu{gap:3px}#camera-game-controls{gap:3px}#header-menu summary,#camera-game-controls button{font-size:11px;padding:10px 5px}}
+.camera-on-short{display:none}
+@media(max-width:600px){#header-menu{gap:6px}#header-menu summary,#camera-game-controls button{font-size:12px;padding:10px 8px}#header-menu summary{gap:4px}.camera-on-full{display:none}.camera-on-short{display:inline}}
+@media(max-width:360px){#header-menu{gap:3px}#camera-game-controls{gap:3px}#header-menu summary,#camera-game-controls button{font-size:11px;padding:10px 3px}}
 
 /* De oude 600px-tablet gebruikt de hele kopregel voor de vier hoofdknoppen. */
 html.tablet-shell body>header .brand{display:none}
