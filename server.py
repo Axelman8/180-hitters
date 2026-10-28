@@ -240,8 +240,8 @@ def mouse_orientation():
 
 def kiosk_status(root):
     if root == Path('/usr/lib/dartsapp'):
-        states = sorted(Path('/var/lib/dartsapp').glob('kiosk-*/.windowed-mode'))
-        kiosk = not bool(states)
+        state_roots = sorted(Path('/var/lib/dartsapp').glob('kiosk-*'))
+        kiosk = bool(state_roots) and any(not (state / '.windowed-mode').exists() for state in state_roots)
         return {'kiosk': kiosk, 'message': 'Kioskmodus actief.' if kiosk
                 else 'Muisbediening met bureaublad actief.'}
     return {'kiosk': not (root / '.windowed-mode').exists(),
@@ -344,6 +344,9 @@ def control_mouse(incoming):
 def serve(host='0.0.0.0', port=8765, data_file=None):
     from autodarts_bridge import AutoDartsBridge
     root = Path(__file__).parent
+    if root == Path('/usr/lib/dartsapp') and not Path('/etc/systemd/system/dartsapp.service.d/desktop-control.conf').is_file():
+        try: (Path('/var/lib/dartsapp') / 'update.request').touch()
+        except OSError: pass
     path = Path(data_file) if data_file else root / 'match.json'
     roster_path = path.with_name(path.stem + '-players.json')
     roster = json.loads(roster_path.read_text(encoding='utf-8')) if roster_path.exists() else []

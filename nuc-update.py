@@ -84,10 +84,10 @@ def ensure_kiosk_browser():
 def ensure_system_helper():
     """Install the allowlisted broker used by packaged NUC installations."""
     if ROOT != Path('/usr/lib/dartsapp') or not hasattr(os, 'geteuid') or os.geteuid() != 0:
-        return
+        return False
     source = ROOT / 'dist' / 'system-control.py'
     if not source.is_file(): source = ROOT / 'system-control.py'
-    if not source.is_file(): return
+    if not source.is_file(): return False
     target = Path('/usr/local/sbin/darts-system')
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix('.next')
@@ -100,6 +100,17 @@ def ensure_system_helper():
     next_sudoers.write_text('dartsapp ALL=(root) NOPASSWD: /usr/local/sbin/darts-system\n', encoding='utf-8')
     next_sudoers.chmod(0o440)
     next_sudoers.replace(sudoers)
+    dropin = Path('/etc/systemd/system/dartsapp.service.d/desktop-control.conf')
+    content = '[Service]\nNoNewPrivileges=false\n'
+    changed = not dropin.is_file() or dropin.read_text(encoding='utf-8', errors='replace') != content
+    if changed:
+        dropin.parent.mkdir(parents=True, exist_ok=True)
+        next_dropin = dropin.with_suffix('.next')
+        next_dropin.write_text(content, encoding='utf-8')
+        next_dropin.chmod(0o644)
+        next_dropin.replace(dropin)
+        subprocess.run(['systemctl', 'daemon-reload'], check=False, timeout=8)
+    return changed
 
 
 def ensure_camera_launcher():
@@ -228,8 +239,10 @@ def main():
             current = VERSION.read_text(encoding='utf-8').strip() if VERSION.exists() else '0.0.0'
             if version_parts(latest) <= version_parts(current) and healthy_dist(ROOT / 'dist'):
                 write_status(state='current', version=current, message=f'NUC is actueel ({current}).')
-                ensure_system_helper()
+                service_changed = ensure_system_helper()
                 ensure_camera_launcher()
+                if service_changed:
+                    subprocess.run(['systemctl', 'restart', 'dartsapp.service'], check=False, timeout=12)
                 ensure_kiosk_browser()
                 return
             assets = {asset['name']: asset['browser_download_url'] for asset in release['assets']}

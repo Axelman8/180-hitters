@@ -33,6 +33,8 @@ assert "str(helper), 'install'" in updater
 switch_source = (root / 'server.py').read_text(encoding='utf-8').split('def switch_kiosk', 1)[1].split('def open_kiosk', 1)[0]
 assert 'not launcher.is_file()' not in switch_source
 assert "update.request').touch()" in (root / 'server.py').read_text(encoding='utf-8')
+assert 'NoNewPrivileges=false' in (root / 'packaging' / 'build-deb.py').read_text(encoding='utf-8')
+assert 'dartsapp.service.d/desktop-control.conf' in (root / 'nuc-update.py').read_text(encoding='utf-8')
 
 with tempfile.TemporaryDirectory() as temporary:
     authority = Path(temporary) / 'Xauthority'
