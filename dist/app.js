@@ -15,8 +15,15 @@ function mobileLayout(){document.body.classList.toggle('remote-control',!!window
 phoneLayout.addEventListener('change',mobileLayout);mobileLayout();
 const $=id=>document.getElementById(id),key='oche.match.v1';
 const androidLocal=window.DartsAndroid?.isLocalMode?.()===true;
-const connectedLabel=androidLocal?'Lokaal op deze telefoon':'Verbonden met NUC';
+const tabletShell=window.DartsAndroid?.isTabletShell===true;
+const connectedLabel=androidLocal?`Lokaal op deze ${tabletShell?'tablet':'telefoon'}`:'Verbonden met NUC';
 const savedLabel=androidLocal?'Lokaal opgeslagen':'Opgeslagen op NUC';
+if(window.DartsAndroid){
+ const modeStatus=document.createElement('p');modeStatus.id='mode-status';
+ modeStatus.className=androidLocal?'local':'nuc';
+ modeStatus.textContent=androidLocal?`MODUS: LOKAAL OP DEZE ${tabletShell?'TABLET':'TELEFOON'}`:'MODUS: NUC VIA BLUETOOTH';
+ $('connection-status').before(modeStatus);
+}
 let historyOpen=false;
 try{historyOpen=localStorage.getItem('axelman8.historyOpen')==='true';}catch{}
 function renderHistoryMenu(){

@@ -73,8 +73,10 @@ function collect(){
 collect();
 new MutationObserver(collect).observe(actions,{childList:true});
 
-// Alleen tonen op installaties die de hardwaretest aanbieden.
-fetch('/api/camera/status').then(response=>{
+// De uitgebreide hardwaretest hoort alleen op het fysieke NUC-scherm. Mobiel
+// gebruikt de compacte knoppen Camera aan/herstart en Camera uit.
+const localNuc=['127.0.0.1','localhost','::1'].includes(location.hostname)&&!window.DartsAndroid;
+if(localNuc)fetch('/api/camera/status').then(response=>{
  if(!response.ok)return;
  const button=document.createElement('button');button.id='camera-test';
  button.textContent='Camera-test';button.onclick=()=>{location.href='camera.html';};

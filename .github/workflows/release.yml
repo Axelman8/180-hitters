@@ -72,7 +72,7 @@ jobs:
 
       - name: Build Android app
         working-directory: android
-        run: gradle --no-daemon :app:assembleRelease
+        run: gradle --no-daemon :app:assembleRelease -PreleaseVersion="${GITHUB_REF_NAME#v}"
 
       - name: Assemble release packages
         shell: bash
