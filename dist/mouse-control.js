@@ -1,6 +1,7 @@
-const tablet = window.DartsAndroid?.isTabletShell === true;
+const android = window.DartsAndroid;
+const remoteAndroid = !!android && android.isLocalMode?.() !== true;
 
-if (tablet) {
+if (remoteAndroid) {
   const stylesheet = document.createElement('link');
   stylesheet.rel = 'stylesheet'; stylesheet.href = 'mouse-control.css';
   document.head.append(stylesheet);

@@ -7,6 +7,8 @@ import android.bluetooth.BluetoothDevice;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
@@ -25,6 +27,7 @@ import android.widget.Toast;
 import java.net.URI;
 import java.util.List;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 public final class MainActivity extends Activity {
     private WebView web;
@@ -63,7 +66,8 @@ public final class MainActivity extends Activity {
         });
         if(hasBluetoothPermission() && !preferences.getBoolean("bluetooth_default_done",false)) {
             for(BluetoothDevice device:bluetooth.pairedDevices()) {
-                if("darten".equalsIgnoreCase(device.getName())) {
+                String name=device.getName()==null?"":device.getName();
+                if("darten".equalsIgnoreCase(name) || name.toLowerCase().contains("venhoeve nuc")) {
                     bluetooth.select(device.getAddress());
                     preferences.edit().putString("bluetooth_address",device.getAddress())
                             .putBoolean("bluetooth_default_done",true).apply();
@@ -193,6 +197,24 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void chooseMode(){runOnUiThread(MainActivity.this::showModeChooser);}
         @JavascriptInterface public boolean isLocalMode(){return "local".equals(mode);}
         @JavascriptInterface public String getConnectionMode(){return mode==null?"local":mode;}
+        @JavascriptInterface public String getConnectionInfo(){
+            try {
+                ConnectivityManager manager=(ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
+                NetworkInfo network=manager==null?null:manager.getActiveNetworkInfo();
+                return new JSONObject()
+                        .put("versionName",BuildConfig.VERSION_NAME)
+                        .put("mode",mode==null?"local":mode)
+                        .put("networkAvailable",network!=null&&network.isConnected())
+                        .put("bluetoothAvailable",bluetooth!=null&&bluetooth.isAvailable())
+                        .put("bluetoothEnabled",bluetooth!=null&&bluetooth.isEnabled())
+                        .put("bluetoothConnected",bluetooth!=null&&bluetooth.isConnected())
+                        .put("bluetoothAddress",bluetooth==null?"":bluetooth.selectedAddress())
+                        .put("bluetoothName",bluetooth==null?"":bluetooth.selectedName())
+                        .put("nucUrl",preferences.getString("nuc_url","http://10.42.0.1:8765"))
+                        .toString();
+            } catch(Exception error){return "{}";}
+        }
+        @JavascriptInterface public void repairConnection(){if(bluetooth!=null)bluetooth.closeSocket();}
         @JavascriptInterface public String getControlToken(){return "d7c87006c31f4da2a4348eeb05b59c8b";}
         @JavascriptInterface public void checkForUpdate(){runOnUiThread(()->updater.check(true));}
         @JavascriptInterface public void saveSnapshot(String json){if(json!=null&&json.length()<10000000)preferences.edit().putString("last_snapshot",json).apply();}

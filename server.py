@@ -397,8 +397,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     except (RuntimeError, OSError, subprocess.SubprocessError) as error:
                         self.reply(503, {'error': str(error)})
             elif route == '/api/kiosk/status':
-                if self.client_address[0] not in ('127.0.0.1', '::1'):
-                    self.reply(403, {'error': 'Alleen beschikbaar op het NUC-scherm.'})
+                if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                    self.reply(403, {'error': 'Alleen beschikbaar op de NUC of vanuit de gekoppelde app.'})
                 else:
                     self.reply(200, kiosk_status(root))
             elif route == '/api/update/status':
@@ -724,8 +724,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             return self.reply(503, {'error': message})
                         return self.reply(200, {'message': message})
                 if self.path == '/api/kiosk/mode':
-                    if self.client_address[0] not in ('127.0.0.1', '::1'):
-                        return self.reply(403, {'error': 'Alleen beschikbaar op het NUC-scherm.'})
+                    if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                        return self.reply(403, {'error': 'Alleen beschikbaar op de NUC of vanuit de gekoppelde app.'})
                     if not isinstance(incoming, dict) or set(incoming) != {'kiosk'} or type(incoming['kiosk']) is not bool:
                         return self.reply(400, {'error': 'Ongeldige kioskstand.'})
                     try:

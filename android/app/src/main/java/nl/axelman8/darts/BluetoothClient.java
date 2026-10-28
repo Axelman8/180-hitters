@@ -50,6 +50,8 @@ final class BluetoothClient {
     BluetoothClient() { adapter = BluetoothAdapter.getDefaultAdapter(); }
 
     boolean isAvailable() { return adapter != null; }
+    boolean isEnabled() { return adapter != null && adapter.isEnabled(); }
+    synchronized boolean isConnected() { return socket != null && socket.isConnected(); }
 
     @SuppressLint("MissingPermission")
     List<BluetoothDevice> pairedDevices() {
@@ -68,6 +70,16 @@ final class BluetoothClient {
     }
 
     synchronized String selectedAddress() { return address; }
+
+    @SuppressLint("MissingPermission")
+    synchronized String selectedName() {
+        if (adapter == null || address == null) return "";
+        try {
+            BluetoothDevice device = adapter.getRemoteDevice(address);
+            String name = device.getName();
+            return name == null ? address : name;
+        } catch (Exception ignored) { return address; }
+    }
 
     @SuppressLint("MissingPermission")
     synchronized Result request(String method, String path, String body, String knownRevision) throws Exception {

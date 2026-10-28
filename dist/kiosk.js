@@ -1,6 +1,11 @@
 const button = document.getElementById('open-kiosk');
 const status = document.getElementById('kiosk-status');
 const localNuc = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname) && !window.DartsAndroid?.isTabletShell;
+const remoteAndroid = !!window.DartsAndroid && window.DartsAndroid.isLocalMode?.() !== true;
+const controlHeaders = () => {
+  try { const token=window.DartsAndroid?.getControlToken?.(); return token?{'X-Darts-Control':token}:{}; }
+  catch { return {}; }
+};
 button.addEventListener('click', async () => {
   button.disabled = true;
   status.textContent = 'App openen op de NUC…';
@@ -20,10 +25,10 @@ button.addEventListener('click', async () => {
   }
 });
 
-if (localNuc) {
+if (localNuc || remoteAndroid) {
   // De browser-fullscreenknop vraagt om Escape en is daardoor onbruikbaar op
   // een NUC met alleen een muis. Gebruik de echte kioskbediening hieronder.
-  document.getElementById('fullscreen').hidden = true;
+  if (localNuc) document.getElementById('fullscreen').hidden = true;
   const modeButton = document.createElement('button');
   modeButton.id = 'kiosk-mode-toggle';
   modeButton.type = 'button';
@@ -32,7 +37,7 @@ if (localNuc) {
   let kiosk = true;
   const refresh = async () => {
     try {
-      const response = await fetch('/api/kiosk/status', {cache:'no-store'});
+      const response = await fetch('/api/kiosk/status', {cache:'no-store',headers:controlHeaders()});
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Kioskstatus niet beschikbaar.');
       kiosk = data.kiosk;
@@ -48,7 +53,7 @@ if (localNuc) {
     modeButton.textContent = kiosk ? 'Kioskmodus verlaten…' : 'Kioskmodus starten…';
     try {
       const response = await fetch('/api/kiosk/mode', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers:{'Content-Type':'application/json',...controlHeaders()},
         body:JSON.stringify({kiosk:!kiosk}), signal:AbortSignal.timeout(10000)
       });
       const data = await response.json();
