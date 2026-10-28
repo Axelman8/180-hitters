@@ -209,6 +209,19 @@ fi
     return {'orientation': current, 'label': labels[current], 'output': output}
 
 
+def mouse_orientation():
+    """Read the persisted xrandr rotation without querying xrandr for every drag event."""
+    config = Path.home() / '.config' / 'oche-display.sh'
+    try:
+        content = config.read_text(encoding='utf-8')
+    except OSError:
+        return 'landscape'
+    for orientation, rotation in (('portrait-left', 'left'), ('portrait-right', 'right')):
+        if f'--rotate {rotation}' in content:
+            return orientation
+    return 'landscape'
+
+
 def kiosk_status(root):
     return {'kiosk': not (root / '.windowed-mode').exists(),
             'message': 'Kioskmodus actief.' if not (root / '.windowed-mode').exists()
@@ -273,6 +286,11 @@ def control_mouse(incoming):
         dx, dy = incoming['dx'], incoming['dy']
         if type(dx) is not int or type(dy) is not int or not -240 <= dx <= 240 or not -240 <= dy <= 240:
             raise ValueError('Ongeldige muisbeweging.')
+        orientation = mouse_orientation()
+        if orientation == 'portrait-left':
+            dx, dy = -dy, dx
+        elif orientation == 'portrait-right':
+            dx, dy = dy, -dx
         command = [executable, 'mousemove_relative', '--sync', '--', str(dx), str(dy)]
     elif action == 'click' and set(incoming) == {'action', 'button'}:
         button = incoming['button']

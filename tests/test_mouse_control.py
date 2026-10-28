@@ -16,6 +16,12 @@ with patch.object(darts_server.shutil, 'which', return_value='/usr/bin/xdotool')
      patch.object(darts_server.subprocess, 'run') as run:
     assert darts_server.control_mouse({'action': 'move', 'dx': 12, 'dy': -7}) == {'ok': True}
     assert run.call_args.args[0][-3:] == ['--', '12', '-7']
+    with patch.object(darts_server, 'mouse_orientation', return_value='portrait-left'):
+        darts_server.control_mouse({'action': 'move', 'dx': 12, 'dy': -7})
+        assert run.call_args.args[0][-3:] == ['--', '7', '12']
+    with patch.object(darts_server, 'mouse_orientation', return_value='portrait-right'):
+        darts_server.control_mouse({'action': 'move', 'dx': 12, 'dy': -7})
+        assert run.call_args.args[0][-3:] == ['--', '-7', '-12']
     darts_server.control_mouse({'action': 'click', 'button': 'double'})
     assert '--repeat' in run.call_args.args[0]
     for invalid in ({'action': 'move', 'dx': 999, 'dy': 0}, {'action': 'click', 'button': 'middle'},
