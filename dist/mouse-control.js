@@ -57,23 +57,45 @@ if (tablet) {
     finally { sending = false; if (pendingX || pendingY) void flushMovement(); }
   }
 
-  pad.addEventListener('pointerdown', event => {
-    lastX = event.clientX; lastY = event.clientY; moved = false;
-    pad.setPointerCapture?.(event.pointerId); pad.classList.add('active'); event.preventDefault();
-  });
-  pad.addEventListener('pointermove', event => {
-    if (!pad.hasPointerCapture?.(event.pointerId)) return;
-    const dx = event.clientX - lastX, dy = event.clientY - lastY;
-    lastX = event.clientX; lastY = event.clientY;
+  let tracking = false;
+  function start(x, y) {
+    lastX = x; lastY = y; moved = false; tracking = true; pad.classList.add('active');
+  }
+  function move(x, y) {
+    if (!tracking) return;
+    const dx = x - lastX, dy = y - lastY;
+    lastX = x; lastY = y;
     if (Math.abs(dx) + Math.abs(dy) > 1) moved = true;
-    pendingX += dx * 1.6; pendingY += dy * 1.6; void flushMovement(); event.preventDefault();
-  });
-  pad.addEventListener('pointerup', event => {
-    pad.releasePointerCapture?.(event.pointerId); pad.classList.remove('active');
+    pendingX += dx * 1.6; pendingY += dy * 1.6; void flushMovement();
+  }
+  function end() {
+    if (!tracking) return;
+    tracking = false; pad.classList.remove('active');
     if (!moved) void send({action: 'click', button: 'left'}).catch(error => { status.textContent = error.message; });
-    event.preventDefault();
-  });
-  pad.addEventListener('pointercancel', () => pad.classList.remove('active'));
+  }
+  // De oude Firefox op de Android 4-tablet levert betrouwbare touch-events,
+  // maar geen bruikbare pointer-capture. Houd beide paden afzonderlijk.
+  if ('ontouchstart' in window) {
+    pad.addEventListener('touchstart', event => {
+      const touch = event.changedTouches[0]; if (touch) start(touch.clientX, touch.clientY);
+      event.preventDefault();
+    }, {passive: false});
+    pad.addEventListener('touchmove', event => {
+      const touch = event.changedTouches[0]; if (touch) move(touch.clientX, touch.clientY);
+      event.preventDefault();
+    }, {passive: false});
+    pad.addEventListener('touchend', event => { end(); event.preventDefault(); }, {passive: false});
+    pad.addEventListener('touchcancel', () => { tracking = false; pad.classList.remove('active'); });
+  } else {
+    pad.addEventListener('pointerdown', event => {
+      start(event.clientX, event.clientY); pad.setPointerCapture?.(event.pointerId); event.preventDefault();
+    });
+    pad.addEventListener('pointermove', event => { move(event.clientX, event.clientY); event.preventDefault(); });
+    pad.addEventListener('pointerup', event => {
+      pad.releasePointerCapture?.(event.pointerId); end(); event.preventDefault();
+    });
+    pad.addEventListener('pointercancel', () => { tracking = false; pad.classList.remove('active'); });
+  }
   dialog.querySelectorAll('[data-mouse]').forEach(button => button.addEventListener('click', () => {
     void send({action: 'click', button: button.dataset.mouse}).catch(error => { status.textContent = error.message; });
   }));

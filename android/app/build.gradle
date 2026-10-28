@@ -13,8 +13,8 @@ android {
         applicationId 'nl.axelman8.darts'
         minSdk 26
         targetSdk 35
-        versionCode 69
-        versionName '1.8.43'
+        versionCode 70
+        versionName '1.8.44'
     }
 
     signingConfigs {
