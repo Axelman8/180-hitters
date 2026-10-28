@@ -19,13 +19,17 @@ with tempfile.TemporaryDirectory() as tmp:
         time.sleep(1)
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
-            page = browser.new_page(viewport={'width': 393, 'height': 750}, is_mobile=True, has_touch=True)
+            page = browser.new_page(viewport={'width': 1080, 'height': 1920})
             errors = []
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.goto('http://127.0.0.1:8791/')
             expect(page.locator('#mobile-dock > #install-app')).to_have_count(1)
             expect(page.locator('#install-app-code')).to_have_attribute(
                 'href', 'https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters.apk')
+            expect(page.locator('#mobile-dock')).to_have_css('position', 'fixed')
+            dock_box = page.locator('#mobile-dock').bounding_box()
+            main_box = page.locator('main').bounding_box()
+            assert main_box['y'] + main_box['height'] > dock_box['y']
             expect(page.locator('#mobile-qr-link')).to_have_count(0)
             expect(page.locator('#club-wifi')).to_have_count(0)
             expect(page.locator('#android-app-action')).to_be_attached()

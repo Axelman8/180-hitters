@@ -1,9 +1,9 @@
-/* A separate bottom row keeps the code visible without covering score controls. */
+/* The install code floats above the NUC screen so the game can use all space. */
 body:not(.remote-control){height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 body:not(.remote-control)>header,body:not(.remote-control)>#connection-status{flex-shrink:0}
 body:not(.remote-control)>main{flex:1;min-height:0;width:100%;overflow-y:auto;overscroll-behavior:contain}
 body:not(.remote-control)>footer{display:none}
-#mobile-dock{flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;gap:20px;padding:8px 20px;background:#101c23;border-top:1px solid var(--line)}
+#mobile-dock{position:fixed;z-index:40;right:16px;bottom:16px;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:10px;background:rgba(16,28,35,.94);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);max-width:min(360px,calc(100vw - 32px))}
 .mobile-dock-copy{max-width:440px;min-width:0;text-align:right}
 .mobile-dock-copy strong{font-size:20px;color:var(--accent)}
 .mobile-dock-copy p{font-size:14px;line-height:1.45;margin:7px 0;color:#c5d4db}
@@ -17,8 +17,7 @@ body.remote-control #mobile-dock{display:none}
 .mobile-dock-copy #mobile-wifi b{font-weight:800}
 @media(min-height:1500px){.mobile-dock-copy #mobile-wifi{font-size:24px}}
 
-/* Two compact scan steps: network on the left, score entry on the right. */
-#mobile-dock{gap:12px;padding:8px 16px;justify-content:space-between}
+/* Compact install card; obsolete network and browser codes are removed by JS. */
 #mobile-dock.bluetooth-only{justify-content:center}
 #install-app,#club-wifi{display:flex;align-items:center;gap:12px;min-width:0}
 #install-app-code,#club-wifi-code,#mobile-qr-link{width:140px;height:140px;flex:0 0 140px;background:white;border-radius:4px;overflow:hidden}

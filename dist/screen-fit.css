@@ -1,4 +1,4 @@
-/* The stage excludes the measured header and QR footer. No browser zoom. */
+/* The QR install card is an overlay; the stage uses all space below the header. */
 body.screen-fit>main{max-width:none;width:100%;padding:10px 16px}
 body.screen-fit #game:not([hidden]){height:var(--stage-height)!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(160px,.8fr) minmax(140px,.55fr) minmax(400px,1.8fr);gap:10px}
 body.screen-fit #game>.match-heading{grid-row:1;margin:0;min-height:0}
