@@ -25,7 +25,7 @@ with tempfile.TemporaryDirectory() as tmp:
    expect(b.locator('#entry')).to_have_text('6')
    digit(b,9);expect(b.locator('#entry')).to_have_text('6')
    old=saved()['control'];before=saved()['match']
-   b.get_by_text('Spelen',exact=True).click();b.locator('#take-control').click()
+   b.get_by_text('Verbindingen',exact=True).click();b.locator('#take-control').click()
    expect(b.locator('#controller-note')).to_have_text('Scorebediening actief')
    expect(a.locator('#controller-note')).to_contain_text('Meekijken')
    assert saved()['match']==before
@@ -47,7 +47,7 @@ with tempfile.TemporaryDirectory() as tmp:
    digit(screen,2);expect(b.locator('#entry')).to_have_text('2')
    b.reload();expect(b.locator('#controller-note')).to_have_text('Scorebediening actief')
    # Explicit recovery when the controlling phone disappears.
-   b.close();a.get_by_text('Spelen',exact=True).click();a.locator('#take-control').click()
+   b.close();a.get_by_text('Verbindingen',exact=True).click();a.locator('#take-control').click()
    expect(a.locator('#controller-note')).to_have_text('Scorebediening actief')
    expect(a.locator('#entry')).to_have_text('2')
    # Same client, new ownership epoch: original delayed request still rejected.

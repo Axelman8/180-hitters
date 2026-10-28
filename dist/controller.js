@@ -23,15 +23,15 @@ function paint(){
  const own=canControl();
  button.textContent=own?(tabletShell?'Bediening gekoppeld':'Bediening op deze telefoon'):'Bediening overnemen';
  button.disabled=claiming||own;
- note.textContent=errorText||(own?'Scorebediening actief':status?(tabletShell?'Meekijken - bediening via Verbindingsmodus':'Meekijken - bediening via Spelen'):'Bediening controleren...');
+ note.textContent=errorText||(own?'Scorebediening actief':status?(tabletShell?'Meekijken - kies Bediening overnemen via Verbindingsmodus':'Meekijken - kies Bediening overnemen via Verbindingen'):'Bediening controleren...');
  document.body.classList.toggle('controller-viewer',!own);
 }
 export function updateControl(value){
  if(!remote||!value)return;
  status=value;paint();
- // De dedicated tablet neemt de bediening over zodra Bluetooth de NUC
- // werkelijk bereikt. Een korte wachttijd voorkomt herhaalde claims.
- if(tabletShell&&status.owner!==id&&!claiming&&Date.now()-lastTabletAutoClaim>5000){lastTabletAutoClaim=Date.now();void claim(true);}
+ // De dedicated tablet neemt alleen automatisch over wanneer niemand de NUC
+ // bedient. Een expliciete overname door een telefoon blijft daardoor geldig.
+ if(tabletShell&&!status.owner&&!claiming&&Date.now()-lastTabletAutoClaim>5000){lastTabletAutoClaim=Date.now();void claim(false);}
  else if(!status.owner&&!claiming&&!failedAutoClaim)void claim(false);
 }
 async function claim(takeover){
@@ -45,7 +45,7 @@ async function claim(takeover){
    refreshing=true;
    document.dispatchEvent(new Event('controller-refresh'));
   }
- }catch{failedAutoClaim=true;errorText=tabletShell?'Overname niet bevestigd; probeer opnieuw via Verbindingsmodus.':'Overname niet bevestigd; probeer opnieuw via Spelen.';}
+ }catch{failedAutoClaim=true;errorText=tabletShell?'Overname niet bevestigd; probeer opnieuw via Verbindingsmodus.':'Overname niet bevestigd; probeer opnieuw via Verbindingen.';}
  finally{claiming=false;paint();}
 }
 export function controllerRefreshed(){refreshing=false;paint();}
