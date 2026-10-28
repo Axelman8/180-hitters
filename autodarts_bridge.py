@@ -113,6 +113,9 @@ class AutoDartsBridge:
         """Clear Detection's current visit without changing calibration or cameras."""
         with urlopen(Request(self.base + '/api/reset', method='POST'), timeout=4) as response:
             response.read(1024)
+        # Detection reports running=false very briefly while the reset settles.
+        # Treat that as part of this requested restart, not as a camera fault.
+        self.starting_until = time.monotonic() + 10
         self.pending.clear()
         self.armed = False
         self.closed = False

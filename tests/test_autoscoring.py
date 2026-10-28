@@ -99,7 +99,10 @@ with tempfile.TemporaryDirectory() as tmp:
             assert page.locator('#camera-game-on').get_attribute('aria-label')== 'Camera aan / herstart'
             assert phone.locator('#camera-game-on').get_attribute('aria-label')== 'Camera aan / herstart'
             assert api.post(url+'/api/autoscoring/reset',data={}).ok
-            wait(lambda:Mock.reset_count==1 and cam()['armed'])
+            Mock.value=state([]);Mock.value.update(running=False,status='Stopped',event='Manual reset')
+            wait(lambda:Mock.reset_count==1 and 'gestopt' not in cam()['message'].lower())
+            Mock.value=state([])
+            wait(lambda:cam()['armed'])
             Mock.value=state([(20,3)])
             wait(lambda:len((get().get('draft') or {}).get('hits',[]))==1)
             assert get()['match']['state']['players'][0]['remaining']==501

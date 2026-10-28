@@ -19,7 +19,7 @@ button.addEventListener('click', async () => {
     status.textContent = result.message;
   } catch (error) {
     status.textContent = error instanceof TypeError || error.name === 'TimeoutError'
-      ? 'Geen antwoord van de NUC. Controleer het scherm en je wifi-verbinding.' : error.message;
+      ? 'Geen antwoord van de NUC. Controleer het scherm en de Bluetooth-verbinding.' : error.message;
   } finally {
     button.disabled = false;
   }

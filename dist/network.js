@@ -6,6 +6,7 @@ const controlToken = (() => { try { return window.DartsAndroid?.getControlToken?
 const localNuc = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname) && !window.DartsAndroid?.isTabletShell;
 const canControl = localNuc || !!controlToken;
 if(localNuc)document.body.classList.add('local-nuc');
+if(window.DartsAndroid){$('network-open').hidden=true;$('network-open').style.display='none';}
 const addNote = document.querySelector('#network-add-section > p');
 const switchNote = document.querySelector('#network-confirmation > p');
 if(addNote)addNote.textContent='Voeg een netwerk toe voor internet en GitHub-updates. De bediening blijft via Bluetooth werken.';

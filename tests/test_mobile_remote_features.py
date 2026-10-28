@@ -43,6 +43,8 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator('#mode-status')).to_have_class('nuc')
             expect(page.locator('#camera-game-on')).to_be_visible()
             expect(page.locator('#camera-game-off')).to_be_visible()
+            expect(page.locator('#network-open')).to_be_hidden()
+            expect(page.locator('#bluetooth-open')).to_have_text('Bluetooth en NUC')
 
             expected = {
                 '#mouse-control-open': 'connections',                 # 1
@@ -75,7 +77,10 @@ with tempfile.TemporaryDirectory() as tmp:
 
             page.locator('#bluetooth-open').evaluate('e=>e.click()')
             expect(page.locator('#nuc-controls')).to_be_visible()
-            expect(page.locator('#nuc-control-status')).to_contain_text('Wifi: aan')
+            expect(page.locator('#nuc-control-status')).to_contain_text('Bluetooth: aan')
+            expect(page.locator('#nuc-control-status')).not_to_contain_text('Wifi:')
+            expect(page.locator('#nuc-wifi-on')).to_have_count(0)
+            expect(page.locator('#nuc-wifi-off')).to_have_count(0)
             page.locator('#bluetooth-close').click()
 
             page.locator('#android-app-action').evaluate('e=>e.click()')

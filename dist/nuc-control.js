@@ -1,15 +1,16 @@
 const bridge = window.DartsAndroid;
 const localNuc = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname) && !bridge?.isTabletShell;
+const androidClient = !!bridge;
 const open = document.createElement('button');
 open.id = 'bluetooth-open';
 open.type = 'button';
-open.textContent = 'Wifi en Bluetooth aan/uit';
+open.textContent = androidClient ? 'Bluetooth en NUC' : 'Wifi en Bluetooth aan/uit';
 document.getElementById('top-actions').append(open);
 
 const dialog = document.createElement('dialog');
 dialog.id = 'bluetooth-dialog';
 dialog.setAttribute('aria-labelledby', 'bluetooth-title');
-dialog.innerHTML = '<h2 id="bluetooth-title">Wifi en Bluetooth</h2>' +
+dialog.innerHTML = `<h2 id="bluetooth-title">${androidClient?'Bluetooth en NUC':'Wifi en Bluetooth'}</h2>` +
   '<section id="tablet-bluetooth-controls" hidden>' +
     '<p id="tablet-bluetooth-status" role="status">Status ophalen…</p>' +
     '<div class="nuc-control-buttons"><button id="tablet-bluetooth-connect" class="primary" type="button">Verbinden met NUC</button>' +
@@ -17,8 +18,7 @@ dialog.innerHTML = '<h2 id="bluetooth-title">Wifi en Bluetooth</h2>' +
     '<p class="muted">De tablet zoekt alleen nadat je op verbinden hebt gedrukt.</p>' +
   '</section>' +
   '<section id="nuc-controls" hidden><h3>NUC-verbindingen</h3><p id="nuc-control-status" role="status">Status ophalen…</p>' +
-    '<div class="nuc-control-buttons"><button id="nuc-wifi-on" type="button">Wifi aan</button>' +
-    '<button id="nuc-wifi-off" type="button">Wifi uit</button>' +
+    '<div class="nuc-control-buttons">' + (androidClient?'':'<button id="nuc-wifi-on" type="button">Wifi aan</button><button id="nuc-wifi-off" type="button">Wifi uit</button>') +
     '<button id="nuc-bluetooth-on" type="button">Bluetooth aan</button>' +
     '<button id="nuc-bluetooth-off" type="button">Bluetooth uit</button>' +
     '<button id="nuc-update" type="button">NUC bijwerken</button>' +
@@ -70,6 +70,7 @@ async function refreshNuc() {
     const data = await request('/api/system/status', {cache: 'no-store'});
     const update = await request('/api/update/status', {cache: 'no-store'});
     status.textContent = `Wifi: ${data.wifi ? 'aan' : 'uit'} · Bluetooth: ${data.bluetooth ? 'aan' : 'uit'} · ${update.message}`;
+    if(androidClient)status.textContent = `Bluetooth: ${data.bluetooth ? 'aan' : 'uit'} · ${update.message}`;
   } catch (error) {
     status.textContent = error.message;
   }
@@ -110,8 +111,10 @@ open.onclick = async () => {
 document.getElementById('bluetooth-close').onclick = () => dialog.close();
 tabletConnect.onclick = () => tabletAction('connect');
 document.getElementById('tablet-bluetooth-disconnect').onclick = () => tabletAction('disconnect');
-document.getElementById('nuc-wifi-on').onclick = () => act('wifi-on');
-document.getElementById('nuc-wifi-off').onclick = () => act('wifi-off', 'Wifi op de NUC uitzetten? Bedien de NUC daarna met de muis om wifi weer aan te zetten.');
+if(!androidClient){
+ document.getElementById('nuc-wifi-on').onclick = () => act('wifi-on');
+ document.getElementById('nuc-wifi-off').onclick = () => act('wifi-off', 'Wifi op de NUC uitzetten? Bedien de NUC daarna met de muis om wifi weer aan te zetten.');
+}
 document.getElementById('nuc-bluetooth-on').onclick = () => act('bluetooth-on');
 document.getElementById('nuc-bluetooth-off').onclick = () => act('bluetooth-off', 'Bluetooth op de NUC uitzetten? De actieve Bluetooth-verbinding wordt verbroken.');
 document.getElementById('nuc-update').onclick = async () => {

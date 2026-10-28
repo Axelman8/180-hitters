@@ -37,6 +37,10 @@ if(android||local){
  </form>`;
  document.body.append(dialog);
  const form=dialog.querySelector('form'),message=dialog.querySelector('#venue-message');
+ if(android){
+  form.querySelector('fieldset').hidden=true;
+  dialog.querySelector('#venue-connections').textContent='Bluetooth beheren';
+ }
  let working={...defaults};
  const fill=profile=>{working={...defaults,...profile};for(const key of ['venueName','city','playerListName','slogan','clubWifiName','clubWifiQr','hotspotName','hotspotPassword'])form.elements[key].value=working[key];};
  const image=async input=>{

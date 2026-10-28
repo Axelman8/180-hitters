@@ -51,6 +51,8 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(android.locator('#camera-game-on')).to_have_count(0)
             expect(android.locator('#camera-game-off')).to_have_count(0)
             expect(android.locator('#mouse-control-open')).to_have_count(0)
+            expect(android.locator('#network-open')).to_be_hidden()
+            expect(android.locator('#bluetooth-open')).to_have_text('Bluetooth en NUC')
             expect(android.locator('#venue-open')).to_be_attached()
             android.locator('#venue-open').evaluate('element => element.click()')
             expect(android.locator('#venue-dialog')).to_be_visible()
