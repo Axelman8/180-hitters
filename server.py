@@ -108,6 +108,16 @@ def wifi_qr(ssid, password):
 
 def system_control(action):
     helper = '/usr/local/sbin/darts-system'
+    if os.name == 'posix' and not Path(helper).is_file() and Path(__file__).parent == Path('/usr/lib/dartsapp'):
+        # An older bundle first installs the new updater itself. Trigger it once
+        # more so it can provision the allowlisted desktop broker.
+        try:
+            (Path('/var/lib/dartsapp') / 'update.request').touch()
+            deadline = time.monotonic() + 8
+            while not Path(helper).is_file() and time.monotonic() < deadline:
+                time.sleep(.2)
+        except OSError:
+            pass
     if os.name != 'posix' or not Path(helper).is_file():
         raise RuntimeError('NUC-bediening is nog niet geïnstalleerd.')
     if action not in ('status', 'bluetooth-on', 'bluetooth-off', 'wifi-on', 'wifi-off', 'restart', 'shutdown', 'kiosk', 'windowed', 'kiosk-open'):
