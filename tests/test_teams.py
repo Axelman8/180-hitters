@@ -58,6 +58,10 @@ with tempfile.TemporaryDirectory() as tmp:
             """)
             expect(page.locator("#players .player")).to_have_count(2)
             expect(page.locator("#players .player").first.locator("strong").first).to_have_text("Rood")
+            team_card_box = page.locator("#players .player").first.bounding_box()
+            team_name_box = page.locator("#players .player").first.locator(".player-top > strong").bounding_box()
+            assert abs((team_name_box["x"] + team_name_box["width"] / 2) -
+                       (team_card_box["x"] + team_card_box["width"] / 2)) < 2
             expect(page.locator("#players .player").first.locator(".team-members span")).to_have_text(["Anita", "Bert", "Dylan", "Judith", "Leen"])
             expect(page.locator("#players .player").first.locator(".team-members .current")).to_have_text("Anita")
             assert page.locator("#players .team-members [data-turn-order]").count() == 0

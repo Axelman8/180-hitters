@@ -333,6 +333,7 @@ function render(){
   card.innerHTML='<div class="player-top"><strong></strong><span class="badge"></span><div class="match-score"></div></div><div class="remaining"></div><div class="stats player-statistics"></div>';
   card.querySelector('strong').textContent=p.name;card.querySelector('.badge').textContent=p.bobsEliminated?'AFGEVALLEN':state.active===i?'● AAN DE BEURT':'';
   if(p.members?.length){
+   card.classList.add('team');
    const members=document.createElement('div');members.className='team-members';
    const activeMember=teamMemberIndex(state,p);
    members.replaceChildren(...p.members.map((name,memberIndex)=>{const member=document.createElement('span');member.textContent=name;if(state.active===i&&memberIndex===activeMember)member.className='current';return member;}));

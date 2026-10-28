@@ -30,3 +30,11 @@ body.screen-fit .team-members span{padding:8px 16px;border-width:2px}
 .wizard-team-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .wizard-team-actions button{min-height:48px}
 @media(max-width:520px){.wizard-team-actions{grid-template-columns:1fr}}
+
+/* Teamnaam exact in het midden; de legs blijven rechtsboven staan. */
+body:not(.remote-control) .player.team .player-top,
+html.tablet-shell .player.team .player-top{position:relative;min-height:48px}
+body:not(.remote-control) .player.team .player-top>strong,
+html.tablet-shell .player.team .player-top>strong{position:absolute;left:50%;width:calc(100% - 110px);max-width:none;transform:translateX(-50%);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body:not(.remote-control) .player.team .match-score,
+html.tablet-shell .player.team .match-score{margin-left:auto;position:relative;z-index:1}
