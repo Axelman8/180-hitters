@@ -2,6 +2,25 @@ import './mouse-control.js';
 import './mobile-diagnostics.js';
 
 const actions=document.getElementById('top-actions');
+const versionLabel=document.createElement('span');
+versionLabel.id='app-version';versionLabel.setAttribute('aria-label','Geïnstalleerde versie');
+versionLabel.textContent=window.DartsAndroid?.isTabletShell===true?'Tablet v…':window.DartsAndroid?'Mobiel v…':'NUC v…';
+document.querySelector('header').append(versionLabel);
+async function showVersion(){
+ let version='';
+ if(window.DartsAndroid){
+  try{version=JSON.parse(window.DartsAndroid.getConnectionInfo?.()||'{}').versionName||'';}catch{}
+  if(!version&&window.DartsAndroid.isTabletShell===true){
+   try{const response=await fetch('/api/tablet/diagnostics',{cache:'no-store'});if(response.ok)version=(await response.json()).appVersionName||'';}catch{}
+  }
+ }else{
+  try{const response=await fetch('/api/desktop-installation',{cache:'no-store'});if(response.ok)version=(await response.json()).version||'';}catch{}
+  if(!version)try{const response=await fetch('/api/update/status',{cache:'no-store'});if(response.ok)version=(await response.json()).version||'';}catch{}
+ }
+ const device=window.DartsAndroid?.isTabletShell===true?'Tablet':window.DartsAndroid?'Mobiel':'NUC';
+ versionLabel.textContent=`${device} v${version||'onbekend'}`;
+}
+void showVersion();
 const menu=document.createElement('nav');
 menu.id='header-menu';menu.setAttribute('aria-label','Hoofdmenu');
 const menuToggle=document.getElementById('toggle-toolbar');

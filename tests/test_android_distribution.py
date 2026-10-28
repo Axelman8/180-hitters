@@ -23,6 +23,11 @@ with tempfile.TemporaryDirectory() as tmp:
             errors = []
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.goto('http://127.0.0.1:8791/')
+            expect(page.locator('#app-version')).to_contain_text('NUC v')
+            version_box = page.locator('#app-version').bounding_box()
+            toggle_box = page.locator('#toggle-toolbar').bounding_box()
+            assert abs(version_box['x'] + version_box['width'] / 2 - 540) < 2
+            assert abs(version_box['y'] - toggle_box['y']) < 2
             expect(page.locator('#mobile-dock > #install-app')).to_have_count(1)
             expect(page.locator('#install-app-code')).to_have_attribute(
                 'href', 'https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters.apk')

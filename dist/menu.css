@@ -1,4 +1,5 @@
 body>header{position:relative;z-index:20;height:auto;min-height:64px;padding-top:6px;padding-bottom:6px;gap:12px;flex-wrap:wrap}
+#app-version{position:absolute;z-index:1;top:max(env(safe-area-inset-top),6px);left:50%;height:44px;display:flex;align-items:center;justify-content:center;transform:translateX(-50%);color:#b8c9d0;font-size:14px;font-weight:750;letter-spacing:.03em;white-space:nowrap;pointer-events:none}
 body #toggle-toolbar{display:block!important;min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:#182a33;color:#fff;font-size:13px;font-weight:750;white-space:nowrap;order:0}
 body>header #top-actions{display:none!important}
 #header-menu{display:flex;gap:8px;margin-left:auto;flex-shrink:0}
@@ -14,6 +15,7 @@ body.toolbar-collapsed>header{min-height:56px}
 #header-menu .menu-panel button{width:100%;position:static!important;min-height:44px;font-size:14px;text-align:left;padding:12px;white-space:normal}
 body.remote-control>header{flex-direction:row;flex-wrap:wrap!important;min-height:56px}
 @media(max-width:600px){body>header{padding-left:10px;padding-right:10px;flex-wrap:wrap}body>header .brand{font-size:17px;letter-spacing:1px}#header-menu details{position:static}#header-menu .menu-panel{right:10px;top:calc(100% + 4px)}#header-menu summary{padding:10px 12px}}
+@media(max-width:420px){#app-version{font-size:12px}}
 @media(max-width:1000px){body>header #header-menu{flex-basis:100%;width:100%;margin-left:0;justify-content:flex-end}}
 
 #header-menu #settings{color:#ffad66}
