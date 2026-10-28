@@ -46,8 +46,11 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(android.locator('#android-app-action')).to_have_count(1)
             expect(android.locator('#android-update-action')).to_have_count(1)
             expect(android.locator('#connection-status')).to_have_text('Lokaal op deze telefoon')
-            expect(android.locator('#mode-status')).to_have_text('MODUS: LOKAAL OP DEZE TELEFOON')
+            expect(android.locator('#mode-status')).to_have_text('LOKAAL')
             expect(android.locator('#mode-status')).to_have_class('local')
+            mode_box = android.locator('#mode-status').bounding_box()
+            menu_box = android.locator('#toggle-toolbar').bounding_box()
+            assert mode_box['x'] < menu_box['x'] and abs(mode_box['y'] - menu_box['y']) < 2
             expect(android.locator('#camera-game-on')).to_have_count(0)
             expect(android.locator('#camera-game-off')).to_have_count(0)
             expect(android.locator('#mouse-control-open')).to_have_count(0)

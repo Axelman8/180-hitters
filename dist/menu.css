@@ -31,5 +31,7 @@ body.remote-control>header{flex-direction:row;flex-wrap:wrap!important;min-heigh
 
 /* De oude 600px-tablet gebruikt de hele kopregel voor de vier hoofdknoppen. */
 html.tablet-shell body>header .brand{display:none}
+html.android-shell body.remote-control>header .brand{display:none}
+html.android-shell body.remote-control>header #toggle-toolbar{order:-1;margin-left:auto;align-self:center}
 html.tablet-shell #header-menu{margin-left:0;justify-content:flex-end}
 html.tablet-shell #header-menu summary,html.tablet-shell #camera-game-controls button{padding-left:9px;padding-right:9px}

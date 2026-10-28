@@ -19,10 +19,13 @@ const tabletShell=window.DartsAndroid?.isTabletShell===true;
 const connectedLabel=androidLocal?`Lokaal op deze ${tabletShell?'tablet':'telefoon'}`:'Verbonden met NUC';
 const savedLabel=androidLocal?'Lokaal opgeslagen':'Opgeslagen op NUC';
 if(window.DartsAndroid){
+ document.documentElement.classList.add('android-shell');
  const modeStatus=document.createElement('p');modeStatus.id='mode-status';
- modeStatus.className=androidLocal?'local':'nuc';
- modeStatus.textContent=androidLocal?`MODUS: LOKAAL OP DEZE ${tabletShell?'TABLET':'TELEFOON'}`:'MODUS: NUC VIA BLUETOOTH';
- $('connection-status').before(modeStatus);
+ modeStatus.className=androidLocal?'local':'nuc controller-inactive';
+ modeStatus.textContent=androidLocal?'LOKAAL':'NUC';
+ modeStatus.setAttribute('role','status');
+ modeStatus.setAttribute('aria-label',androidLocal?`Lokale modus op deze ${tabletShell?'tablet':'telefoon'}`:'Bedieningsstatus van de NUC controleren');
+ document.querySelector('header').prepend(modeStatus);
 }
 let historyOpen=false;
 try{historyOpen=localStorage.getItem('axelman8.historyOpen')==='true';}catch{}

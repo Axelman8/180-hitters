@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -39,8 +40,11 @@ with tempfile.TemporaryDirectory() as tmp:
             page.route('**/api/kiosk/status', lambda route: route.fulfill(
                 status=200, content_type='application/json', body='{"kiosk":true,"message":"Kioskmodus actief."}'))
             page.goto('http://127.0.0.1:8798/?remote=1&android=1&transport=bluetooth')
-            expect(page.locator('#mode-status')).to_have_text('MODUS: NUC VIA BLUETOOTH')
-            expect(page.locator('#mode-status')).to_have_class('nuc')
+            expect(page.locator('#mode-status')).to_have_text('NUC')
+            expect(page.locator('#mode-status')).to_have_class(re.compile(r'nuc.*controller-active'))
+            mode_box = page.locator('#mode-status').bounding_box()
+            menu_box = page.locator('#toggle-toolbar').bounding_box()
+            assert mode_box['x'] < menu_box['x'] and abs(mode_box['y'] - menu_box['y']) < 2
             expect(page.locator('#camera-game-on')).to_be_visible()
             expect(page.locator('#camera-game-off')).to_be_visible()
             expect(page.locator('#network-open')).to_be_hidden()

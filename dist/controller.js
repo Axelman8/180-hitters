@@ -25,6 +25,12 @@ function paint(){
  button.disabled=claiming||own;
  note.textContent=errorText||(own?'Scorebediening actief':status?(tabletShell?'Meekijken - kies Bediening overnemen via Verbindingsmodus':'Meekijken - kies Bediening overnemen via Verbindingen'):'Bediening controleren...');
  document.body.classList.toggle('controller-viewer',!own);
+ const mode=document.getElementById('mode-status');
+ if(mode&&mode.classList.contains('nuc')){
+  mode.classList.toggle('controller-active',own);mode.classList.toggle('controller-inactive',!own);
+  mode.textContent='NUC';
+  mode.setAttribute('aria-label',own?'Dit apparaat bedient de NUC':status?'Dit apparaat kijkt mee; een ander apparaat bedient de NUC':'Bedieningsstatus van de NUC controleren');
+ }
 }
 export function updateControl(value){
  if(!remote||!value)return;

@@ -1,5 +1,6 @@
 """A dedicated tablet must not steal control back after a phone takeover."""
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -31,13 +32,29 @@ with tempfile.TemporaryDirectory() as tmp:
             tablet.goto('http://127.0.0.1:8799/?remote=1&android=1&transport=bluetooth')
             expect(tablet.locator('#controller-note')).to_have_text('Scorebediening actief')
 
+            expect(tablet.locator('#mode-status')).to_have_class(re.compile(r'controller-active'))
+
             phone = browser.new_page(viewport={'width': 393, 'height': 852}, has_touch=True)
-            phone.goto('http://127.0.0.1:8799/?remote=1')
+            phone.add_init_script("""
+                window.DartsAndroid={isTabletShell:false,isLocalMode:()=>false,
+                  getConnectionMode:()=>'bluetooth',getControlToken:()=>'token',
+                  getPendingNucTransfer:()=>'',getMobilePlayers:()=>'[]',hasMobilePlayers:()=>true,
+                  getVenuePlayers:()=>'[]',saveMobilePlayers:()=>{},saveVenuePlayers:()=>{},
+                  getConnectionInfo:()=>JSON.stringify({mode:'bluetooth',bluetoothConnected:true}),
+                  saveSnapshot:()=>{},checkForUpdate:()=>{},chooseMode:()=>{}};
+            """)
+            phone.goto('http://127.0.0.1:8799/?remote=1&android=1&transport=bluetooth')
             expect(phone.locator('#controller-note')).to_contain_text('Meekijken')
+            expect(phone.locator('#mode-status')).to_have_class(re.compile(r'controller-inactive'))
             phone.get_by_text('Verbindingen', exact=True).click()
             phone.locator('#take-control').click()
             expect(phone.locator('#controller-note')).to_have_text('Scorebediening actief')
             expect(tablet.locator('#controller-note')).to_contain_text('Meekijken')
+            expect(phone.locator('#mode-status')).to_have_class(re.compile(r'controller-active'))
+            expect(tablet.locator('#mode-status')).to_have_class(re.compile(r'controller-inactive'))
+            colors = [phone.locator('#mode-status').evaluate("e=>getComputedStyle(e).backgroundColor"),
+                      tablet.locator('#mode-status').evaluate("e=>getComputedStyle(e).backgroundColor")]
+            assert colors[0] != colors[1], colors
 
             # The old tablet logic reclaimed ownership every five seconds.
             phone.wait_for_timeout(6500)
