@@ -175,18 +175,29 @@ def wait_for_api(seconds: int = 45) -> dict[str, object]:
     raise CameraError("AutoDarts werd niet op tijd actief. " + last_error)
 
 
-def start_calibration() -> None:
+def start_calibration(attempts: int = 20) -> None:
     # AutoDarts 2.x rejects an empty form body/content-type with HTTP 400.
     # A bodyless POST is the API's expected calibration command.
-    request = urllib.request.Request(API + "/api/config/calibration/auto", method="POST")
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            if response.status not in (200, 202, 204):
-                raise CameraError(f"AutoDarts weigerde kalibratie (HTTP {response.status}).")
-    except urllib.error.HTTPError as error:
-        detail = error.read(1000).decode('utf-8', errors='replace').strip()
-        suffix = f": {detail}" if detail else ""
-        raise CameraError(f"Automatische kalibratie starten mislukt (HTTP {error.code}){suffix}.") from error
+    last = ""
+    for attempt in range(attempts):
+        request = urllib.request.Request(API + "/api/config/calibration/auto", method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                if response.status in (200, 202, 204):
+                    return
+                last = f"HTTP {response.status}"
+        except urllib.error.HTTPError as error:
+            detail = error.read(1000).decode('utf-8', errors='replace').strip()
+            last = f"HTTP {error.code}" + (f": {detail}" if detail else "")
+            # AutoDarts reports 400 briefly while its camera graph is still
+            # settling after a service restart. Retry only transient statuses.
+            if error.code not in (400, 409, 425, 503):
+                raise CameraError(f"Automatische kalibratie starten mislukt ({last}).") from error
+        except OSError as error:
+            last = str(error)
+        if attempt + 1 < attempts:
+            time.sleep(1)
+    raise CameraError(f"Automatische kalibratie starten mislukt na {attempts} pogingen ({last}).")
 
 
 def backup_files(config: Path, uid: int, gid: int) -> Path:

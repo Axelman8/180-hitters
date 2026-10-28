@@ -1,6 +1,8 @@
 import importlib.util
+import io
 from pathlib import Path
 from unittest.mock import patch
+import urllib.error
 
 
 path = Path(__file__).parents[1] / 'calibreer-cameras.py'
@@ -51,9 +53,27 @@ def test_calibration_uses_bodyless_post():
     assert seen[0].get_header('Content-type') is None
 
 
+def test_calibration_retries_transient_400():
+    calls = []
+    class Response:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+    def open_request(request, timeout):
+        calls.append(request)
+        if len(calls) == 1:
+            raise urllib.error.HTTPError(request.full_url, 400, 'not ready', {}, io.BytesIO(b''))
+        return Response()
+    with patch.object(calibrator.urllib.request, 'urlopen', side_effect=open_request), \
+         patch.object(calibrator.time, 'sleep'):
+        calibrator.start_calibration(attempts=2)
+    assert len(calls) == 2
+
+
 if __name__ == '__main__':
     test_replace_and_parse_devices()
     test_map_slots_prefers_native_then_old_port()
     test_usb_location_supports_hub_paths()
     test_calibration_uses_bodyless_post()
+    test_calibration_retries_transient_400()
     print('camera calibrator tests: OK')
