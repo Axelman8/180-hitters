@@ -225,6 +225,31 @@ The signing keystore and passwords are intentionally excluded from version contr
 
 Camera detection, online opponents, matchmaking, leagues, bots, AI refereeing, and long-term match archives are outside the current scope.
 
+### Camera repair and 50 Hz calibration (Linux NUC)
+
+Install the camera helper directly from this repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Axelman8/180-hitters/main/install-calibreer-cameras.sh | sudo sh
+```
+
+Then empty the dartboard and run:
+
+```bash
+sudo calibreer-cameras
+```
+
+The helper requires exactly three USB capture cameras. It backs up the current
+AutoDarts configuration and calibration, refreshes stale USB locations, sets
+all cameras to the European 50 Hz anti-flicker mode, restarts the per-user
+AutoDarts service, and requests automatic calibration. A small boot service
+reapplies 50 Hz because many USB cameras forget that setting after losing power.
+
+Identical cameras can expose the same serial number. The helper therefore keeps
+known device paths and USB ports where possible and otherwise uses stable USB
+port order. Keep each fixed camera in its marked hub port; software cannot tell
+two physically swapped, otherwise identical cameras apart before recalibration.
+
 ## Disable autostart on Linux
 
 ```bash
