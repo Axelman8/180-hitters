@@ -58,7 +58,7 @@ body.remote-control[data-mobile-layout].cricket-game #cricket-note{display:none}
 /* Keep the complete Tactics board and every input button visible on the
    legacy 600x1024 tablet, also while Firefox's toolbar consumes part of the
    viewport. The structure stays identical to mobile; only spacing scales. */
-@media(min-width:580px) and (max-width:699px) and (orientation:portrait) and (max-height:930px){
+@media(min-width:580px) and (max-width:699px) and (orientation:portrait) and (max-height:1050px){
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"]:not(.controller-viewer) #controller-note,
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #connection-status:not(.offline){display:none!important}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"]>main{padding:3px;overflow:hidden}

@@ -28,7 +28,7 @@ with tempfile.TemporaryDirectory() as tmp:
       assert fit['cricket']['bottom']<=fit['scoring']['top']+1,fit
       assert abs(fit['cricket']['width']-fit['scoring']['width'])<=2,fit
       expect(page.locator('#miss-dart')).to_be_visible()
-      if height==894:
+      if height in (894,1024):
        fit=page.evaluate("()=>{const m=document.querySelector('main').getBoundingClientRect(),miss=document.querySelector('#miss-dart').getBoundingClientRect(),history=document.querySelector('#toggle-history').getBoundingClientRect();return {main:m,miss,history,scroll:document.querySelector('main').scrollHeight,client:document.querySelector('main').clientHeight}}")
        assert fit['scroll']<=fit['client']+1,fit
        assert fit['miss']['bottom']<=fit['main']['bottom']+1,fit
