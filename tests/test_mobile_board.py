@@ -21,14 +21,12 @@ with tempfile.TemporaryDirectory() as tmp:
      expect(page.locator('.marks-table tbody tr')).to_have_count(12 if game=='tactics' else 7)
      assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
      if game=='tactics' and width==600:
-      fit=page.evaluate("()=>{const m=document.querySelector('main'),g=document.querySelector('#game'),p=document.querySelector('.play-grid'),s=document.querySelector('.scoring'),c=document.querySelector('#cricket-panel');return {html:document.documentElement.className,body:document.body.className,gameData:document.body.dataset.game,display:getComputedStyle(p).display,columns:getComputedStyle(p).gridTemplateColumns,main:[m.clientHeight,m.scrollHeight],game:[g.clientHeight,g.scrollHeight],play:[p.clientHeight,p.scrollHeight],scoring:[s.clientHeight,s.scrollHeight],cricket:[c.clientHeight,c.scrollHeight]}}")
-      assert fit['main'][1]<=fit['main'][0]+1,fit
-      assert page.evaluate("document.querySelector('#cricket-panel').getBoundingClientRect().bottom<=document.querySelector('main').getBoundingClientRect().bottom+1")
-      assert page.evaluate("document.querySelector('.scoring').getBoundingClientRect().bottom<=document.querySelector('main').getBoundingClientRect().bottom+1")
-      assert page.evaluate("document.querySelector('#toggle-history').getBoundingClientRect().bottom<=document.querySelector('main').getBoundingClientRect().bottom+1")
-      assert page.evaluate("document.querySelector('#tactics-remove').getBoundingClientRect().left===document.querySelector('#board-keys').getBoundingClientRect().left")
-      assert page.evaluate("document.querySelector('#board-keys').getBoundingClientRect().height>=429")
-      assert page.evaluate("document.querySelector('.marks-table').getBoundingClientRect().height>=500")
+      # The legacy tablet follows the same vertical Tactics layout as mobile:
+      # the closing board spans the width and appears above score input.
+      fit=page.evaluate("()=>{const p=document.querySelector('.play-grid'),s=document.querySelector('.scoring').getBoundingClientRect(),c=document.querySelector('#cricket-panel').getBoundingClientRect();return {display:getComputedStyle(p).display,scoring:s,cricket:c}}")
+      assert fit['display']=='flex',fit
+      assert fit['cricket']['bottom']<=fit['scoring']['top']+1,fit
+      assert abs(fit['cricket']['width']-fit['scoring']['width'])<=2,fit
      if width==768:page.screenshot(path=str(root/'tests/mobile-board-preview.png'))
     page.locator('#board-keys').get_by_role('button',name='20',exact=True).click()
     expect(page.locator('.marks-table [aria-label="Ed: 1 van 3 treffers op 20 (nog bevestigen)"]')).to_be_visible()
