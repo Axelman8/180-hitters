@@ -49,7 +49,7 @@ export function newMatch(names,start=501,out='double',legs=3,options={}){
   if(names.length<1||names.length>4)throw Error("Kies 1 tot 4 spelers voor Bob's 27.");
   start=27;out='double';legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50',starter:options.starter||0,bobsTarget:1,bobsRoundPlayed:[]};
  }
- if(options.game==='gotcha'){if(names.length<2)throw Error('Gotcha heeft minimaal twee spelers nodig.');if(![301,401,501,601,701].includes(start))throw Error('Ongeldige Gotcha-doelscore.');if(!['single','double','master'].includes(out))throw Error('Ongeldige finishregel.');legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50'};}
+ if(options.game==='gotcha'){if(names.length<2||names.length>4)throw Error('Kies 2 tot 4 spelers voor Gotcha.');if(![301,401,501,601,701].includes(start))throw Error('Ongeldige Gotcha-doelscore.');if(!['single','double','master'].includes(out))throw Error('Ongeldige finishregel.');legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50'};}
  if(options.training121){
   if(names.length<1||names.length>4)throw Error('Kies 1 tot 4 spelers.');
   start=121;out='double';legs=999999;options={...options,game:'x01',inMode:'single',matchMode:'legs',bull:'25/50',maxRounds:0,starter:options.starter||0,trainingDarts:0,trainingBest:121};

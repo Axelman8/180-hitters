@@ -25,9 +25,8 @@ with tempfile.TemporaryDirectory() as tmp:
     assert saved()['match']['state']['players'][0]['marks']['20']==3
     phone.locator('#mode-dart').click();phone.reload();expect(phone.locator('#mode-dart')).to_have_class('selected')
    seed('gotcha')
-   phone.locator('#gotcha-reset').click()
    expect(phone.locator('#gotcha-targets')).to_be_visible()
-   phone.locator('#gotcha-targets').get_by_role('button',name='B (20) op nul',exact=True).click()
+   phone.locator('#gotcha-targets').get_by_role('button',name='B op 0',exact=True).click()
    expect(phone.locator('#message')).to_contain_text('B staat op nul')
    assert saved()['match']['state']['players'][1]['remaining']==0
    assert saved()['match']['state']['active']==0
@@ -42,7 +41,7 @@ with tempfile.TemporaryDirectory() as tmp:
    enter_total(phone, '60');phone.locator('#submit:visible, #confirm-total:visible').click()
    expect(phone.locator('#turn-label')).to_have_text('B is aan de beurt')
    assert [x['remaining'] for x in saved()['match']['state']['players']]==[60,0,0]
-   phone.reload();expect(phone.locator('#gotcha-targets')).to_be_hidden()
+   phone.reload();expect(phone.locator('#gotcha-targets')).to_be_visible()
    expect(screen.locator('#turn-label')).to_have_text('B is aan de beurt')
    screen.locator('#undo').click()
    expect(phone.locator('#turn-label')).to_have_text('A is aan de beurt')
@@ -54,7 +53,7 @@ with tempfile.TemporaryDirectory() as tmp:
    enter_total(phone, '60');phone.locator('#submit:visible, #confirm-total:visible').click()
    expect(phone.locator('#turn-label')).to_have_text('B is aan de beurt')
    assert [x['remaining'] for x in saved()['match']['state']['players']]==[60,20,0]
-   phone.locator('#gotcha-reset').click()
+   phone.locator('#gotcha-targets').get_by_role('button',name='A op 0',exact=True).click()
    expect(phone.locator('#message')).to_contain_text('A staat op nul')
    assert [x['remaining'] for x in saved()['match']['state']['players']]==[0,20,0]
    assert saved()['match']['state']['active']==1
