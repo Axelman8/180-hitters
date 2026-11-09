@@ -84,5 +84,13 @@ body.remote-control[data-mobile-layout].cricket-game #cricket-note{display:none}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys #tactics-remove,
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #board-keys #tactics-confirm{font-size:11px;line-height:1.05}
  html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"] #toggle-history{min-height:32px;padding:2px;font-size:11px}
+ /* Gebruik de ruimte van het ingeklapte beurtmenu voor grotere invoertoetsen.
+    Zodra het menu opent gelden weer de compacte maten hierboven. */
+ html.tablet-shell body.remote-control[data-mobile-layout]:not(.history-open) #keypad{min-height:239px;grid-template-rows:repeat(4,minmax(56px,1fr))}
+ html.tablet-shell body.remote-control[data-mobile-layout]:not(.history-open) #keypad button{min-height:56px;font-size:28px}
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"]:not(.history-open) #board-keys{grid-auto-rows:52px}
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"]:not(.history-open) #board-keys button{min-height:52px;font-size:22px}
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"]:not(.history-open) #board-keys #tactics-remove,
+ html.tablet-shell body.remote-control[data-mobile-layout][data-game="tactics"]:not(.history-open) #board-keys #tactics-confirm{font-size:12px}
 }
 
