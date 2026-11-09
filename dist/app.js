@@ -259,7 +259,8 @@ $('category-match').onclick=()=>chooseCategory(false);$('category-training').onc
 function buildKeys(){
  const numbers=cricket()?state.numbers.filter(n=>n!==25):Array.from({length:20},(_,i)=>i+1);
  $('board-keys').replaceChildren(...numbers.map(n=>button(n,()=>addDart(n,multiplier))));
- $('board-keys').append(button('Mis',()=>addDart(0,1)),button(state?.game==='x01'&&state.bull==='50/50'?'Buitenbull 50':'25',()=>addDart(25,1)),button('Bull',()=>addDart(25,2)));
+ const miss=button('Mis',()=>addDart(0,1));miss.id='miss-dart';
+ $('board-keys').append(miss,button(state?.game==='x01'&&state.bull==='50/50'?'Buitenbull 50':'25',()=>addDart(25,1)),button('Bull',()=>addDart(25,2)));
  if(state.game==='tactics'){
   const remove=button('Laatste pijl wissen',()=>$('remove-dart').click());remove.id='tactics-remove';remove.dataset.action='remove';
   const confirm=button('Beurt bevestigen',()=>$('submit').click());confirm.id='tactics-confirm';confirm.dataset.action='confirm';

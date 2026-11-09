@@ -14,7 +14,7 @@ with tempfile.TemporaryDirectory() as tmp:
     page.request.post('http://127.0.0.1:8788/api/state',data={'revision':revision,'match':{'state':state,'undo':[]}})
     page.evaluate("localStorage.clear()");page.reload();page.evaluate("document.documentElement.classList.add('tablet-shell')")
     expect(page.locator('body')).to_have_attribute('data-game',game)
-    for width,height in [(393,852),(600,1024),(768,900),(852,700),(320,740)]:
+    for width,height in [(393,852),(600,1024),(600,894),(768,900),(852,700),(320,740)]:
      page.set_viewport_size({'width':width,'height':height})
      expect(page.locator('#cricket-panel')).to_be_visible()
      expect(page.locator('#board-keys')).to_be_visible()
@@ -27,6 +27,12 @@ with tempfile.TemporaryDirectory() as tmp:
       assert fit['display']=='flex',fit
       assert fit['cricket']['bottom']<=fit['scoring']['top']+1,fit
       assert abs(fit['cricket']['width']-fit['scoring']['width'])<=2,fit
+      expect(page.locator('#miss-dart')).to_be_visible()
+      if height==894:
+       fit=page.evaluate("()=>{const m=document.querySelector('main').getBoundingClientRect(),miss=document.querySelector('#miss-dart').getBoundingClientRect(),history=document.querySelector('#toggle-history').getBoundingClientRect();return {main:m,miss,history,scroll:document.querySelector('main').scrollHeight,client:document.querySelector('main').clientHeight}}")
+       assert fit['scroll']<=fit['client']+1,fit
+       assert fit['miss']['bottom']<=fit['main']['bottom']+1,fit
+       assert fit['history']['bottom']<=fit['main']['bottom']+1,fit
      if width==768:page.screenshot(path=str(root/'tests/mobile-board-preview.png'))
     page.locator('#board-keys').get_by_role('button',name='20',exact=True).click()
     expect(page.locator('.marks-table [aria-label="Ed: 1 van 3 treffers op 20 (nog bevestigen)"]')).to_be_visible()
