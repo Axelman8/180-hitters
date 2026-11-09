@@ -52,7 +52,7 @@ function migrate(s){
  return {...base,...s,version:2,players:s.players.map((p,i)=>({...base.players[i],...p,setLegs:p.legs})),turns:s.history.filter(h=>h.leg===s.leg).length,round:Math.floor(s.history.filter(h=>h.leg===s.leg).length/s.players.length)+1};
 }
 try{const saved=JSON.parse(localStorage.getItem(key));if([1,2].includes(saved?.state?.version)&&saved.state.players?.length){state=migrate(saved.state);undo=(saved.undo||[]).map(s=>migrate(s.historyLength===undefined?s:{...s,history:state.history.slice(0,s.historyLength)}));}}catch{}
-let revision=-1, ready=false, syncing=false, busy=false, confirmed=null;
+let revision=-1, ready=false, syncing=false, busy=false, confirmed=null,resultDismissedOffline=false;
 const draftOwner=Date.now().toString(36)+Math.random().toString(36).slice(2);
 let sharedDraft=null,draftSequence=0,draftWrites=0;
 async function publishDraft(){
@@ -85,7 +85,12 @@ function cache(){
  try{localStorage.setItem(key,value);}catch{}
  try{window.DartsAndroid?.saveSnapshot?.(value);}catch{}
 }
-function connection(ok,text){ready=ok;$('saved').textContent=text;$('connection-status').textContent=text;$('connection-status').classList.toggle('offline',!ok);}
+function connection(ok,text){
+ const recovered=ok&&!ready;
+ ready=ok;$('saved').textContent=text;$('connection-status').textContent=text;$('connection-status').classList.toggle('offline',!ok);
+ $('result-later').hidden=ok;
+ if(recovered&&resultDismissedOffline){resultDismissedOffline=false;render();message('Verbinding hersteld. Kies hoe je verder wilt.');}
+}
 function receive(data){
  if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
  revision=data.revision;confirmed=data.match;sharedDraft=null;
@@ -147,7 +152,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#result-later, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
@@ -548,6 +553,7 @@ function showResult(){
 }
 $('continue').onclick=async()=>{$('result-dialog').close();if(state.phase==='won')showSetup();else{state=nextLeg(state);if(!await persist())return;resetInput();render();}};
 $('result-undo').onclick=()=>{$('result-dialog').close();$('undo').click();};
+$('result-later').onclick=()=>{resultDismissedOffline=!ready;$('result-dialog').close();if(resultDismissedOffline)message('Het legvenster opent opnieuw zodra de verbinding met de NUC terug is.');};
 $('finish-match').onclick=async()=>{state={...state,phase:'won',winner:null};if(!await persist())return;$('result-dialog').close();showSetup();};
 const teamMode=()=>$('participant-mode').value==='teams'&&$('game-type').value!=='training';
 function participantNameInputs(){return teamMode()?[...$('names').querySelectorAll('input[data-team-name]')]:[...$('names').children].filter(element=>element.tagName==='LABEL').map(label=>label.querySelector('input'));}
