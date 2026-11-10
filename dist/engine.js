@@ -56,7 +56,7 @@ export function newMatch(names,start=501,out='double',legs=3,options={}){
  }
  const config={game:'x01',inMode:'single',scoring:'standard',matchMode:'legs',legsPerSet:3,bull:'25/50',maxRounds:50,starter:0,...options};
  const numbers=config.game==='tactics'?[20,19,18,17,16,15,14,13,12,11,10,25]:[20,19,18,17,16,15,25];
- return {version:2,...config,start,out,target:legs,numbers,players:names.map(name=>({name,...(config.game==='tenlives'?{lives:10,livesTarget:20,attempts:3,livesHits:0}:{}),...(options.training121?{trainingLevel:121,trainingBest:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0,bobsEliminated:false}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null};
+ return {version:2,...config,start,out,target:legs,numbers,players:names.map(name=>({name,...(config.game==='tenlives'?{lives:10,livesTarget:20,attempts:3,livesHits:0}:{}),...(options.training121?{trainingLevel:121,trainingBest:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0,bobsEliminated:false}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null,startedAt:Date.now()};
 }
 function win(s,index,reason='finish'){
  s.winner=index;s.reason=reason;const p=s.players[index];p.legs++;p.setLegs++;

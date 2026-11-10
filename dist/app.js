@@ -3,7 +3,7 @@ import {cameraControls} from './autoscoring.js';
 import {applyCameraEvent} from './autoscoring-rules.js';
 import './match-transfer.js';
 import './desktop-update.js';
-import {renderLives} from './ten-lives.js';
+import {renderLives,renderLivesSummary} from './ten-lives.js';
 import {matchSummary,renderLegTable} from './match-summary.js';
 import {renderScreenOverview} from './screen-overview.js';
 import {replayTurns} from './replay.js';
@@ -525,9 +525,11 @@ for(const b of document.querySelectorAll('[data-darts]'))b.onclick=()=>{$('finis
 $('finish-cancel').onclick=()=>$('finish-dialog').close();
 function showResult(){
  showWinner(state);
+ $('result-dialog').querySelector('#lives-summary')?.remove();
  if(state.game==='tenlives'){
   $('result-title').textContent=state.winner===null?'Training afgelopen':state.players[state.winner].name+' wint!';
   $('result-text').textContent=(state.winner===null?'Alle spelers zijn hun levens kwijt. ':'Bull geraakt! ')+state.players.map(p=>`${p.name}: ${p.lives} levens, ${p.darts} pijlen`).join(' ? ');
+  renderLivesSummary(state,$('result-dialog'));
   $('continue').textContent='Nieuwe training';$('finish-match').hidden=true;
   if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }

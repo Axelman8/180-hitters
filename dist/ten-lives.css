@@ -110,3 +110,25 @@ body.remote-control .lives-last{font-size:12px;margin:0;min-height:0}
 @keyframes lives-fail-wave{0%{opacity:.9;transform:translate(-50%,-50%) scale(.2)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.8)}}
 @keyframes lives-fail-sparks{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--spark-x)),calc(-50% + var(--spark-y))) rotate(var(--spark-turn)) scale(.3)}}
 @media(prefers-reduced-motion:reduce){.lives-fail-wave,.lives-fail-spark{display:none}.lives-fail-burst{animation:none}#lives-fail-effect .lives-fail-burst{background:#71331ee8;border-radius:20px}}
+
+/* Complete Hitters Challenge report in the end-of-training dialog. */
+#result-dialog:has(#lives-summary){max-width:min(920px,96vw);max-height:92dvh;overflow:auto;text-align:left}
+#result-dialog:has(#lives-summary)>#result-title,#result-dialog:has(#lives-summary)>#result-text{text-align:center}
+.lives-summary{display:grid;gap:14px;margin:16px 0 20px}
+.lives-summary h3{font-size:clamp(22px,5vw,34px);color:var(--accent);margin:0;text-align:center}
+.lives-summary h4{font-size:16px;margin:0 0 7px;color:#83d9ef}
+.lives-summary-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}
+.lives-summary-meta>dt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lives-summary-meta>dd{font-size:18px;font-weight:800;margin:0;grid-row:2}
+.lives-summary-one,.lives-summary-ranking{background:#10212a;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.lives-summary-one p{margin:0;color:#fff}
+.lives-summary-ranking ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 22px;margin:0;padding-left:24px}
+.lives-summary-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.lives-summary-table{width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap}
+.lives-summary-table th,.lives-summary-table td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line)}
+.lives-summary-table th{color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.04em;background:#10212a}
+.lives-summary-table tbody tr:last-child td{border-bottom:0}.lives-summary-table tr.missed td{color:#ffbb79}
+@media(max-width:600px){
+ #result-dialog:has(#lives-summary){width:96%;padding:18px 12px}
+ .lives-summary-meta{grid-template-columns:1fr 1fr}.lives-summary-meta>dt,.lives-summary-meta>dd{grid-row:auto}.lives-summary-meta>dd{font-size:16px}.lives-summary-meta>dt:nth-of-type(3){grid-column:1}.lives-summary-ranking ol{grid-template-columns:1fr}.lives-summary-table{font-size:12px}.lives-summary-table th,.lives-summary-table td{padding:9px 8px}
+}
