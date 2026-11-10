@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory() as tmp:
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page(viewport={'width': 393, 'height': 852})
-            page.add_init_script("""window.sharedPng=null;window.DartsAndroid={parts:[],beginPngShare(name){this.parts=[];this.name=name;return true},appendPngShare(chunk){this.parts.push(chunk);return chunk.length<=196608},finishPngShare(){window.sharedPng={data:this.parts.join(''),name:this.name,chunks:this.parts.length};return true}}""")
+            page.add_init_script("""window.sharedPng=null;window.DartsAndroid={images:[],parts:[],beginPngShareCollection(){this.images=[];return true},beginPngSharePart(name){this.parts=[];this.name=name;return true},appendPngShare(chunk){this.parts.push(chunk);return chunk.length<=196608},finishPngSharePart(){this.images.push({data:this.parts.join(''),name:this.name,chunks:this.parts.length});return true},finishPngShareCollection(){window.sharedPng={images:this.images};return true}}""")
             page.goto('http://127.0.0.1:8794/?android=1')
             result = page.evaluate("""async()=>{
               const {newMatch}=await import('/engine.js');
@@ -44,11 +44,12 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator('.lives-one-dart-chart>div')).to_have_count(2)
             expect(page.locator('.lives-one-dart-chart strong')).to_have_text(['× 1', '× 1'])
             page.locator('#lives-summary .lives-summary-share').click()
-            page.wait_for_function('window.sharedPng && window.sharedPng.data.length > 1000')
+            page.wait_for_function('window.sharedPng && window.sharedPng.images.length === 2')
             shared = page.evaluate('window.sharedPng')
-            assert shared['name'].startswith('hitters-challenge-') and shared['name'].endswith('.png')
-            assert shared['data'].startswith('iVBOR')
-            assert shared['chunks'] >= 1
+            assert shared['images'][0]['name'].endswith('-overzicht.png')
+            assert shared['images'][1]['name'].endswith('-rondes-01.png')
+            assert all(image['data'].startswith('iVBOR') for image in shared['images'])
+            assert all(image['chunks'] >= 1 for image in shared['images'])
             assert page.locator('#result-dialog').evaluate('e=>e.scrollWidth<=e.clientWidth')
             browser.close()
             print('PASS: Hitters Challenge times, total, one-dart ranking, detail table and mobile fit')
