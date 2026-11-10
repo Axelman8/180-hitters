@@ -56,6 +56,25 @@ with tempfile.TemporaryDirectory() as tmp:
                       tablet.locator('#mode-status').evaluate("e=>getComputedStyle(e).backgroundColor")]
             assert colors[0] != colors[1], colors
 
+            # A follower may leave a completed report locally without taking
+            # control; advancing a live leg remains protected.
+            status = phone.evaluate("""async()=>{
+              const {newMatch}=await import('/engine.js');
+              const current=await fetch('/api/state').then(response=>response.json());
+              const state=newMatch(['Remon'],501,'double',1,{game:'tenlives',livesMode:'triple'});
+              state.phase='won';state.winner=0;state.reason='lives-bull';
+              const response=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:current.revision,match:{state,undo:[]}})});
+              return response.status;
+            }""")
+            assert status == 200
+            expect(phone.locator('#result-dialog')).to_be_visible()
+            expect(tablet.locator('#result-dialog')).to_be_visible()
+            expect(tablet.locator('#continue')).to_have_class(re.compile(r'result-local-continue'))
+            tablet.locator('#continue').click()
+            expect(tablet.locator('#result-dialog')).to_be_hidden()
+            expect(tablet.locator('#setup')).to_be_visible()
+            expect(phone.locator('#result-dialog')).to_be_visible()
+
             # The old tablet logic reclaimed ownership every five seconds.
             phone.wait_for_timeout(6500)
             expect(phone.locator('#controller-note')).to_have_text('Scorebediening actief')

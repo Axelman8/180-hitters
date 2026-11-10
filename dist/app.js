@@ -153,7 +153,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#result-later, .lives-summary-share, .game-report-share, #archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
@@ -526,20 +526,21 @@ for(const b of document.querySelectorAll('[data-darts]'))b.onclick=()=>{$('finis
 $('finish-cancel').onclick=()=>$('finish-dialog').close();
 function showResult(){
  showWinner(state);
+ $('continue').classList.remove('result-local-continue');
  $('result-dialog').querySelector('#lives-summary')?.remove();
  $('result-dialog').querySelector('#game-report')?.remove();
  if(state.game==='tenlives'){
   $('result-title').textContent=state.winner===null?'Training afgelopen':state.players[state.winner].name+' wint!';
   $('result-text').textContent=(state.winner===null?'Alle spelers zijn hun levens kwijt. ':'Bull geraakt! ')+state.players.map(p=>`${p.name}: ${p.lives} levens, ${p.darts} pijlen`).join(' ? ');
   renderLivesSummary(state,$('result-dialog'));
-  $('continue').textContent='Nieuwe training';$('finish-match').hidden=true;
+  $('continue').textContent='Nieuwe training';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;
   if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
  if(state.game==='bobs27'){
   const complete=['bobs-complete','bobs-tie'].includes(state.reason),scores=state.players.map(p=>`${p.name}: ${p.remaining} (${p.bobsHits||0} raak)`).join(' · ');
   $('result-title').textContent=state.reason==='bobs-tie'?'Gelijkspel!':state.winner!==null?`${state.players[state.winner].name} wint!`:complete?"Bob's 27 voltooid!":'Training afgelopen';
   $('result-text').textContent=scores;renderGameReport(state,$('result-dialog'));
-  $('continue').textContent='Nieuwe training';$('finish-match').hidden=true;
+  $('continue').textContent='Nieuwe training';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;
   if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
  if(state.training121){
@@ -553,7 +554,7 @@ function showResult(){
  if(state.phase==='won'&&state.winner!==null)$('result-title').textContent=state.players[state.winner].name;
  $('result-text').textContent=(state.reason==='round-limit'?'Rondelimiet bereikt. ':'')+state.players.map(p=>`${p.name}: ${state.matchMode==='sets'?`${p.sets} sets, `:''}${p.legs} legs`).join(' · ');
  if(state.phase==='won')renderGameReport(state,$('result-dialog'));
- $('continue').textContent=state.phase==='won'?'Nieuwe partij →':'Volgende leg →';$('finish-match').hidden=state.matchMode!=='off'||state.phase==='won';
+ $('continue').textContent=state.phase==='won'?'Nieuwe partij →':'Volgende leg →';$('continue').classList.toggle('result-local-continue',state.phase==='won');$('finish-match').hidden=state.matchMode!=='off'||state.phase==='won';
  if(!$('result-dialog').open)$('result-dialog').showModal();
 }
 $('continue').onclick=async()=>{$('result-dialog').close();if(state.phase==='won')showSetup();else{state=nextLeg(state);if(!await persist())return;resetInput();render();}};
