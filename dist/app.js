@@ -5,6 +5,7 @@ import './match-transfer.js';
 import './desktop-update.js';
 import {renderLives,renderLivesSummary} from './ten-lives.js';
 import {matchSummary,renderLegTable} from './match-summary.js';
+import {renderGameReport} from './game-reports.js';
 import {renderScreenOverview} from './screen-overview.js';
 import {replayTurns} from './replay.js';
 import {celebrateScore} from './celebration.js';
@@ -152,7 +153,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#result-later, .lives-summary-share, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#result-later, .lives-summary-share, .game-report-share, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
@@ -526,6 +527,7 @@ $('finish-cancel').onclick=()=>$('finish-dialog').close();
 function showResult(){
  showWinner(state);
  $('result-dialog').querySelector('#lives-summary')?.remove();
+ $('result-dialog').querySelector('#game-report')?.remove();
  if(state.game==='tenlives'){
   $('result-title').textContent=state.winner===null?'Training afgelopen':state.players[state.winner].name+' wint!';
   $('result-text').textContent=(state.winner===null?'Alle spelers zijn hun levens kwijt. ':'Bull geraakt! ')+state.players.map(p=>`${p.name}: ${p.lives} levens, ${p.darts} pijlen`).join(' ? ');
@@ -536,20 +538,21 @@ function showResult(){
  if(state.game==='bobs27'){
   const complete=['bobs-complete','bobs-tie'].includes(state.reason),scores=state.players.map(p=>`${p.name}: ${p.remaining} (${p.bobsHits||0} raak)`).join(' · ');
   $('result-title').textContent=state.reason==='bobs-tie'?'Gelijkspel!':state.winner!==null?`${state.players[state.winner].name} wint!`:complete?"Bob's 27 voltooid!":'Training afgelopen';
-  $('result-text').textContent=scores;
+  $('result-text').textContent=scores;renderGameReport(state,$('result-dialog'));
   $('continue').textContent='Nieuwe training';$('finish-match').hidden=true;
   if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
  if(state.training121){
   $('result-title').textContent=state.trainingSuccess?'Uitgegooid!':'Negen darts voorbij';
   const change=state.trainingChange>0?'+'+state.trainingChange:String(state.trainingChange);
-  $('result-text').textContent=state.trainingSuccess?`Uit in ${state.trainingDarts} darts: 1 + ${9-state.trainingDarts} over = ${change}. Volgende startscore: ${state.trainingNext}.`:`Niet uitgegooid. ${state.trainingChange===0?'Je blijft op het minimum van 121.':'Startscore -1: de volgende poging begint op '+state.trainingNext+'.'}`;
+  $('result-text').textContent=state.trainingSuccess?`Uit in ${state.trainingDarts} darts: 1 + ${9-state.trainingDarts} over = ${change}. Volgende startscore: ${state.trainingNext}.`:`Niet uitgegooid. ${state.trainingChange===0?'Je blijft op het minimum van 121.':'Startscore -1: de volgende poging begint op '+state.trainingNext+'.'}`;renderGameReport(state,$('result-dialog'));
   $('continue').textContent=state.players.length>1?'Volgende speler: '+state.players[(state.active+1)%state.players.length].name:'Volgende poging';$('finish-match').hidden=true;
   if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
  $('result-title').textContent=state.winner===null?'Partij afgerond':`${state.players[state.winner].name} wint ${state.phase==='won'?'de partij':state.setComplete?'de set':'de leg'}!`;
  if(state.phase==='won'&&state.winner!==null)$('result-title').textContent=state.players[state.winner].name;
  $('result-text').textContent=(state.reason==='round-limit'?'Rondelimiet bereikt. ':'')+state.players.map(p=>`${p.name}: ${state.matchMode==='sets'?`${p.sets} sets, `:''}${p.legs} legs`).join(' · ');
+ if(state.phase==='won')renderGameReport(state,$('result-dialog'));
  $('continue').textContent=state.phase==='won'?'Nieuwe partij →':'Volgende leg →';$('finish-match').hidden=state.matchMode!=='off'||state.phase==='won';
  if(!$('result-dialog').open)$('result-dialog').showModal();
 }

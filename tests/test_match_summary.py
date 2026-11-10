@@ -31,21 +31,21 @@ with tempfile.TemporaryDirectory() as tmp:
             assert rows[3]['average'] == 0 and rows[0]['legs'] == 2
             page.request.post('http://127.0.0.1:8788/api/state', data={'revision':0,'match':result['match']})
             page.reload()
-            expect(page.locator('.summary-player')).to_have_count(4)
-            expect(page.locator('.summary-total small').first).to_have_text('SPELGEMIDDELDE')
-            expect(page.locator('.summary-leg-table').first.locator('thead th')).to_have_text(['Leg','Gemiddelde','Finish'])
-            expect(page.locator('.summary-leg-table').first.locator('tbody tr').first.locator('td')).to_have_text(['30,00','40'])
+            expect(page.locator('.game-report-players article')).to_have_count(4)
+            expect(page.locator('.game-report-players article').first.locator('dt').first).to_have_text('Gemiddelde')
+            expect(page.locator('.game-report-table thead th')).to_have_text(['Beurt','Speler','Score','Darts','Resterend'])
             expect(page.locator('#players .player-leg-results').first.locator('thead th')).to_have_text(['Leg','Gemiddelde','Finish'])
             expect(page.locator('.winner-trophy')).to_have_count(0)
             winner_photo = page.locator('#result-dialog').evaluate("e=>({backgroundImage:getComputedStyle(e,'::before').backgroundImage,height:getComputedStyle(e,'::before').height})")
             assert 'winner-stage-pdc.jpg' in winner_photo['backgroundImage']
             assert abs(float(winner_photo['height'][:-2]) - page.evaluate('innerHeight') / 3) < 1
-            expect(page.locator('.summary-total strong').first).to_have_text('48,00')
+            expect(page.locator('.game-report-players article').first.locator('dd').first).to_have_text('48,00')
             page.set_viewport_size({'width':393,'height':750})
             page.wait_for_timeout(100)
             assert page.locator('#result-dialog').evaluate('e=>e.scrollWidth<=e.clientWidth')
             page.locator('#result-undo').click()
             expect(page.locator('#match-summary')).to_have_count(0)
+            expect(page.locator('#game-report')).to_have_count(0)
             marks = page.evaluate("""async()=>{
                 const {matchSummary}=await import('/match-summary.js');
                 return matchSummary({game:'tactics',leg:1,starter:0,players:[{name:'A',legs:1}],

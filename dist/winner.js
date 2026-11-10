@@ -5,6 +5,7 @@ const dialog=document.getElementById('result-dialog');
 function clearWinner(){
  dialog.classList.remove('winner-party');
  dialog.querySelector('#match-summary')?.remove();
+ dialog.querySelector('#game-report')?.remove();
  dialog.querySelector('.eyebrow').textContent='LEKKER GESPEELD';
  dialog.querySelector('.winner-decoration')?.remove();
 }
