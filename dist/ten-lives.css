@@ -122,7 +122,7 @@ body.remote-control .lives-last{font-size:12px;margin:0;min-height:0}
 .lives-summary-meta>dd{font-size:18px;font-weight:800;margin:0;grid-row:2}
 .lives-summary-one,.lives-summary-ranking{background:#10212a;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .lives-summary-chart{background:#10212a;border:1px solid var(--line);border-radius:12px;padding:12px 14px;overflow:hidden}
-.lives-summary-chart svg{display:block;width:100%;height:auto;max-height:420px}.chart-grid{stroke:#2a3b44;stroke-width:2}.chart-axis{fill:#93a9b2;font:18px sans-serif}.chart-darts{font:700 17px sans-serif;paint-order:stroke;stroke:#10212a;stroke-width:4px}
+.lives-summary-chart svg{display:block;width:100%;height:auto;max-height:420px}.chart-grid{stroke:#2a3b44;stroke-width:2}.chart-axis{fill:#93a9b2;font:18px sans-serif}.chart-darts,.chart-goal{font:700 17px sans-serif;paint-order:stroke;stroke:#10212a;stroke-width:4px}
 .lives-chart-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}.lives-chart-legend span::before{content:'';display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--chart-color);margin-right:6px}
 .lives-summary-one p{margin:0;color:#fff}
 .lives-one-dart-chart{display:grid;gap:8px}.lives-one-dart-chart>div{display:grid;grid-template-columns:52px minmax(80px,1fr) 42px;align-items:center;gap:8px}.lives-one-dart-chart span,.lives-one-dart-chart strong{font-size:14px}.lives-one-dart-chart i{display:block;height:14px;border-radius:8px;background:#20313b;overflow:hidden}.lives-one-dart-chart b{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#83d9ef,#c8f56a)}
@@ -135,5 +135,5 @@ body.remote-control .lives-last{font-size:12px;margin:0;min-height:0}
 .lives-summary-share{margin-top:2px;font-size:17px}
 @media(max-width:600px){
  #result-dialog:has(#lives-summary){width:96%;padding:18px 12px}
- .lives-summary-meta{grid-template-columns:1fr 1fr}.lives-summary-meta>dt,.lives-summary-meta>dd{grid-row:auto}.lives-summary-meta>dd{font-size:16px}.lives-summary-meta>dt:nth-of-type(3){grid-column:1}.lives-summary-ranking ol{grid-template-columns:1fr}.lives-summary-chart{padding:10px 5px}.chart-axis{font-size:16px}.chart-darts{font-size:15px}.lives-summary-table{font-size:12px}.lives-summary-table th,.lives-summary-table td{padding:9px 8px}
+ .lives-summary-meta{grid-template-columns:1fr 1fr}.lives-summary-meta>dt,.lives-summary-meta>dd{grid-row:auto}.lives-summary-meta>dd{font-size:16px}.lives-summary-meta>dt:nth-of-type(3){grid-column:1}.lives-summary-ranking ol{grid-template-columns:1fr}.lives-summary-chart{padding:10px 5px}.chart-axis{font-size:16px}.chart-darts,.chart-goal{font-size:15px}.lives-summary-table{font-size:12px}.lives-summary-table th,.lives-summary-table td{padding:9px 8px}
 }
