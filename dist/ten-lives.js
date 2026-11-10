@@ -98,8 +98,8 @@ export function renderLivesSummary(state,dialog){
  wrap.append(table);section.append(wrap);
  const share=el('button','Delen als afbeelding','lives-summary-share primary wide');share.type='button';share.onclick=async()=>{
   const original=share.textContent;share.disabled=true;share.textContent='Afbeelding maken...';
-  try{await shareLivesSummary(state);share.textContent='Deelmenu geopend';}
-  catch(error){share.textContent=error?.message||'Delen is niet gelukt';}
+  try{window.DartsAndroid?.logShare?.('deelknop geactiveerd');await shareLivesSummary(state);share.textContent='Deelmenu geopend';}
+  catch(error){window.DartsAndroid?.logShare?.('fout: '+(error?.message||error));share.textContent=error?.message||'Delen is niet gelukt';}
   finally{setTimeout(()=>{share.disabled=false;share.textContent=original;},2200);}
  };
  section.append(share);dialog.querySelector('#result-title').after(section);
@@ -180,9 +180,17 @@ export function createLivesSummaryImage(state){
 }
 
 export async function shareLivesSummary(state){
+ window.DartsAndroid?.logShare?.('afbeelding opbouwen');
  const canvas=createLivesSummaryImage(state),filename=`hitters-challenge-${new Date().toISOString().slice(0,10)}.png`,data=canvas.toDataURL('image/png');
  if(!data.startsWith('data:image/png;base64,'))throw Error('Afbeelding kon niet worden gemaakt.');
- if(window.DartsAndroid?.sharePng){window.DartsAndroid.sharePng(data.slice(data.indexOf(',')+1),filename);return;}
+ const encoded=data.slice(data.indexOf(',')+1),bridge=window.DartsAndroid;bridge?.logShare?.(`afbeelding gereed: ${encoded.length} tekens`);
+ if(bridge?.beginPngShare&&bridge?.appendPngShare&&bridge?.finishPngShare){
+  if(!bridge.beginPngShare(filename))throw Error('Delen kon niet worden voorbereid.');
+  const chunkSize=196608;
+  for(let offset=0,index=0;offset<encoded.length;offset+=chunkSize,index++){if(!bridge.appendPngShare(encoded.slice(offset,offset+chunkSize)))throw Error('Afbeelding kon niet worden overgedragen.');if(index%8===7)await new Promise(resolve=>setTimeout(resolve,0));}
+  if(!bridge.finishPngShare())throw Error('Android kon het deelmenu niet openen.');return;
+ }
+ if(bridge?.sharePng){bridge.sharePng(encoded,filename);return;}
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
  if(!blob)throw Error('Afbeelding kon niet worden gemaakt.');
  const file=new File([blob],filename,{type:'image/png'});

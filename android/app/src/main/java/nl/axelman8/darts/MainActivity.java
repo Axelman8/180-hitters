@@ -21,6 +21,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 import android.util.Base64;
+import android.util.Log;
 
 import androidx.core.content.FileProvider;
 
@@ -39,6 +40,9 @@ public final class MainActivity extends Activity {
     private SharedPreferences preferences;
     private String mode;
     private boolean webPaused;
+    private final Object shareLock = new Object();
+    private FileOutputStream pendingShareStream;
+    private File pendingShareFile;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -207,6 +211,42 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void repairConnection(){if(bluetooth!=null)bluetooth.closeSocket();}
         @JavascriptInterface public String getControlToken(){return "d7c87006c31f4da2a4348eeb05b59c8b";}
         @JavascriptInterface public void checkForUpdate(){runOnUiThread(()->updater.check(true));}
+        @JavascriptInterface public void logShare(String message){Log.i("180HittersShare",message==null?"":message);}
+        @JavascriptInterface public boolean beginPngShare(String filename){
+            synchronized(shareLock){
+                try {
+                    if(pendingShareStream!=null){try{pendingShareStream.close();}catch(Exception ignored){}pendingShareStream=null;}
+                    File directory=new File(getCacheDir(),"shared");if(!directory.exists()&&!directory.mkdirs())return false;
+                    File[] old=directory.listFiles();if(old!=null)for(File file:old)file.delete();
+                    String safe=filename==null?"hitters-challenge.png":filename.replaceAll("[^A-Za-z0-9._-]","_");if(!safe.endsWith(".png"))safe+=".png";
+                    pendingShareFile=new File(directory,safe);pendingShareStream=new FileOutputStream(pendingShareFile);Log.i("180HittersShare","bestand gestart: "+safe);return true;
+                } catch(Exception error){Log.e("180HittersShare","begin mislukt",error);pendingShareStream=null;pendingShareFile=null;return false;}
+            }
+        }
+        @JavascriptInterface public boolean appendPngShare(String chunk){
+            if(chunk==null||chunk.isEmpty()||chunk.length()>300000)return false;
+            synchronized(shareLock){
+                try {if(pendingShareStream==null||pendingShareFile==null||pendingShareFile.length()>30000000)return false;pendingShareStream.write(Base64.decode(chunk,Base64.NO_WRAP));return true;}
+                catch(Exception error){Log.e("180HittersShare","blok mislukt",error);return false;}
+            }
+        }
+        @JavascriptInterface public boolean finishPngShare(){
+            final File output;
+            synchronized(shareLock){
+                try {if(pendingShareStream==null||pendingShareFile==null)return false;pendingShareStream.flush();pendingShareStream.close();output=pendingShareFile;pendingShareStream=null;pendingShareFile=null;if(output.length()<8||output.length()>30000000)return false;}
+                catch(Exception error){Log.e("180HittersShare","afronden mislukt",error);pendingShareStream=null;pendingShareFile=null;return false;}
+            }
+            try {
+                Uri uri=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".updates",output);
+                Intent send=new Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM,uri)
+                        .putExtra(Intent.EXTRA_SUBJECT,"Hitters Challenge-resultaat")
+                        .putExtra(Intent.EXTRA_TEXT,"Mijn Hitters Challenge-resultaat - 180 Hitters")
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                send.setClipData(ClipData.newRawUri("Hitters Challenge",uri));
+                Intent chooser=Intent.createChooser(send,"Hitters Challenge delen");chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);chooser.setClipData(send.getClipData());
+                Log.i("180HittersShare","chooser openen, bytes="+output.length());runOnUiThread(()->{try{startActivity(chooser);}catch(Exception error){Log.e("180HittersShare","chooser mislukt",error);Toast.makeText(MainActivity.this,"Geen app gevonden om de afbeelding te delen.",Toast.LENGTH_LONG).show();}});return true;
+            } catch(Exception error){Log.e("180HittersShare","provider mislukt",error);return false;}
+        }
         @JavascriptInterface public void sharePng(String encoded,String filename){
             if(encoded==null||encoded.isEmpty()||encoded.length()>30000000)return;
             new Thread(()->{

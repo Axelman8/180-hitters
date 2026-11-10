@@ -4,6 +4,8 @@ import subprocess, sys, tempfile, time
 from playwright.sync_api import sync_playwright, expect
 
 root = Path(__file__).resolve().parents[1]
+assert '.lives-summary-share' in (root/'dist'/'app.js').read_text(encoding='utf-8').split("if((!ready||busy)",1)[1].split(')){',1)[0]
+assert '.lives-summary-share' in (root/'dist'/'controller.js').read_text(encoding='utf-8').split("event.target.closest(",1)[1].split('))return',1)[0]
 with tempfile.TemporaryDirectory() as tmp:
     server = subprocess.Popen([sys.executable, str(root/'server.py'), '--host', '127.0.0.1', '--port', '8794', '--data-file', str(Path(tmp)/'match.json')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
@@ -11,7 +13,7 @@ with tempfile.TemporaryDirectory() as tmp:
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page(viewport={'width': 393, 'height': 852})
-            page.add_init_script("window.sharedPng=null;window.DartsAndroid={sharePng:(data,name)=>window.sharedPng={data,name}}")
+            page.add_init_script("""window.sharedPng=null;window.DartsAndroid={parts:[],beginPngShare(name){this.parts=[];this.name=name;return true},appendPngShare(chunk){this.parts.push(chunk);return chunk.length<=196608},finishPngShare(){window.sharedPng={data:this.parts.join(''),name:this.name,chunks:this.parts.length};return true}}""")
             page.goto('http://127.0.0.1:8794/?android=1')
             result = page.evaluate("""async()=>{
               const {newMatch}=await import('/engine.js');
@@ -46,6 +48,7 @@ with tempfile.TemporaryDirectory() as tmp:
             shared = page.evaluate('window.sharedPng')
             assert shared['name'].startswith('hitters-challenge-') and shared['name'].endswith('.png')
             assert shared['data'].startswith('iVBOR')
+            assert shared['chunks'] >= 1
             assert page.locator('#result-dialog').evaluate('e=>e.scrollWidth<=e.clientWidth')
             browser.close()
             print('PASS: Hitters Challenge times, total, one-dart ranking, detail table and mobile fit')
