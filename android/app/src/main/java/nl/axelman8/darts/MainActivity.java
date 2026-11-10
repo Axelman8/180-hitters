@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.Manifest;
 import android.bluetooth.BluetoothDevice;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -19,6 +20,12 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import android.util.Base64;
+
+import androidx.core.content.FileProvider;
+
+import java.io.File;
+import java.io.FileOutputStream;
 
 import java.util.List;
 import org.json.JSONArray;
@@ -200,6 +207,25 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void repairConnection(){if(bluetooth!=null)bluetooth.closeSocket();}
         @JavascriptInterface public String getControlToken(){return "d7c87006c31f4da2a4348eeb05b59c8b";}
         @JavascriptInterface public void checkForUpdate(){runOnUiThread(()->updater.check(true));}
+        @JavascriptInterface public void sharePng(String encoded,String filename){
+            if(encoded==null||encoded.isEmpty()||encoded.length()>30000000)return;
+            new Thread(()->{
+                try {
+                    byte[] image=Base64.decode(encoded,Base64.DEFAULT);
+                    if(image.length<8||image[0]!=(byte)0x89||image[1]!=(byte)0x50||image[2]!=(byte)0x4e||image[3]!=(byte)0x47)throw new IllegalArgumentException("Geen PNG");
+                    File directory=new File(getCacheDir(),"shared");if(!directory.exists()&&!directory.mkdirs())throw new java.io.IOException("Map ontbreekt");
+                    File[] old=directory.listFiles();if(old!=null)for(File file:old)file.delete();
+                    String safe=filename==null?"hitters-challenge.png":filename.replaceAll("[^A-Za-z0-9._-]","_");if(!safe.endsWith(".png"))safe+=".png";
+                    File output=new File(directory,safe);try(FileOutputStream stream=new FileOutputStream(output)){stream.write(image);}
+                    Uri uri=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".updates",output);
+                    Intent send=new Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM,uri)
+                            .putExtra(Intent.EXTRA_TEXT,"Mijn Hitters Challenge-resultaat - 180 Hitters")
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    send.setClipData(ClipData.newRawUri("Hitters Challenge",uri));
+                    runOnUiThread(()->{try{startActivity(Intent.createChooser(send,"Hitters Challenge delen"));}catch(Exception error){Toast.makeText(MainActivity.this,"Geen app gevonden om de afbeelding te delen.",Toast.LENGTH_LONG).show();}});
+                } catch(Exception error){runOnUiThread(()->Toast.makeText(MainActivity.this,"Afbeelding delen is niet gelukt.",Toast.LENGTH_LONG).show());}
+            },"hitters-share").start();
+        }
         @JavascriptInterface public void saveSnapshot(String json){if(json!=null&&json.length()<10000000)preferences.edit().putString("last_snapshot",json).apply();}
         @JavascriptInterface public String getMobilePlayers(){return preferences.getString("mobile_players","[]");}
         @JavascriptInterface public boolean hasMobilePlayers(){return preferences.contains("mobile_players");}
