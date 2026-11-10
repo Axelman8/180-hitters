@@ -36,11 +36,7 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator('.lives-summary-table thead th')).to_have_text(['Ronde', 'Doel', 'Aantal darts', 'Darts gegooid'])
             expect(page.locator('.lives-summary-table tbody tr')).to_have_count(3)
             expect(page.locator('.lives-summary-table tbody tr').nth(1).locator('td')).to_have_text(['2', 'D19', '2', 'Mis · Raak'])
-            expect(page.locator('.lives-round-timeline')).to_be_visible()
-            expect(page.locator('.lives-timeline-grid article')).to_have_count(3)
-            expect(page.locator('.lives-timeline-grid article strong')).to_have_text(['D20', 'D19', 'Bull'])
-            expect(page.locator('.lives-timeline-grid article b')).to_have_text(['1 dart', '2 darts', '1 dart'])
-            expect(page.locator('.lives-timeline-grid article small')).to_have_text(['Start', 'Vooruit', 'Vooruit'])
+            expect(page.locator('.lives-round-timeline')).to_have_count(0)
             expect(page.locator('.lives-summary-ranking li i')).to_have_count(3)
             assert page.locator('.lives-summary-ranking li b').first.evaluate('el=>parseFloat(el.style.width)') == 100
             expect(page.locator('.lives-one-dart-chart>div')).to_have_count(2)
