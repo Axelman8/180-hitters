@@ -382,6 +382,16 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             try: os.fsync(fd)
             finally: os.close(fd)
 
+    def archive_match(match, pending=None):
+        """Store one complete match before it is replaced; caller holds lock."""
+        if not match: return None
+        backups.mkdir(parents=True, exist_ok=True)
+        backup_id = uuid.uuid4().hex
+        durable_json(backups / (backup_id + '.json'), {
+            'time': time.time(), 'match': match, 'draft': pending})
+        prune_backups(backups)
+        return backup_id
+
     def transfer_match(incoming):
         match = incoming.get('match')
         if not isinstance(match, dict) or not isinstance(match.get('undo'), list):
@@ -565,6 +575,22 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                                           'players': [p['name'] for p in state['players']], 'leg': state.get('leg')})
                         except (OSError, ValueError, KeyError, TypeError): continue
                     self.reply(200, {'backups': items})
+            elif route.startswith('/api/match-backups/'):
+                backup_id = route.rsplit('/', 1)[-1]
+                if len(backup_id) != 32 or any(c not in '0123456789abcdef' for c in backup_id):
+                    self.reply(400, {'error': 'Ongeldige opgeslagen partij.'})
+                else:
+                    with lock:
+                        backup_file = backups / (backup_id + '.json')
+                        if not backup_file.is_file():
+                            self.reply(404, {'error': 'Opgeslagen partij niet gevonden.'})
+                        else:
+                            try:
+                                saved = json.loads(backup_file.read_text(encoding='utf-8'))
+                                match, _ = transfer_match(saved)
+                                self.reply(200, {'time': saved['time'], 'match': match})
+                            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+                                self.reply(400, {'error': 'Opgeslagen partij is beschadigd.'})
             elif route == '/api/players':
                 with lock:
                     combined = list(roster)
@@ -724,11 +750,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             return self.reply(507, {'error': 'Te weinig vrije opslag op de NUC. De huidige partij blijft behouden; maak ruimte vrij en probeer opnieuw.'})
                         backup_id = None
                         if current.get('match'):
-                            backups.mkdir(parents=True, exist_ok=True)
-                            backup_id = uuid.uuid4().hex
-                            durable_json(backups / (backup_id + '.json'), {
-                                'time': time.time(), 'match': current['match'],
-                                'draft': draft['value'] if time.monotonic()-draft['time'] < 180 else None})
+                            backup_id = archive_match(current['match'], draft['value'] if time.monotonic()-draft['time'] < 180 else None)
                         recent = dict(list(receipts.items())[-99:])
                         updated = {**current, 'revision': current['revision']+1, 'match': match,
                                    'transfers': {**recent, request_id: backup_id}}
@@ -983,6 +1005,13 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         return self.reply(409, current)
                     if current['match'] is None and self.client_address[0] not in ('127.0.0.1', '::1'):
                         return self.reply(403, {'error': 'Start de eerste partij op het NUC-scherm'})
+                    previous = current.get('match')
+                    previous_started = (previous or {}).get('state', {}).get('startedAt')
+                    incoming_started = state.get('startedAt')
+                    if previous and previous_started != incoming_started:
+                        if not room_for(path.parent, current, match):
+                            return self.reply(507, {'error': 'Te weinig vrije opslag om de vorige partij veilig te bewaren.'})
+                        archive_match(previous, draft['value'] if time.monotonic()-draft['time'] < 180 else None)
                     updated = {**current, 'revision': current['revision'] + 1, 'match': match, 'cameraDraft': {}}
                     encoded = json.dumps(updated, allow_nan=False)
                     temporary = path.with_suffix('.tmp')

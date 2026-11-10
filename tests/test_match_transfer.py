@@ -48,13 +48,27 @@ with tempfile.TemporaryDirectory() as tmp:
    assert get()['revision']==rev
    # Restoration from the menu backs up the imported party before restoring.
    screen.reload();screen.get_by_text('Spelen',exact=True).click();screen.locator('#match-backups').click()
-   expect(screen.locator('#transfer-items button')).to_have_count(1)
-   screen.locator('#transfer-items button').click();screen.locator('#transfer-confirm').click()
+   expect(screen.locator('#transfer-items button')).to_have_count(2)
+   screen.locator('.archive-view').click()
+   expect(screen.locator('#archive-report-dialog')).to_be_visible()
+   expect(screen.locator('#archive-report-dialog #game-report')).to_be_visible()
+   assert get()['match']==incoming
+   screen.locator('#archive-report-close').click()
+   if not screen.locator('#match-backups').is_visible(): screen.get_by_text('Spelen',exact=True).click()
+   screen.locator('#match-backups').click()
+   screen.locator('.archive-restore').click();screen.locator('#transfer-confirm').click()
    expect(screen.locator('#transfer-dialog')).not_to_be_visible()
    assert get()['match']==original
    assert len(list(backupdir.glob('*.json')))==2
    assert any(json.loads(f.read_text(encoding='utf-8'))['match']==incoming for f in backupdir.glob('*.json'))
+   listed=screen.request.get(url+'/api/match-backups').json()['backups']
+   viewed=screen.request.get(url+'/api/match-backups/'+listed[0]['id'])
+   assert viewed.ok and viewed.json()['match']['state']['history']
    assert post('/api/match-restore',{'revision':get()['revision'],'requestId':'bad-restore-000001','backup':'../match'}).status==400
-   print('PASS transfer UI, full match/history, draft, durable backups, disk failure, conflict, restart retry, restore and path validation')
+   # Starting a genuinely new match automatically archives the previous one.
+   replacement=screen.evaluate("async()=>{const e=await import('/engine.js');return {state:e.newMatch(['Nieuw A','Nieuw B'],501,'double',3),undo:[]}}")
+   assert post('/api/state',{'revision':get()['revision'],'match':replacement}).ok
+   assert len(list(backupdir.glob('*.json')))==3
+   print('PASS transfer UI, read-only report, automatic archive, full history, durable backups, restore and path validation')
    browser.close()
  finally:server.terminate();server.wait()
