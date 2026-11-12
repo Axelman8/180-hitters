@@ -38,8 +38,16 @@ menuToggle.onclick=()=>{
  try{localStorage.setItem('180hitters.menuCollapsed',String(menuCollapsed));}catch{}
  renderMenuToggle();
 };
+function compactForFourInRow(){
+ if(menuCollapsed||!document.body.classList.contains('remote-control')||document.body.dataset.game!=='fourinarow')return;
+ menuCollapsed=true;
+ try{localStorage.setItem('180hitters.menuCollapsed','true');}catch{}
+ renderMenuToggle();
+}
+document.addEventListener('four-in-row-menu-compact',compactForFourInRow);
 actions.before(menu);
 renderMenuToggle();
+compactForFourInRow();
 
 const definitions=[
  ['play','Spelen'],

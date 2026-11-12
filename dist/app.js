@@ -10,7 +10,7 @@ import {renderScreenOverview} from './screen-overview.js';
 import {replayTurns} from './replay.js';
 import {celebrateScore} from './celebration.js';
 import {showWinner} from './winner.js';
-import {renderFourInRow,fourCellLabel} from './four-in-row.js';
+import {renderFourInRow,fourCellLabel,fourSymbols as fourPlayerSymbols} from './four-in-row.js';
 import {newMatch,applyTurn,nextLeg,validX01Total,checkout,setupShot,possibleTotal,makeDart,previewTurn,previewCricket,previewGotcha,previewBobs27,playerStats} from './engine.js';
 const phoneLayout=matchMedia('(max-width:600px)');
 function mobileLayout(){document.body.classList.toggle('remote-control',!!window.DartsAndroid||new URLSearchParams(location.search).has('android')||new URLSearchParams(location.search).get('remote')==='1'||phoneLayout.matches);}
@@ -342,6 +342,7 @@ function teamMemberIndex(matchState,player){
 }
 function render(){
  document.body.dataset.game=state?.game||'';
+ if(state?.game==='fourinarow'&&document.body.classList.contains('remote-control'))document.dispatchEvent(new Event('four-in-row-menu-compact'));
  $('edit-match').hidden=!state||state.phase==='won';
  $('team-manager').hidden=!state||state.phase==='won'||!state.teamMode;
  if(!state){showSetup();return;}
@@ -690,6 +691,7 @@ function editCurrentMatch(){
    if(!container.children.length)addTeamMember(container,'');
   });
  }else participantNameInputs().forEach((input,index)=>input.value=state.players[index].name);
+ if(state.game==='fourinarow')participantNameInputs().forEach((input,index)=>input.dataset.fourSymbol=state.players[index].fourSymbol||fourPlayerSymbols[index]);
  starterOptions();$('starter').value=String(state.starter);
  $('category-match').setAttribute('aria-pressed',String(!training));
  $('category-training').setAttribute('aria-pressed',String(training));
@@ -743,7 +745,7 @@ $('setup-form').onsubmit=async e=>{
  if(players.length!==Number($('count').value)||teams.some(team=>!team.name||team.members.length<1||team.members.length>5)){$('team-validation').hidden=false;$('team-validation').textContent='Geef ieder team een naam en voeg per team 1 tot maximaal 5 spelers toe.';return;}$('team-validation').hidden=true;
  const gotcha=$('game-type').value==='training'&&$('training-type').value==='gotcha',bobs=$('game-type').value==='training'&&$('training-type').value==='bobs27',four=$('game-type').value==='fourinarow';
  let previousFourBoard=state?.game==='fourinarow'?state.fourBoard:null;try{previousFourBoard=previousFourBoard||JSON.parse(localStorage.getItem('180hitters.lastFourBoard'));}catch{}
- const proposed=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,fourBot:four&&$('four-bot').value==='bot',previousFourBoard,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
+ const proposed=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,fourBot:four&&$('four-bot').value==='bot',fourSymbols:four?participantNameInputs().map((input,index)=>input.dataset.fourSymbol||fourPlayerSymbols[index]):null,previousFourBoard,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
  if(four)try{localStorage.setItem('180hitters.lastFourBoard',JSON.stringify(proposed.fourBoard));}catch{}
  proposed.teamMode=teamMode();if(proposed.teamMode)proposed.players=proposed.players.map((player,index)=>({...player,members:teams[index].members}));
  if(editingCurrentMatch){
@@ -751,7 +753,7 @@ $('setup-form').onsubmit=async e=>{
   if(!compatible&&!confirm('Deze structurele wijziging kan niet op de bestaande scorestand worden toegepast. De partij blijft in hetzelfde scherm, maar scores, legs en geschiedenis beginnen opnieuw. Doorgaan?'))return;
   if(compatible){
    const renamed={};state.players.forEach((player,index)=>{renamed[player.name]=players[index];});
-   state={...state,game:proposed.game,inMode:proposed.inMode,out:proposed.out,scoring:proposed.scoring,matchMode:proposed.matchMode,target:proposed.target,legsPerSet:proposed.legsPerSet,bull:proposed.bull,maxRounds:proposed.maxRounds,livesMode:proposed.livesMode,teamMode:proposed.teamMode,players:state.players.map((player,index)=>({...player,name:players[index],members:proposed.players[index].members,opened:proposed.inMode==='single'?true:player.opened})),history:state.history.map(turn=>({...turn,name:renamed[turn.name]||turn.name}))};
+   state={...state,game:proposed.game,inMode:proposed.inMode,out:proposed.out,scoring:proposed.scoring,matchMode:proposed.matchMode,target:proposed.target,legsPerSet:proposed.legsPerSet,bull:proposed.bull,maxRounds:proposed.maxRounds,livesMode:proposed.livesMode,teamMode:proposed.teamMode,fourSymbols:proposed.fourSymbols,players:state.players.map((player,index)=>({...player,name:players[index],members:proposed.players[index].members,fourSymbol:proposed.players[index].fourSymbol||player.fourSymbol,opened:proposed.inMode==='single'?true:player.opened})),history:state.history.map(turn=>({...turn,name:renamed[turn.name]||turn.name}))};
   }else{
    state=proposed;undo=[];future=[];pendingTurns=[];pendingReason='';editingPending=false;historyNavigation=false;
   }

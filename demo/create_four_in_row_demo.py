@@ -100,8 +100,6 @@ def capture_ui(work: Path) -> dict[str, Path]:
             for index in (3, 8, 13):
                 owned["fourOwners"][index] = 1
                 owned["players"][1]["fourMarks"][index] = 3
-            owned["players"][0]["fourMarks"][17] = 2
-            owned["players"][1]["fourMarks"][18] = 1
             owned["active"] = 1
             post_state(phone, owned)
             screen.reload()
@@ -168,11 +166,11 @@ def main() -> None:
         assets = capture_ui(work)
         slides = [
             (slide("Nieuw: 4 op een rij", "Een dartspel voor twee tot vier spelers, volledig in 180 Hitters.", [(assets["board"], (565, 135, 650, 520)), (assets["legend"], (60, 215, 440, 220))]),
-             "Welkom bij vier op een rij in 180 Hitters. Je speelt met twee tot vier spelers. Iedere speler heeft een eigen, duidelijk herkenbaar symbool."),
+             "Welkom bij vier op een rij in 180 Hitters. Je speelt met twee tot vier spelers. Iedere speler kiest een eigen, duidelijk herkenbaar symbool."),
             (slide("Een nieuw bord bij ieder spel", "Twintig getallen, vier keer single bull en de bull in het midden.", [(assets["board"], (415, 145, 700, 525))]),
              "Het speelveld bestaat uit vijf bij vijf vakken. De twintig getallen worden bij ieder nieuw spel opnieuw verdeeld, zonder dat een getal op dezelfde plaats blijft staan. In de hoeken staat single bull en in het midden de bull."),
             (slide("Drie marks verovert een vak", "Single is 1 mark · dubbel is 2 marks · triple is 3 marks.", [(assets["owned"], (415, 145, 700, 525))]),
-             "Raak je een single, dan krijg je één mark. Een dubbel telt voor twee en een triple voor drie. Zodra je drie marks hebt, is het vak van jou en blijft het van jou."),
+             "Op een getal geeft een single één mark. Een dubbel telt voor twee en een triple voor drie. Je moet drie marks binnen dezelfde beurt halen; losse marks vervallen daarna. Single bull en bull claim je direct met één raak pijl."),
             (slide("Mobiel bedient, NUC toont", "Tik op het geraakte vak en kies single, dubbel of triple.", [(assets["phone_board"], (80, 170, 500, 480)), (assets["controls"], (690, 170, 470, 480))]),
              "Op de telefoon of tablet tik je het geraakte vak aan. Kies vooraf single, dubbel of triple. Na drie pijlen wordt de beurt automatisch naar de NUC gestuurd en gaat de volgende speler verder."),
             (slide("Vier op een rij wint", "Horizontaal, verticaal of diagonaal: vier eigen vakken is winst.", [(assets["win"], (415, 145, 700, 525))]),

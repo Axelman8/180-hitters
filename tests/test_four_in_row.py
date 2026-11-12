@@ -1,6 +1,6 @@
 """4 op een rij: engine, mobile input, NUC board and two-player visual."""
 from pathlib import Path
-import json, subprocess, sys, tempfile, time
+import json, re, subprocess, sys, tempfile, time
 from playwright.sync_api import sync_playwright, expect
 
 root = Path(__file__).resolve().parents[1]
@@ -26,20 +26,42 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(phone.locator('.four-symbol')).to_have_text(['○','×'])
             expect(phone.locator('#turn-label')).to_contain_text('Anna')
             expect(phone.locator('#controller-note')).to_have_text('Scorebediening actief')
+            for width, height in [(320,640),(360,740),(393,852),(600,800),(768,1024),(1024,600)]:
+                phone.set_viewport_size({'width':width,'height':height})
+                assert phone.evaluate('document.documentElement.scrollWidth<=innerWidth'), (width,height)
+                for selector in ['.four-board','.four-controls']:
+                    box = phone.locator(selector).bounding_box()
+                    assert box and box['x'] >= 0 and box['x'] + box['width'] <= width + 1, (selector,width,height,box)
+                cell = phone.locator('.four-cell').first.bounding_box()
+                assert cell['width'] >= 42 and cell['height'] >= 42, (width,height,cell)
+            phone.set_viewport_size({'width':393,'height':852})
+            phone.screenshot(path=str(root/'tests'/'four-in-row-mobile-portrait.png'))
+            phone.set_viewport_size({'width':852,'height':393})
+            phone.screenshot(path=str(root/'tests'/'four-in-row-mobile-landscape.png'))
+            phone.set_viewport_size({'width':393,'height':852})
             first = phone.locator('.four-cell[data-kind="number"]').first
-            for _ in range(3): first.click()
+            first_cell = first.get_attribute('data-cell')
+            first.click()
+            expect(screen.locator(f'.four-cell[data-cell="{first_cell}"] .four-progress .player-0')).to_have_text('•')
+            first.click(); first.click()
             expect(phone.locator('#turn-label')).to_contain_text('Bert')
             expect(phone.locator('.four-cell.owned.player-0')).to_have_count(1)
             expect(screen.locator('.four-cell.owned.player-0')).to_have_count(1)
             saved = phone.request.get('http://127.0.0.1:8802/api/state').json()['match']['state']
             assert saved['history'][-1]['darts'] == 3 and saved['active'] == 1
 
+            bull = phone.locator('.four-cell[data-kind="sb"]').first
+            bull.click()
+            expect(bull).to_have_class(re.compile(r'.*pending-owned.*'))
+            expect(screen.locator('.four-cell.pending-owned.player-1')).to_have_count(1)
+            phone.get_by_role('button', name='Mis', exact=True).click()
+            phone.get_by_role('button', name='Mis', exact=True).click()
+            expect(phone.locator('.four-cell.owned.player-1')).to_have_count(1)
+
             # Make the visual example immediately readable without changing game logic.
             visual = saved
             visual['fourOwners'][1] = visual['fourOwners'][6] = 0
             visual['fourOwners'][3] = visual['fourOwners'][8] = 1
-            visual['players'][0]['fourMarks'][11] = 2
-            visual['players'][1]['fourMarks'][13] = 1
             latest = phone.request.get('http://127.0.0.1:8802/api/state').json()
             assert phone.request.post('http://127.0.0.1:8802/api/state', data={'revision':latest['revision'],'match':{'state':visual,'undo':[]}}).ok
             screen.reload();expect(screen.locator('.four-board')).to_be_visible()

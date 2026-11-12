@@ -24,6 +24,7 @@ body #setup-wizard{display:block;padding:10px 8px 0}
 .wizard-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
 .wizard-slots button{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px;min-width:0}
 .wizard-slots small{color:#a9bdc7;font-size:12px}.wizard-slots strong{font-size:20px;overflow-wrap:anywhere}
+.wizard-slot-symbol{font-size:28px;line-height:1;color:#83d9ef}.wizard-four-symbols{border:1px solid var(--line);border-radius:14px;padding:12px;margin:12px 0}.wizard-four-symbols h3{margin:0 0 4px;color:var(--accent);font-size:16px}.wizard-four-symbols .wizard-hint{margin:4px 0 10px}.wizard-symbol-player{display:grid;grid-template-columns:minmax(90px,1fr) minmax(190px,2fr);gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}.wizard-symbol-player>strong{overflow-wrap:anywhere}.wizard-symbol-choices{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.wizard-symbol-choices button{min-width:0;min-height:48px;padding:4px;font-size:27px}
 .wizard-roster{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
 .wizard-roster button{min-height:46px;padding:8px 14px;font-size:15px;border-radius:24px}
 .wizard-roster-group{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0}.wizard-roster-group h3{margin:0;color:var(--accent);font-size:15px}.wizard-roster-group .wizard-roster{margin:10px 0 0}.wizard-roster-empty{color:var(--muted);margin:6px 0;font-size:13px}
@@ -34,6 +35,7 @@ body #setup-wizard{display:block;padding:10px 8px 0}
 .wizard-actions{position:sticky;bottom:0;z-index:5;display:flex;gap:8px;background:#0c151bf5;border-top:1px solid #34444d;padding:12px 0 max(12px,env(safe-area-inset-bottom));margin-top:18px}
 .wizard-actions button{font-size:16px;min-height:54px}.wizard-next{flex:1}.wizard-back{padding:10px;background:transparent}
 @media(min-width:600px){.wizard-games{grid-template-columns:repeat(3,minmax(0,1fr))}.wizard-options{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
+@media(max-width:420px){.wizard-symbol-player{grid-template-columns:1fr}.wizard-symbol-choices button{min-height:44px}}
 
 .wizard-option[data-field=count] .wizard-options{grid-template-columns:repeat(4,minmax(0,1fr))}
 .wizard-content{padding-bottom:8px}
@@ -52,6 +54,7 @@ body:not(.remote-control) .wizard-hint{font-size:18px}
 body:not(.remote-control) .wizard-slots button{min-height:90px;padding:18px}
 body:not(.remote-control) .wizard-slots strong{font-size:28px}
 body:not(.remote-control) .wizard-slots small{font-size:16px}
+body:not(.remote-control) .wizard-symbol-player{grid-template-columns:minmax(180px,1fr) minmax(360px,2fr);font-size:22px}body:not(.remote-control) .wizard-symbol-choices button{min-height:66px;font-size:38px}
 body:not(.remote-control) .wizard-roster button{min-height:58px;font-size:20px}
 body:not(.remote-control) .wizard-actions button{min-height:68px;font-size:23px}
 body:not(.remote-control) .wizard-summary p{font-size:18px}

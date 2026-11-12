@@ -44,7 +44,9 @@ export function newMatch(names,start=501,out='double',legs=3,options={}){
  if(options.game==='fourinarow'){
   if(options.fourBot){if(names.length!==1)throw Error('Kies één speler voor een partij tegen de BOT.');names=[...names,'BOT'];}
   else if(names.length<2||names.length>4)throw Error('Kies 2 tot 4 spelers voor 4 op een rij.');
-  start=0;out='single';legs=1;options={...options,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50',fourBoard:createFourBoard(options.previousFourBoard)};
+  const requested=Array.isArray(options.fourSymbols)?options.fourSymbols:[],chosen=[];
+  for(let index=0;index<names.length;index++){const candidate=requested[index];chosen.push(fourSymbols.includes(candidate)&&!chosen.includes(candidate)?candidate:fourSymbols.find(symbol=>!chosen.includes(symbol)));}
+  start=0;out='single';legs=1;options={...options,fourSymbols:chosen,inMode:'single',matchMode:'legs',maxRounds:0,bull:'25/50',fourBoard:createFourBoard(options.previousFourBoard)};
  }
  if(options.game==='tenlives'){
   if(names.length<1||names.length>4)throw Error('Kies 1 tot 4 spelers.');
@@ -62,7 +64,7 @@ export function newMatch(names,start=501,out='double',legs=3,options={}){
  }
  const config={game:'x01',inMode:'single',scoring:'standard',matchMode:'legs',legsPerSet:3,bull:'25/50',maxRounds:50,starter:0,...options};
  const numbers=config.game==='tactics'?[20,19,18,17,16,15,14,13,12,11,10,25]:[20,19,18,17,16,15,25];
- return {version:2,...config,start,out,target:legs,numbers,...(config.game==='fourinarow'?{fourBoard:config.fourBoard,fourOwners:Array(25).fill(null),fourWinningCells:[],fourBotAverage:config.fourBot?50:null}:{}),players:names.map((name,index)=>({name,...(config.game==='tenlives'?{lives:10,livesTarget:20,attempts:3,livesHits:0}:{}),...(options.training121?{trainingLevel:121,trainingBest:121,trainingDarts:0,trainingAttempt:1,trainingAttemptStart:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0,bobsEliminated:false}:{}),...(config.game==='fourinarow'?{fourMarks:Array(25).fill(0),fourSymbol:fourSymbols[index],bot:!!config.fourBot&&index===1}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null,startedAt:Date.now()};
+ return {version:2,...config,start,out,target:legs,numbers,...(config.game==='fourinarow'?{fourBoard:config.fourBoard,fourOwners:Array(25).fill(null),fourWinningCells:[],fourBotAverage:config.fourBot?50:null}:{}),players:names.map((name,index)=>({name,...(config.game==='tenlives'?{lives:10,livesTarget:20,attempts:3,livesHits:0}:{}),...(options.training121?{trainingLevel:121,trainingBest:121,trainingDarts:0,trainingAttempt:1,trainingAttemptStart:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0,bobsEliminated:false}:{}),...(config.game==='fourinarow'?{fourMarks:Array(25).fill(0),fourSymbol:config.fourSymbols[index],bot:!!config.fourBot&&index===1}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null,startedAt:Date.now()};
 }
 function win(s,index,reason='finish'){
  s.winner=index;s.reason=reason;const p=s.players[index];p.legs++;p.setLegs++;

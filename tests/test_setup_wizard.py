@@ -37,6 +37,8 @@ with tempfile.TemporaryDirectory() as tmp:
     page.locator('.wizard-slots button').first.click()
     page.locator('.wizard-roster').get_by_role('button',name='Ed',exact=True).click()
     page.locator('.wizard-roster').get_by_role('button',name='Frank',exact=True).click()
+    if game=='4 op een rij':
+     page.locator('.wizard-symbol-player').first.get_by_role('button',name='Ed: △',exact=True).click()
     page.get_by_role('group',name='Wie begint?',exact=True).get_by_role('button',name='Frank',exact=True).click()
     page.get_by_role('button',name='← Terug',exact=True).click()
     page.get_by_role('button',name='Kies spelers').click()
@@ -46,6 +48,7 @@ with tempfile.TemporaryDirectory() as tmp:
     match=page.request.get('http://127.0.0.1:8788/api/state').json()['match']['state']
     assert [x['name'] for x in match['players']]==['Ed','Frank'] and match['active']==1,(game,[x['name'] for x in match['players']],match['active'])
     assert match['game']==({'X01':'x01','Cricket':'cricket','Tactics':'tactics','4 op een rij':'fourinarow','121':'x01','Gotcha':'gotcha',"Bob's 27":'bobs27'}[game])
+    if game=='4 op een rij':assert match['players'][0]['fourSymbol']=='△' and len({player['fourSymbol'] for player in match['players']})==2
     if game=='X01':assert match['start']==301 and match['inMode']=='double'
    open_setup()
    page.locator('.wizard-game').filter(has=page.get_by_text('Hitters Challenge',exact=True)).click()
