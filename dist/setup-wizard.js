@@ -15,10 +15,18 @@ const games=[
  ['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training','Start op 27 en gooi drie pijlen op iedere dubbel van D1 tot en met D20 en daarna Bull. Treffers tellen erbij; volledig missen trekt de dubbelwaarde af.']
 ];
 const gameVideos={
+ x01:'180-Hitters-X01-uitleg.mp4',
+ cricket:'180-Hitters-Cricket-uitleg.mp4',
+ tactics:'180-Hitters-Tactics-uitleg.mp4',
+ fourinarow:'180-Hitters-4-op-een-rij-uitleg.mp4',
  scram:'180-Hitters-Scram-uitleg.mp4',
  killer:'180-Hitters-Killer-uitleg.mp4',
  bull41:'180-Hitters-Bull-41-uitleg.mp4',
- twentyone:'180-Hitters-21-uitleg.mp4'
+ twentyone:'180-Hitters-21-uitleg.mp4',
+ '121':'180-Hitters-121-uitleg.mp4',
+ gotcha:'180-Hitters-Gotcha-uitleg.mp4',
+ tenlives:'180-Hitters-Hitters-Challenge-uitleg.mp4',
+ bobs27:'180-Hitters-Bobs-27-uitleg.mp4'
 };
 const fields=['lives-mode','four-bot','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','participant-mode','count'];
 let step=0,slot=0,teamSlot=0,memberSlot=0,venueRoster=[],mobileRoster=[],selected='x01',fourSymbolChoices=[...fourSymbols];
@@ -27,6 +35,11 @@ let applying=false,sendTimer,sendBusy=false,pendingSetup=undefined,seenVersion=-
 const root=document.createElement('section');root.id='setup-wizard';$('setup').append(root);
 function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;}
 function button(text,action,cls){const node=el('button',text,cls);node.type='button';node.onclick=action;return node;}
+function openGameVideo(url,title){
+ let dialog=$('game-video-dialog');
+ if(!dialog){dialog=el('dialog',undefined,'game-video-dialog');dialog.id='game-video-dialog';const heading=el('h2'),video=el('video');video.controls=true;video.playsInline=true;video.preload='metadata';const note=el('p','De video wordt rechtstreeks vanaf GitHub afgespeeld.','wizard-hint'),close=button('Sluiten',()=>dialog.close(),'wide');dialog.append(heading,video,note,close);dialog.addEventListener('close',()=>{video.pause();video.removeAttribute('src');video.load();});document.body.append(dialog);}
+ dialog.querySelector('h2').textContent=`Uitleg: ${title}`;const video=dialog.querySelector('video');video.src=url;dialog.showModal();video.play().catch(()=>{});
+}
 function change(id,value){$(id).value=String(value);$(id).dispatchEvent(new Event('change',{bubbles:true}));}
 function isTeams(){return $('participant-mode').value==='teams'&&!['121','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone'].includes(selected);}
 function teamEditors(){return [...$('names').querySelectorAll('.team-editor')];}
@@ -135,7 +148,7 @@ function render(){
   if(gameVideos[selected]){
    const video=el('a','▶ Bekijk uitlegvideo','wizard-video-link');
    video.href=`https://github.com/Axelman8/180-hitters/releases/latest/download/${gameVideos[selected]}`;
-   video.target='_blank';video.rel='noopener noreferrer';content.append(video);
+   video.onclick=event=>{event.preventDefault();openGameVideo(video.href,game?.[1]||selected);};content.append(video);
   }
   content.append(el('p',games.find(game=>game[0]===selected)?.[1]+' · tik op een tegel om te kiezen','wizard-hint'));
   const main=[['lives-mode','Doubles of Triples'],['four-bot','Tegen wie speel je?'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];

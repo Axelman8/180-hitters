@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory() as tmp:
     if page.locator('#toggle-toolbar').get_attribute('aria-expanded')=='false':page.locator('#toggle-toolbar').click()
     if not page.locator('#settings').is_visible():page.locator('#header-menu details[data-menu="play"] summary').click()
     page.locator('#settings').click();page.locator('#new-match-confirm').click()
-   videos={'Scram':'180-Hitters-Scram-uitleg.mp4','Killer':'180-Hitters-Killer-uitleg.mp4','Bull / 41':'180-Hitters-Bull-41-uitleg.mp4','21':'180-Hitters-21-uitleg.mp4'}
+   videos={'X01':'180-Hitters-X01-uitleg.mp4','Cricket':'180-Hitters-Cricket-uitleg.mp4','Tactics':'180-Hitters-Tactics-uitleg.mp4','4 op een rij':'180-Hitters-4-op-een-rij-uitleg.mp4','Scram':'180-Hitters-Scram-uitleg.mp4','Killer':'180-Hitters-Killer-uitleg.mp4','Bull / 41':'180-Hitters-Bull-41-uitleg.mp4','21':'180-Hitters-21-uitleg.mp4','121':'180-Hitters-121-uitleg.mp4','Gotcha':'180-Hitters-Gotcha-uitleg.mp4',"Bob's 27":'180-Hitters-Bobs-27-uitleg.mp4'}
    descriptions={'X01':'gekozen startscore','Cricket':'15, 16, 17, 18, 19, 20','Tactics':'10 tot en met 20','4 op een rij':'drie marks','Scram':'scoringsfase','Killer':'uniek eigen getal','Bull / 41':'25 bullmarks','21':'Single gaat één stap','121':'maximaal negen darts','Gotcha':'tegenstander','Hitters Challenge':'20 naar 10',"Bob's 27":'Start op 27'}
    for game in ['X01','Cricket','Tactics','4 op een rij','Scram','Killer','Bull / 41','21','121','Gotcha',"Bob's 27"]:
     if game!='X01':
@@ -28,7 +28,8 @@ with tempfile.TemporaryDirectory() as tmp:
     if game in videos:
      video=page.get_by_role('link',name='Bekijk uitlegvideo')
      expect(video).to_have_attribute('href',f'https://github.com/Axelman8/180-hitters/releases/latest/download/{videos[game]}')
-     expect(video).to_have_attribute('target','_blank')
+     if game=='X01':
+      video.click();expect(page.locator('#game-video-dialog')).to_be_visible();expect(page.locator('#game-video-dialog video')).to_have_attribute('src',f'https://github.com/Axelman8/180-hitters/releases/latest/download/{videos[game]}');page.locator('#game-video-dialog').get_by_role('button',name='Sluiten').click()
     else:assert page.locator('.wizard-video-link').count()==0
     if game=='X01':
      page.get_by_role('group',name='Startscore',exact=True).get_by_role('button',name='301',exact=True).click()
@@ -60,6 +61,7 @@ with tempfile.TemporaryDirectory() as tmp:
    open_setup()
    page.locator('.wizard-game').filter(has=page.get_by_text('Hitters Challenge',exact=True)).click()
    expect(page.locator('.wizard-game-description')).to_contain_text(descriptions['Hitters Challenge'])
+   expect(page.get_by_role('link',name='Bekijk uitlegvideo')).to_have_attribute('href','https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Hitters-Challenge-uitleg.mp4')
    page.reload();expect(page.locator('#connection-status')).to_have_text('Verbonden met NUC')
    open_setup()
    page.locator('.wizard-game').filter(has=page.get_by_text('X01',exact=True)).click()

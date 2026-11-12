@@ -58,6 +58,8 @@ Download the latest packages from [GitHub Releases](https://github.com/Axelman8/
 
 The user interface is currently in Dutch. This repository and its technical documentation use English.
 
+Every game in the setup wizard includes a Dutch text explanation and an in-app **Bekijk uitlegvideo** player. The MP4 is streamed directly from the latest GitHub release; selecting it does not first save the video to the device's Downloads folder.
+
 ## Linux NUC installation
 
 The complete installer targets Ubuntu/Debian with a graphical desktop, systemd, NetworkManager, and BlueZ.

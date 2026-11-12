@@ -1,4 +1,4 @@
-"""Create four Dutch narrated videos from screenshots of the real game UI."""
+"""Create Dutch narrated videos from screenshots of the real game UI."""
 from __future__ import annotations
 
 import asyncio
@@ -39,7 +39,15 @@ def make_slide(title: str, body: str, screenshot: Path) -> Image.Image:
 
 
 async def speak(text: str, path: Path) -> None:
-    await edge_tts.Communicate(text, VOICE, rate="-4%").save(str(path))
+    for attempt in range(4):
+        try:
+            await edge_tts.Communicate(text, VOICE, rate="-4%").save(str(path))
+            return
+        except edge_tts.exceptions.NoAudioReceived:
+            path.unlink(missing_ok=True)
+            if attempt == 3:
+                raise
+            await asyncio.sleep(3 * (attempt + 1))
 
 
 def run(command: list[str]) -> None:
@@ -48,6 +56,8 @@ def run(command: list[str]) -> None:
 
 def video(game: str, screenshot: str, slides: list[tuple[str, str, str]]) -> Path:
     destination = OUT / f"180-Hitters-{game}-uitleg.mp4"
+    if destination.exists():
+        return destination
     with tempfile.TemporaryDirectory() as temporary:
         work = Path(temporary)
         segments: list[Path] = []
@@ -68,6 +78,41 @@ def video(game: str, screenshot: str, slides: list[tuple[str, str, str]]) -> Pat
 def main() -> None:
     OUT.mkdir(exist_ok=True)
     games = {
+        "X01": ("screen-fit-x01-False.png", [
+            ("X01", "Kies een startscore en speel exact naar nul.", "Bij X nul één kies je een startscore, bijvoorbeeld driehonderdeen of vijfhonderdeen. Het doel is om exact op nul te eindigen."),
+            ("Kies jouw regels", "Straight, dubbel of master in en uit. Kies ook legs, sets en de bullwaarde.", "Voor de partij kies je de beginregel, de uitgooiregel, de bullwaarde en of je met legs of sets speelt."),
+            ("Voer iedere beurt in", "Gebruik de totaalscore of voer iedere pijl apart in. De app toont een mogelijke finish.", "Voer na iedere beurt de totaalscore in, of registreer de drie pijlen afzonderlijk. De app controleert busts en toont een mogelijke finishroute."),
+        ]),
+        "Cricket": ("screen-fit-cricket-False.png", [
+            ("Cricket", "Sluit 15, 16, 17, 18, 19, 20 en Bull.", "Bij Cricket probeer je de doelen vijftien tot en met twintig en bull elk met drie marks te sluiten."),
+            ("Marks en punten", "Single telt 1 mark, dubbel 2 en triple 3.", "Een single telt als één mark, een dubbel als twee en een triple als drie. Extra treffers kunnen punten opleveren zolang een tegenstander het doel nog open heeft."),
+            ("Kies de puntentelling", "Speel Standard, Cut Throat of No Score.", "Je kunt Standard spelen voor de hoogste score, Cut Throat voor de laagste score, of No Score waarbij alleen het sluiten van alle doelen telt."),
+        ]),
+        "Tactics": ("screen-fit-tactics-False.png", [
+            ("Tactics", "Sluit alle doelen van 10 tot en met 20 en Bull.", "Tactics werkt als een uitgebreide Cricketvariant. Je sluit de getallen tien tot en met twintig en daarna bull."),
+            ("Drie marks per doel", "Single telt 1, dubbel 2 en triple 3 marks.", "Ieder doel heeft drie marks nodig. De invoer toont direct welke getallen open of gesloten zijn voor iedere speler."),
+            ("Punten en winnaar", "Extra treffers scoren volgens de gekozen spelvariant.", "Op een gesloten doel kun je punten maken zolang een tegenstander dit nog open heeft. Wie alle doelen sluit en aan de scorevoorwaarde voldoet, wint."),
+        ]),
+        "121": ("screen-fit-121-False.png", [
+            ("121", "Gooi jouw niveau uit binnen maximaal negen darts.", "Bij de training honderdeenentwintig probeer je jouw actuele niveau binnen maximaal negen darts uit te gooien met dubbel uit."),
+            ("Drie beurten", "Je krijgt drie bezoeken van maximaal drie pijlen.", "Je hebt maximaal drie beurten van drie pijlen. Met meerdere spelers wisselt de beurt steeds na drie darts en behoudt iedereen zijn eigen poging."),
+            ("Niveau stijgt of daalt", "Geslaagd: niveau omhoog. Niet geslaagd: niveau omlaag, minimaal 121.", "Gooi je uit, dan stijgt het volgende niveau met één plus het aantal overgebleven pijlen. Lukt het niet, dan daalt het niveau met één tot minimaal honderdeenentwintig."),
+        ]),
+        "Gotcha": ("screen-fit-gotcha-False.png", [
+            ("Gotcha", "Bouw jouw score op tot precies de gekozen doelscore.", "Bij Gotcha begint iedere speler op nul. Tel je worpen op en bereik precies de gekozen doelscore."),
+            ("Zet een tegenstander op nul", "Kom exact gelijk met een tegenstander en die verliest zijn score.", "Bereik je precies de actuele score van een tegenstander, dan wordt die speler teruggezet naar nul. Dat is de Gotcha."),
+            ("Voorkom een bust", "Te hoog of ongeldig uitgooien maakt de eigen beurt ongeldig.", "Kom je boven de doelscore of voldoe je niet aan de gekozen finishregel, dan is de beurt bust. De eerste speler die correct finisht, wint."),
+        ]),
+        "Hitters-Challenge": ("ten-lives-screen.png", [
+            ("Hitters Challenge", "Speel Doubles of Triples van 20 naar 10 en sluit af met Bull.", "Bij Hitters Challenge kies je doubles of triples. Je werkt van twintig terug naar tien en sluit af met bull."),
+            ("Bewaar je pogingen", "Een treffer geeft de resterende pijlen plus drie nieuwe pogingen.", "Raak je het doel, dan neem je de resterende pijlen mee en krijg je drie nieuwe pogingen op het volgende doel."),
+            ("Bescherm je levens", "Zonder treffer ga je terug; missen op 20 kost een leven.", "Zijn alle pogingen op, dan ga je één doel terug. Op twintig kost dit een leven. Wie bull bereikt voordat de levens op zijn, voltooit de challenge."),
+        ]),
+        "Bobs-27": ("screen-fit-bobs27-False.png", [
+            ("Bob's 27", "Train alle dubbels van D1 tot en met D20 en daarna Bull.", "Bij Bob's zevenentwintig begin je met zevenentwintig punten en gooi je drie pijlen op iedere dubbel, van dubbel één tot dubbel twintig en daarna bull."),
+            ("Raak of verlies punten", "Iedere treffer telt de dubbelwaarde erbij. Helemaal missen trekt die waarde af.", "Elke geraakte dubbel telt de dubbelwaarde bij je score op. Raak je met alle drie de pijlen niet, dan wordt die waarde afgetrokken."),
+            ("Blijf boven nul", "Bij nul of lager val je af. Voltooi alle 21 rondes met de hoogste score.", "Komt je score op nul of lager, dan val je af. Voltooi je alle eenentwintig rondes, dan wordt jouw eindscore bewaard en vergeleken."),
+        ]),
         "Scram": ("sonny-scram.png", [
             ("Scram", "Iedere speler krijgt een scoringsfase. De andere spelers zijn om beurten stopper.", "Bij Scram krijgt iedere speler een eigen scoringsfase. De andere spelers gooien om beurten als stopper."),
             ("Stop of scoor", "Een stopper sluit geraakte doelen. De scoorder krijgt alleen punten op doelen die nog open zijn.", "De stopper sluit elk geraakt doel van één tot en met twintig of bull. De scoorder krijgt daarna alleen punten voor doelen die nog open staan."),

@@ -32,6 +32,7 @@ body #setup-wizard{display:block;padding:10px 8px 0}
 .wizard-custom input{font-size:18px}
 .wizard-summary,.wizard-info{background:#1c332c;border:1px solid #3d5a47;border-radius:14px;padding:16px;line-height:1.5;margin:20px 0}
 .wizard-video-link{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;margin:-10px 0 18px;border:1px solid #6e8c4c;border-radius:12px;background:#293f31;color:var(--accent);font-weight:800;text-decoration:none}.wizard-video-link:hover,.wizard-video-link:focus-visible{background:#36533e;outline:3px solid var(--accent);outline-offset:3px}
+.game-video-dialog{width:min(94vw,920px);max-width:920px;padding:18px}.game-video-dialog video{display:block;width:100%;max-height:72dvh;margin:14px 0;background:#000;border:1px solid var(--line);border-radius:12px}.game-video-dialog h2{color:var(--accent)}
 .wizard-summary p{font-size:14px;margin:6px 0;color:#c4d6cb}
 .wizard-actions{position:sticky;bottom:0;z-index:5;display:flex;gap:8px;background:#0c151bf5;border-top:1px solid #34444d;padding:12px 0 max(12px,env(safe-area-inset-bottom));margin-top:18px}
 .wizard-actions button{font-size:16px;min-height:54px}.wizard-next{flex:1}.wizard-back{padding:10px;background:transparent}
