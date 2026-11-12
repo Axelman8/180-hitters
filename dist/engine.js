@@ -56,7 +56,7 @@ export function newMatch(names,start=501,out='double',legs=3,options={}){
  }
  const config={game:'x01',inMode:'single',scoring:'standard',matchMode:'legs',legsPerSet:3,bull:'25/50',maxRounds:50,starter:0,...options};
  const numbers=config.game==='tactics'?[20,19,18,17,16,15,14,13,12,11,10,25]:[20,19,18,17,16,15,25];
- return {version:2,...config,start,out,target:legs,numbers,players:names.map(name=>({name,...(config.game==='tenlives'?{lives:10,livesTarget:20,attempts:3,livesHits:0}:{}),...(options.training121?{trainingLevel:121,trainingBest:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0,bobsEliminated:false}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null,startedAt:Date.now()};
+ return {version:2,...config,start,out,target:legs,numbers,players:names.map(name=>({name,...(config.game==='tenlives'?{lives:10,livesTarget:20,attempts:3,livesHits:0}:{}),...(options.training121?{trainingLevel:121,trainingBest:121,trainingDarts:0,trainingAttempt:1,trainingAttemptStart:121}:{}),...(config.game==='bobs27'?{bobsHits:0,bobsHighest:0,bobsEliminated:false}:{}),remaining:config.game==='gotcha'?0:start,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:config.inMode==='single',marks:{},cricketPoints:0,totalMarks:0})),active:config.starter,starter:config.starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null,startedAt:Date.now()};
 }
 function win(s,index,reason='finish'){
  s.winner=index;s.reason=reason;const p=s.players[index];p.legs++;p.setLegs++;
@@ -226,26 +226,40 @@ function applyGotchaTotal(state,turn){
 }
 function applyTrainingTurn(state,turn){
  if(state.phase!=='playing')throw Error('Deze poging is afgelopen.');
- const result=applyTurn({...state,training121:false},turn);
- const used=state.trainingDarts+result.players[state.active].darts-state.players[state.active].darts;
+ const current=state.active,source=state.players[current];
+ const prior=Number.isInteger(source.trainingDarts)?source.trainingDarts:(Number.isInteger(state.trainingDarts)?state.trainingDarts:0);
+ const attempt=Number.isInteger(source.trainingAttempt)?source.trainingAttempt:1;
+ const attemptStart=source.trainingAttemptStart||source.trainingLevel||state.start||121;
+ const result=applyTurn({...state,start:attemptStart,training121:false},turn);
+ const used=prior+result.players[current].darts-source.darts;
  if(used>9)throw Error('Je hebt maximaal negen darts per poging.');
- const success=result.players[state.active].remaining===0;
- result.training121=true;result.trainingDarts=used;result.active=state.active;
+ const success=result.players[current].remaining===0,last=result.history.at(-1);
+ result.training121=true;result.players[current].trainingDarts=used;result.players[current].trainingAttempt=attempt;result.players[current].trainingAttemptStart=attemptStart;
+ Object.assign(last,{player:current,trainingAttempt:attempt,trainingStart:attemptStart});
  if(success||used===9){
   const bonus=success?10-used:-1;
-  result.trainingNext=Math.max(121,state.start+bonus);
-  result.trainingChange=result.trainingNext-state.start;
+  result.trainingNext=Math.max(121,attemptStart+bonus);
+  result.trainingChange=result.trainingNext-attemptStart;
   result.trainingSuccess=success;result.trainingBest=Math.max(state.trainingBest||121,result.trainingNext);
-  result.players[state.active].trainingLevel=result.trainingNext;result.players[state.active].trainingBest=Math.max(state.players[state.active].trainingBest||state.trainingBest||121,result.trainingNext);
-  result.phase='leg';result.winner=success?state.active:null;
+  result.players[current].trainingLevel=result.trainingNext;result.players[current].trainingBest=Math.max(source.trainingBest||state.trainingBest||121,result.trainingNext);
+  result.active=current;result.start=attemptStart;result.trainingDarts=used;
+  Object.assign(last,{trainingComplete:true,trainingSuccess:success,trainingNext:result.trainingNext});
+  result.phase='leg';result.winner=success?current:null;
   result.reason=success?'training-finish':'training-limit';
+ }else{
+  const next=result.active,nextPlayer=result.players[next];
+  result.start=nextPlayer.trainingAttemptStart||nextPlayer.trainingLevel||121;
+  result.trainingDarts=Number.isInteger(nextPlayer.trainingDarts)?nextPlayer.trainingDarts:0;
+  result.trainingBest=nextPlayer.trainingBest||121;
  }
  return result;
 }
 export function nextLeg(state){
  if(state.training121){
   if(state.phase!=='leg')throw Error('Deze poging is nog niet afgelopen.');
-  const s=structuredClone(state);s.players[s.active].remaining=s.trainingNext;s.players[s.active].trainingLevel=s.trainingNext;s.players[s.active].trainingBest=state.players[state.active].trainingBest||state.trainingBest||121;s.active=(s.active+1)%s.players.length;s.starter=s.active;const p=s.players[s.active];s.start=p.trainingLevel||121;p.remaining=s.start;p.opened=true;s.trainingBest=p.trainingBest||121;s.trainingDarts=0;s.leg++;s.round=1;s.turns=0;s.phase='playing';s.winner=null;s.reason=null;delete s.trainingNext;delete s.trainingChange;delete s.trainingSuccess;return s;
+  const s=structuredClone(state),completed=s.active,done=s.players[completed];
+  done.remaining=s.trainingNext;done.trainingLevel=s.trainingNext;done.trainingBest=state.players[completed].trainingBest||state.trainingBest||121;done.trainingDarts=0;done.trainingAttempt=(done.trainingAttempt||1)+1;done.trainingAttemptStart=s.trainingNext;done.opened=true;
+  s.active=(completed+1)%s.players.length;const p=s.players[s.active];s.start=p.trainingAttemptStart||p.trainingLevel||121;p.remaining=Number.isInteger(p.remaining)?p.remaining:s.start;p.opened=true;s.trainingBest=p.trainingBest||121;s.trainingDarts=Number.isInteger(p.trainingDarts)?p.trainingDarts:0;s.leg++;s.phase='playing';s.winner=null;s.reason=null;delete s.trainingNext;delete s.trainingChange;delete s.trainingSuccess;return s;
  }
  if(state.phase!=='leg')throw Error('Geen volgende leg beschikbaar.');
  const s=structuredClone(state);s.leg++;s.starter=(s.starter+1)%s.players.length;s.active=s.starter;s.round=1;s.turns=0;s.tiebreak=false;
@@ -255,8 +269,8 @@ export function nextLeg(state){
 
 export function playerStats(state,index){
  const p=state.players[index];
- const visits=state.history.filter(h=>h.leg===state.leg);
- const own=visits.filter((h,i)=>state.training121?state.active===index:(state.starter+i)%state.players.length===index);
+ const visits=state.training121?state.history.filter(h=>(h.trainingAttempt||h.leg||1)===(p.trainingAttempt||1)&&(Number.isInteger(h.player)?h.player===index:h.name===p.name)):state.history.filter(h=>h.leg===state.leg);
+ const own=state.training121?visits:visits.filter((h,i)=>(state.starter+i)%state.players.length===index);
  const legDarts=own.reduce((n,h)=>n+h.darts,0);
  const legPoints=own.reduce((n,h)=>n+(state.game!=='cricket'&&state.game!=='tactics'?h.score:(h.marks||0)),0);
  const points=state.game!=='cricket'&&state.game!=='tactics'?p.points:p.totalMarks;
