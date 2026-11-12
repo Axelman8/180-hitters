@@ -20,7 +20,7 @@ with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
 
     shutil.copytree('dist', root / 'usr/lib/dartsapp/dist')
     shutil.copy2('server.py', root / 'usr/lib/dartsapp/server.py')
-    for name in ('autodarts_bridge.py', 'camera_research.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py'):
+    for name in ('online-relay.py', 'autodarts_bridge.py', 'camera_research.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py'):
         shutil.copy2(name, root / 'usr/lib/dartsapp' / name)
     (root / 'usr/local/sbin').mkdir(parents=True, exist_ok=True)
     shutil.copy2('system-control.py', root / 'usr/local/sbin/darts-system')

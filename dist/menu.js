@@ -69,7 +69,7 @@ for(const [key,label] of definitions){
 }
 
 const order={
- play:['settings','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
+ play:['settings','online-game','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
  connections:['android-app-action','take-control','connection-health','mouse-control-open','bluetooth-open','network-open'],
  application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','screen-orientation','desktop-update-action','android-update-action','camera-test','venue-open']
 };

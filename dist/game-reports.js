@@ -3,10 +3,10 @@ const fmt=(value,digits=2)=>Number(value||0).toLocaleString('nl-NL',{minimumFrac
 const mod=(value,size)=>(value%size+size)%size;
 function annotatedTurns(state){
  const count=state.players.length,initialStarter=mod((state.starter||0)-((state.leg||1)-1),count),visits=new Map();
- return state.history.map((turn,historyIndex)=>{let index;if(state.game==='bobs27')index=state.players.findIndex(player=>player.name===turn.name);else if(state.training121)index=Number.isInteger(turn.player)?turn.player:state.players.findIndex(player=>player.name===turn.name);else{const leg=turn.leg||1,visit=visits.get(leg)||0;index=mod(initialStarter+leg-1+visit,count);visits.set(leg,visit+1);}if(index<0)index=mod(initialStarter+(turn.leg||1)-1,count);return {...turn,playerIndex:index,historyIndex};});
+ return state.history.map((turn,historyIndex)=>{let index;if(Number.isInteger(turn.player))index=turn.player;else if(state.game==='bobs27'||state.training121)index=state.players.findIndex(player=>player.name===turn.name);else{const leg=turn.leg||1,visit=visits.get(leg)||0;index=mod(initialStarter+leg-1+visit,count);visits.set(leg,visit+1);}if(index<0)index=mod(initialStarter+(turn.leg||1)-1,count);return {...turn,playerIndex:index,historyIndex};});
 }
 const turnsByPlayer=(state,index)=>annotatedTurns(state).filter(turn=>turn.playerIndex===index);
-const gameName=state=>state.training121?'121':state.game==='x01'?'X01':state.game==='cricket'?'Cricket':state.game==='tactics'?'Tactics':state.game==='gotcha'?'Gotcha':state.game==='bobs27'?"Bob's 27":'Partij';
+const gameName=state=>state.training121?'121':({x01:'X01',cricket:'Cricket',tactics:'Tactics',gotcha:'Gotcha',bobs27:"Bob's 27",fourinarow:'4 op een rij',scram:'Scram',killer:'Killer',bull41:'Bull / 41',twentyone:'21'})[state.game]||'Partij';
 const time=value=>new Date(value||Date.now()).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
 const targetLabel=target=>target===25?'Bull':String(target);
 
@@ -44,9 +44,27 @@ function gotchaReport(state){
  return {title:'Gotcha-partijoverzicht',subtitle:'Scoreverloop en geraakte tegenstanders',players,bars:[{title:'Eindscore per speler',items:players.map(player=>({label:player.name,value:Number(player.stats[0][1]),display:player.stats[0][1]}))},{title:'Tegenstanders op 0 gezet',items:players.map(player=>({label:player.name,value:Number(player.stats[2][1]),display:player.stats[2][1]}))}],headers:['Beurt','Speler','Score','Totaal','Resets','Status'],rows};
 }
 
+function fourInRowReport(state){
+ const players=state.players.map((player,index)=>{const turns=turnsByPlayer(state,index),cells=state.fourOwners.filter(owner=>owner===index).length,darts=turns.reduce((sum,turn)=>sum+(turn.darts||0),0),claims=turns.reduce((sum,turn)=>sum+(turn.captured?.length||0),0);return {name:`${player.fourSymbol||''} ${player.name}`.trim(),stats:[['Vakken veroverd',String(cells)],['Claims',String(claims)],['Darts totaal',String(darts)],['Punten geraakt',String(turns.reduce((sum,turn)=>sum+(turn.score||0),0))]]};});
+ const rows=annotatedTurns(state).map((turn,index)=>[String(index+1),state.players[turn.playerIndex]?.name||turn.name,turn.labels||'—',String(turn.darts||0),String(turn.captured?.length||0)]);
+ return {title:'4-op-een-rij-overzicht',subtitle:'Veroverde vakken en alle gespeelde beurten',players,bars:[{title:'Vakken per speler',items:players.map((player,index)=>({label:player.name,value:state.fourOwners.filter(owner=>owner===index).length,display:`${state.fourOwners.filter(owner=>owner===index).length} vakken`}))}],headers:['Beurt','Speler','Gegooid','Darts','Vakken'],rows};
+}
+
+function sonnyReport(state){
+ const players=state.players.map((player,index)=>{const turns=turnsByPlayer(state,index),darts=turns.reduce((sum,turn)=>sum+(turn.darts||0),0);let stats;
+  if(state.game==='scram')stats=[['Eindscore',String(player.scramScore||0)],['Darts totaal',String(darts)],['Hoogste beurt',String(Math.max(0,...turns.map(turn=>turn.score||0)))]];
+  else if(state.game==='killer')stats=[['Eigen getal',String(player.killerNumber??'—')],['KILLER-letters',String(player.killerLetters||0)],['Status',player.killerEliminated?'Uitgeschakeld':index===state.winner?'Winnaar':'Actief'],['Darts totaal',String(darts)]];
+  else if(state.game==='bull41')stats=[['Eindscore',String(player.bull41Score||0)],['Darts totaal',String(darts)],['Hoogste scorebeurt',String(Math.max(0,...turns.map(turn=>turn.score||0)))]];
+  else stats=[['Resultaat',player.twentyOneAdjusted===null?'Niet voltooid':`${player.twentyOneAdjusted} pijlen`],['Triples',String(player.twentyOneTriples||0)],['Darts totaal',String(darts)]];
+  return {name:player.name,stats};});
+ const value=player=>state.game==='scram'?player.scramScore||0:state.game==='killer'?player.killerLetters||0:state.game==='bull41'?player.bull41Score||0:player.twentyOneAdjusted||0;
+ const rows=annotatedTurns(state).map((turn,index)=>[String(index+1),state.players[turn.playerIndex]?.name||turn.name,turn.role||'Beurt',turn.labels||'—',String(turn.score||0),String(turn.darts||0)]);
+ return {title:`${gameName(state)}-overzicht`,subtitle:'Resultaat en alle gespeelde beurten',players,bars:[{title:'Resultaat per speler',items:players.map((player,index)=>({label:player.name,value:value(state.players[index]),display:player.stats[0][1]}))}],headers:['Beurt','Speler','Rol','Gegooid','Score','Darts'],rows};
+}
+
 export function buildGameReport(state){
- const report=state.training121?training121Report(state):state.game==='bobs27'?bobsReport(state):state.game==='gotcha'?gotchaReport(state):['cricket','tactics'].includes(state.game)?cricketReport(state):x01Report(state);
- return {...report,started:time(state.startedAt),ended:time(Date.now()),totalDarts:state.history.reduce((n,turn)=>n+(turn.darts||0),0),game:gameName(state)};
+ const report=state.training121?training121Report(state):state.game==='bobs27'?bobsReport(state):state.game==='gotcha'?gotchaReport(state):state.game==='fourinarow'?fourInRowReport(state):['scram','killer','bull41','twentyone'].includes(state.game)?sonnyReport(state):['cricket','tactics'].includes(state.game)?cricketReport(state):x01Report(state);
+ return {...report,started:time(state.startedAt),ended:time(state.completedAt||Date.now()),totalDarts:state.history.reduce((n,turn)=>n+(turn.darts||0),0),game:gameName(state)};
 }
 
 export function renderGameReport(state,dialog){

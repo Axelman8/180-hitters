@@ -79,6 +79,9 @@ with tempfile.TemporaryDirectory() as tmp:
             assert phone.request.post('http://127.0.0.1:8802/api/state', data={'revision':latest['revision'],'match':{'state':won,'undo':[]}}).ok
             screen.reload()
             expect(screen.locator('#result-dialog #result-title')).to_contain_text('Anna wint')
+            expect(screen.locator('#result-dialog')).to_have_class(re.compile(r'.*winner-party.*'))
+            expect(screen.locator('#result-dialog #game-report')).to_be_visible()
+            expect(screen.locator('#result-dialog .game-report-share')).to_have_text('Delen als afbeeldingen')
             assert screen.locator('#result-dialog #match-summary').count() == 0
             browser.close()
             print('PASS: 5x5 field, symbols, three-mark capture, mobile-to-NUC sync and two-player visual')

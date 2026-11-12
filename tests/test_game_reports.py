@@ -29,9 +29,14 @@ with tempfile.TemporaryDirectory() as tmp:
               const bobs=base('bobs27',['A'],[{name:'A',leg:1,target:1,hits:2,darts:3,remaining:31,labels:'D1 / D1 / Mis'},{name:'A',leg:1,target:2,hits:1,darts:3,remaining:35,labels:'D2 / Mis / Mis'}],{players:[{name:'A',remaining:35}]});
               const training=base('x01',['A'],[{name:'A',leg:1,score:60,darts:3,remaining:61},{name:'A',leg:1,score:61,darts:2,remaining:0},{name:'A',leg:2,score:60,darts:3,remaining:66},{name:'A',leg:2,score:60,darts:3,remaining:6},{name:'A',leg:2,score:0,darts:3,remaining:6}],{training121:true,leg:2,players:[{name:'A',remaining:6}]});
               const gotcha=base('gotcha',['A','B'],[{name:'A',leg:1,score:100,darts:3,remaining:100,resets:[1]},{name:'B',leg:1,score:60,darts:3,remaining:60,resets:[]},{name:'A',leg:1,score:201,darts:3,remaining:301,resets:[]}],{start:301,players:[{name:'A',remaining:301},{name:'B',remaining:60}]});
-              return [x,cricket,tactics,bobs,training,gotcha].map(state=>{const report=buildGameReport(state),images=createGameReportImages(state);return {title:report.title,players:report.players.length,bars:report.bars.length,headers:report.headers,rows:report.rows.length,images:images.images.length,width:images.images[0].canvas.width};});
+              const four=base('fourinarow',['A','B'],[{name:'A',player:0,leg:1,score:60,darts:1,labels:'T20',captured:[0]}],{players:[{name:'A',remaining:0,fourSymbol:'○'},{name:'B',remaining:0,fourSymbol:'×'}],fourOwners:[0,...Array(24).fill(null)]});
+              const scram=base('scram',['A','B'],[{name:'B',player:1,leg:1,score:100,darts:3,role:'scorer',labels:'T20 / D20 / Mis'}],{players:[{name:'A',remaining:0,scramScore:0},{name:'B',remaining:0,scramScore:100}]});
+              const killer=base('killer',['A','B'],[{name:'A',player:0,leg:1,score:0,darts:3,role:'killer',labels:'5 / D5 / T5'}],{winner:0,players:[{name:'A',remaining:0,killerNumber:5,killerLetters:6,killerEliminated:false},{name:'B',remaining:0,killerNumber:6,killerLetters:0,killerEliminated:true}]});
+              const bull=base('bull41',['A','B'],[{name:'A',player:0,leg:1,score:59,darts:3,role:'score',labels:'T20 / D20 / Mis'}],{players:[{name:'A',remaining:0,bull41Score:59},{name:'B',remaining:0,bull41Score:0}]});
+              const twentyone=base('twentyone',['A'],[{name:'A',player:0,leg:1,score:0,darts:2,role:'21',labels:'T20 / Bull'}],{players:[{name:'A',remaining:0,twentyOneAdjusted:2,twentyOneTriples:1}]});
+              return [x,cricket,tactics,bobs,training,gotcha,four,scram,killer,bull,twentyone].map(state=>{const report=buildGameReport(state),images=createGameReportImages(state);return {title:report.title,players:report.players.length,bars:report.bars.length,headers:report.headers,rows:report.rows.length,images:images.images.length,width:images.images[0].canvas.width};});
             }""")
-            assert [item['title'] for item in reports] == ['X01-partijoverzicht','Cricket-partijoverzicht','Tactics-partijoverzicht',"Bob's 27-overzicht",'121-trainingsoverzicht','Gotcha-partijoverzicht']
+            assert [item['title'] for item in reports] == ['X01-partijoverzicht','Cricket-partijoverzicht','Tactics-partijoverzicht',"Bob's 27-overzicht",'121-trainingsoverzicht','Gotcha-partijoverzicht','4-op-een-rij-overzicht','Scram-overzicht','Killer-overzicht','Bull / 41-overzicht','21-overzicht']
             assert all(item['players'] >= 1 and item['bars'] >= 1 and item['rows'] >= 1 for item in reports)
             assert all(item['images'] >= 2 and item['width'] == 1080 for item in reports)
             page.evaluate("""async()=>{const {renderGameReport}=await import('/game-reports.js');const dialog=document.querySelector('#result-dialog'),state={game:'bobs27',players:[{name:'Axel',remaining:31}],history:[{name:'Axel',leg:1,target:1,hits:2,darts:3,remaining:31,labels:'D1 / D1 / Mis'}],starter:0,leg:1,startedAt:Date.now()-10000};renderGameReport(state,dialog);dialog.showModal();}""")
@@ -44,7 +49,7 @@ with tempfile.TemporaryDirectory() as tmp:
             assert all(image['data'].startswith('iVBOR') for image in shared)
             assert page.locator('#result-dialog').evaluate('e=>e.scrollWidth<=e.clientWidth')
             browser.close()
-            print('PASS: rich X01, Cricket, Tactics, 121, Gotcha and Bob reports, image pages and mobile fit')
+            print('PASS: shareable reports for every game, image pages and mobile fit')
     finally:
         server.terminate()
         server.wait()

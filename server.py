@@ -1,13 +1,14 @@
 """Offline shared scoreboard. Python standard library only."""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-from threading import Lock
+from threading import Lock, Thread
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 import argparse
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -365,10 +366,64 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     sequences = {}
     shared_setup = {'version': 0, 'value': None}
     control = {'owner': None, 'epoch': 0}
+    online = {'status':'stopped','url':'','error':'','relay':None,'tunnel':None}
+    online_local = {'active':False,'ready':False,'role':None,'code':'','base':'','key':'','remoteRevision':0}
     storage = {'checked': 0, 'free': STORAGE_RESERVE * 2}
     backups = path.with_name(path.stem + '-backups')
     try: prune_backups(backups)
     except OSError: pass  # Cleanup failure must not prevent playing.
+
+    def stop_online():
+        for name in ('tunnel','relay'):
+            process=online.get(name)
+            if process and process.poll() is None:
+                process.terminate()
+                try: process.wait(timeout=5)
+                except subprocess.TimeoutExpired: process.kill()
+            online[name]=None
+        online.update(status='stopped',url='',error='')
+
+    def start_online():
+        if online['status'] in ('starting','ready'): return
+        online.update(status='starting',url='',error='')
+        def worker():
+            try:
+                binary=path.parent / ('cloudflared.exe' if os.name=='nt' else 'cloudflared')
+                if not binary.is_file():
+                    url='https://github.com/cloudflare/cloudflared/releases/latest/download/'+('cloudflared-windows-amd64.exe' if os.name=='nt' else 'cloudflared-linux-amd64')
+                    temporary=binary.with_suffix(binary.suffix+'.tmp');total=0
+                    with urlopen(Request(url,headers={'User-Agent':'180-Hitters'}),timeout=30) as source, temporary.open('wb') as target:
+                        while True:
+                            chunk=source.read(65536)
+                            if not chunk:break
+                            total+=len(chunk)
+                            if total>100*1024*1024:raise RuntimeError('Cloudflared-download is onverwacht groot.')
+                            target.write(chunk)
+                    if total<5*1024*1024:raise RuntimeError('Cloudflared-download is onvolledig.')
+                    temporary.replace(binary)
+                    if os.name!='nt':binary.chmod(0o755)
+                online['relay']=subprocess.Popen([sys.executable,str(root/'online-relay.py'),'--host','127.0.0.1','--port','8790'],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                for _ in range(30):
+                    try:
+                        with urlopen('http://127.0.0.1:8790/health',timeout=1):break
+                    except (URLError,OSError):time.sleep(.2)
+                else:raise RuntimeError('Online relay kon niet starten.')
+                online['tunnel']=subprocess.Popen([str(binary),'tunnel','--no-autoupdate','--url','http://127.0.0.1:8790'],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
+                deadline=time.time()+45
+                while time.time()<deadline:
+                    line=online['tunnel'].stdout.readline()
+                    found=re.search(r'https://[a-z0-9-]+\.trycloudflare\.com',line or '')
+                    if found:
+                        online.update(status='ready',url=found.group(0));return
+                    if online['tunnel'].poll() is not None:break
+                raise RuntimeError('Tijdelijke internettunnel gaf geen adres terug.')
+            except Exception as error:
+                for name in ('tunnel','relay'):
+                    process=online.get(name)
+                    if process and process.poll() is None:process.terminate()
+                    online[name]=None
+                online.update(status='error',error=str(error)[:300],url='')
+        Thread(target=worker,daemon=True).start()
 
     def durable_json(target, value):
         temporary = target.with_suffix('.tmp')
@@ -440,6 +495,10 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
         same_visit = False
         if shared_setup['value'] is not None:
             reason = 'Camera aan; wacht op het starten van de partij.'
+        elif online_local['active'] and not online_local['ready']:
+            reason = 'Online dartbaan: wacht tot alle spelers aanwezig zijn.'
+        elif online_local['active'] and match.get('state', {}).get('active') != online_local['role']:
+            reason = 'Online dartbaan: wacht op de beurt van de tegenstander.'
         elif match.get('state', {}).get('phase') != 'playing':
             reason = 'Camera aan; wacht op de volgende leg of partij.'
         elif match.get('future') or match.get('editTurn') or match.get('pendingTurns'):
@@ -617,6 +676,10 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     except OSError:
                         pass
                 self.reply(200, {'urls': [f'http://{a}:{port}' for a in sorted(addresses)]})
+            elif route == '/api/online/tunnel':
+                self.reply(200, {key:online[key] for key in ('status','url','error')})
+            elif route == '/api/online/local':
+                self.reply(200, dict(online_local))
             elif route.startswith('/api/'):
                 self.reply(404, {'error': 'Onbekend verzoek'})
             else:
@@ -650,7 +713,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check'):
+            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -662,6 +725,22 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 < length <= 10000000:
                     return self.reply(413, {'error': 'Partij te groot'})
                 incoming = json.loads(self.rfile.read(length))
+                if self.path == '/api/online/tunnel':
+                    if self.client_address[0] not in ('127.0.0.1','::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
+                        return self.reply(403, {'error':'Online hosten kan alleen vanaf de NUC of gekoppelde app.'})
+                    action=incoming.get('action')
+                    if action=='start':start_online()
+                    elif action=='stop':stop_online()
+                    else:raise ValueError()
+                    return self.reply(202 if action=='start' else 200,{key:online[key] for key in ('status','url','error')})
+                if self.path == '/api/online/local':
+                    active=incoming.get('active');ready=incoming.get('ready',False);role=incoming.get('role');code=incoming.get('code','');base=incoming.get('base','');key=incoming.get('key','');remote_revision=incoming.get('remoteRevision',0)
+                    if type(active) is not bool or type(ready) is not bool or (active and (type(role) is not int or not 0<=role<=3)) or not isinstance(code,str) or len(code)>12 or not isinstance(key,str) or len(key)>100 or type(remote_revision) is not int:raise ValueError()
+                    if active and (not re.fullmatch(r'https://[a-z0-9-]+\.trycloudflare\.com',base) or not re.fullmatch(r'[A-Z2-9]{6}',code) or len(key)<20):raise ValueError()
+                    with lock:
+                        online_local.update(active=active,ready=ready if active else False,role=role if active else None,code=code if active else '',base=base if active else '',key=key if active else '',remoteRevision=remote_revision if active else 0)
+                        follow_camera()
+                    return self.reply(200,dict(online_local))
                 if self.path == '/api/autoscoring/reset':
                     with lock:
                         if not self.may_edit(incoming): return

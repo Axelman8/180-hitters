@@ -3,6 +3,7 @@ import {cameraControls} from './autoscoring.js';
 import {applyCameraEvent} from './autoscoring-rules.js';
 import './match-transfer.js';
 import './desktop-update.js';
+import './online.js';
 import {renderLives,renderLivesSummary} from './ten-lives.js';
 import {matchSummary,renderLegTable} from './match-summary.js';
 import {renderGameReport} from './game-reports.js';
@@ -155,7 +156,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-game, #online-dialog')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
@@ -240,10 +241,18 @@ function fourDart(cell){
  return {cell,mult,number:id==='bb'||id.startsWith('sb')?25:Number(id.slice(1)),label:id==='bb'?'BB':prefix+fourCellLabel(id)};
 }
 function addFourDart(cell=null){
+ const unresolved=dartList.findIndex(hit=>hit.needsBullCorner);
+ if(unresolved>=0){
+  if(cell===null||!state.fourBoard[cell]?.startsWith('sb')){message('Kies één van de vrije sB-hoekvakken.');return;}
+  dartList[unresolved]=fourDart(cell);
+  if(fourTurnEnds(dartList)||dartList.length===3)void commit({hits:[...dartList]});else{renderFourGame();publishDraft();}
+  return;
+ }
  if(dartList.length>=3)return;
  dartList.push(cell===null?{cell:null,mult:1,number:0,label:'Mis'}:fourDart(cell));
- if(dartList.length===3)void commit({hits:[...dartList]});else{renderFourGame();publishDraft();}
+ if(fourTurnEnds(dartList)||dartList.length===3)void commit({hits:[...dartList]});else{renderFourGame();publishDraft();}
 }
+function fourTurnEnds(hits){try{return applyTurn(state,{hits:[...hits]}).phase!=='playing';}catch{return false;}}
 function renderFourGame(){
  if(!state||state.game!=='fourinarow')return;
  $('setup').hidden=true;$('game').hidden=false;$('players').hidden=true;$('fourinarow-root').hidden=false;
@@ -445,6 +454,7 @@ async function commit(turn){try{
  undo.push(state);future=[];historyNavigation=false;editingPending=false;
  const replay=replayTurns(updated,queued);
  undo.push(...replay.undo);state=replay.state;pendingTurns=replay.pending;pendingReason=replay.reason;
+ if(state.phase==='won'&&!state.completedAt)state.completedAt=Date.now();
  if(!pendingTurns.length&&latest?.leg===state.leg+1&&state.phase==='leg')state=nextLeg(state);
  let restored=null;
  if(browsing&&replay.undo.length){
@@ -573,12 +583,12 @@ function showResult(){
  if(sonnyGameIds.includes(state.game)){
   $('result-title').textContent=state.winner===null?'Gelijkspel':`${state.players[state.winner].name} wint ${sonnyGameNames[state.game]}!`;
   $('result-text').textContent=state.game==='scram'?state.players.map(player=>`${player.name}: ${player.scramScore} punten`).join(' · '):state.game==='bull41'?state.players.map(player=>`${player.name}: ${player.bull41Score} punten`).join(' · '):state.game==='killer'?'Alle andere spelers zijn uitgeschakeld.':state.players.map(player=>`${player.name}: ${player.twentyOneAdjusted} pijlen, ${player.twentyOneTriples} triples`).join(' · ');
-  $('continue').textContent='Nieuwe partij';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;if(!$('result-dialog').open)$('result-dialog').showModal();return;
+  renderGameReport(state,$('result-dialog'));$('continue').textContent='Nieuwe partij';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
  if(state.game==='fourinarow'){
   $('result-title').textContent=state.winner===null?'Gelijkspel':`${state.players[state.winner].fourSymbol} ${state.players[state.winner].name} wint!`;
   $('result-text').textContent=state.winner===null?'Alle vakken zijn verdeeld zonder vier op een rij.':`${state.players[state.winner].name} heeft vier vakken horizontaal, verticaal of diagonaal verbonden.`;
-  $('continue').textContent='Nieuwe partij';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;
+  renderGameReport(state,$('result-dialog'));$('continue').textContent='Nieuwe partij';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;
   if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
  if(state.game==='tenlives'){
