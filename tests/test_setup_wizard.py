@@ -16,6 +16,7 @@ with tempfile.TemporaryDirectory() as tmp:
     if page.locator('#toggle-toolbar').get_attribute('aria-expanded')=='false':page.locator('#toggle-toolbar').click()
     if not page.locator('#settings').is_visible():page.locator('#header-menu details[data-menu="play"] summary').click()
     page.locator('#settings').click();page.locator('#new-match-confirm').click()
+   videos={'Scram':'180-Hitters-Scram-uitleg.mp4','Killer':'180-Hitters-Killer-uitleg.mp4','Bull / 41':'180-Hitters-Bull-41-uitleg.mp4','21':'180-Hitters-21-uitleg.mp4'}
    descriptions={'X01':'gekozen startscore','Cricket':'15, 16, 17, 18, 19, 20','Tactics':'10 tot en met 20','4 op een rij':'drie marks','Scram':'scoringsfase','Killer':'uniek eigen getal','Bull / 41':'25 bullmarks','21':'Single gaat één stap','121':'maximaal negen darts','Gotcha':'tegenstander','Hitters Challenge':'20 naar 10',"Bob's 27":'Start op 27'}
    for game in ['X01','Cricket','Tactics','4 op een rij','Scram','Killer','Bull / 41','21','121','Gotcha',"Bob's 27"]:
     if game!='X01':
@@ -24,6 +25,11 @@ with tempfile.TemporaryDirectory() as tmp:
     expect(page.locator('#setup-wizard h1')).to_have_text('Maak het jouw partij')
     expect(page.locator('.wizard-game-description')).to_contain_text(descriptions[game])
     assert page.locator('.wizard-game-description').count()==1
+    if game in videos:
+     video=page.get_by_role('link',name='Bekijk uitlegvideo')
+     expect(video).to_have_attribute('href',f'https://github.com/Axelman8/180-hitters/releases/latest/download/{videos[game]}')
+     expect(video).to_have_attribute('target','_blank')
+    else:assert page.locator('.wizard-video-link').count()==0
     if game=='X01':
      page.get_by_role('group',name='Startscore',exact=True).get_by_role('button',name='301',exact=True).click()
      page.get_by_role('group',name='Beginnen',exact=True).get_by_role('button',name='Dubbel-in',exact=True).click()

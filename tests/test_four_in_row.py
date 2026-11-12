@@ -26,12 +26,16 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(phone.locator('.four-symbol')).to_have_text(['○','×'])
             expect(phone.locator('#turn-label')).to_contain_text('Anna')
             expect(phone.locator('#controller-note')).to_have_text('Scorebediening actief')
-            for width, height in [(320,640),(360,740),(393,852),(600,800),(768,1024),(1024,600)]:
+            for width, height in [(320,640),(360,740),(393,852),(600,800),(736,872),(872,736),(884,1104),(1104,884),(768,1024),(1024,600)]:
                 phone.set_viewport_size({'width':width,'height':height})
                 assert phone.evaluate('document.documentElement.scrollWidth<=innerWidth'), (width,height)
                 for selector in ['.four-board','.four-controls']:
                     box = phone.locator(selector).bounding_box()
                     assert box and box['x'] >= 0 and box['x'] + box['width'] <= width + 1, (selector,width,height,box)
+                board=phone.locator('.four-board').bounding_box();controls=phone.locator('.four-controls').bounding_box()
+                separated=board['x']+board['width']<=controls['x']+.5 or controls['x']+controls['width']<=board['x']+.5 or board['y']+board['height']<=controls['y']+.5 or controls['y']+controls['height']<=board['y']+.5
+                assert separated,('board/control overlap',width,height,board,controls)
+                if (width,height)==(736,872):phone.screenshot(path=str(root/'tests'/'four-in-row-fold-inner.png'),full_page=True)
                 cell = phone.locator('.four-cell').first.bounding_box()
                 assert cell['width'] >= 42 and cell['height'] >= 42, (width,height,cell)
             phone.set_viewport_size({'width':393,'height':852})

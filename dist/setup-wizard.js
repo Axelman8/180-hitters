@@ -14,6 +14,12 @@ const games=[
  ['tenlives','Hitters Challenge','20 t/m 10 en Bull. Bewaar je levens.','Training','Speel Doubles of Triples van 20 naar 10 en daarna Bull. Een treffer geeft extra pogingen; mis je het doel, dan ga je terug of verlies je een leven.'],
  ['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training','Start op 27 en gooi drie pijlen op iedere dubbel van D1 tot en met D20 en daarna Bull. Treffers tellen erbij; volledig missen trekt de dubbelwaarde af.']
 ];
+const gameVideos={
+ scram:'180-Hitters-Scram-uitleg.mp4',
+ killer:'180-Hitters-Killer-uitleg.mp4',
+ bull41:'180-Hitters-Bull-41-uitleg.mp4',
+ twentyone:'180-Hitters-21-uitleg.mp4'
+};
 const fields=['lives-mode','four-bot','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','participant-mode','count'];
 let step=0,slot=0,teamSlot=0,memberSlot=0,venueRoster=[],mobileRoster=[],selected='x01',fourSymbolChoices=[...fourSymbols];
 const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';
@@ -126,6 +132,11 @@ function render(){
  }else if(step===1){
   const game=games.find(item=>item[0]===selected);
   content.append(el('p',game?.[4]||'','wizard-info wizard-game-description'));
+  if(gameVideos[selected]){
+   const video=el('a','▶ Bekijk uitlegvideo','wizard-video-link');
+   video.href=`https://github.com/Axelman8/180-hitters/releases/latest/download/${gameVideos[selected]}`;
+   video.target='_blank';video.rel='noopener noreferrer';content.append(video);
+  }
   content.append(el('p',games.find(game=>game[0]===selected)?.[1]+' · tik op een tegel om te kiezen','wizard-hint'));
   const main=[['lives-mode','Doubles of Triples'],['four-bot','Tegen wie speel je?'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
   for(const [id,title] of main){const group=options(id,title);if(group)content.append(group);}
