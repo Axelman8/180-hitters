@@ -17,7 +17,7 @@ with tempfile.TemporaryDirectory() as tmp, patch.object(updater.os,'sync',create
  (root/'dist/winner-trophy.jpg').write_bytes(b'')
  payload=Path(tmp)/'payload';(payload/'dist').mkdir(parents=True)
  for name in ['index.html','app.js','engine.js','style.css']:(payload/'dist'/name).write_text('new')
- for name in ['server.py','bluetooth-bridge.py','nuc-update.py','kiosk-control.py','camera-calibrate-gui.py']:(payload/name).write_text('# valid')
+ for name in ['server.py','online-relay.py','bluetooth-bridge.py','nuc-update.py','kiosk-control.py','camera-calibrate-gui.py']:(payload/name).write_text('# valid')
  (payload/'dist/winner-trophy.jpg').write_bytes(b'valid image')
  bundle=Path(tmp)/'bundle.tar.gz'
  def archive():
@@ -25,6 +25,7 @@ with tempfile.TemporaryDirectory() as tmp, patch.object(updater.os,'sync',create
  updater.ROOT=root;updater.VERSION=root/'.version'
  archive();updater.install(bundle,'test')
  assert (root/'dist/index.html').read_text()=='new'
+ assert (root/'online-relay.py').read_text()=='# valid'
  assert (root/'dist.previous/index.html').read_text()=='old'
  assert (root/'dist/club-wifi.json').read_text()=='{"local":true}'
  assert (root/'dist/winner-trophy.jpg').read_bytes()==b'valid image'
