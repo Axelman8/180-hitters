@@ -1,5 +1,6 @@
 import {applyLivesDart} from './ten-lives.js';
 import {applyFourTurn,createFourBoard,fourSymbols} from './four-in-row.js';
+import {applySonnyTurn,newSonnyMatch,sonnyGameIds} from './sonny-games.js';
 export const targets = [...Array.from({length:20},(_,i)=>({label:`T${20-i}`,value:(20-i)*3,mult:3})),{label:'Bull',value:50,mult:2},...Array.from({length:20},(_,i)=>({label:`D${20-i}`,value:(20-i)*2,mult:2})),...Array.from({length:20},(_,i)=>({label:String(20-i),value:20-i,mult:1})),{label:'25',value:25,mult:1}];
 const allowed=(mult,rule)=>rule==='single'||mult===2||(rule==='master'&&mult===3);
 // Validate totals against the opening rule, bull setting and optional final dart.
@@ -41,6 +42,7 @@ export function setupShot(score,out='double',n=1,bull='25/50'){
  return {label,remaining:score-value,next:route.slice(1)};
 }
 export function newMatch(names,start=501,out='double',legs=3,options={}){
+ if(sonnyGameIds.includes(options.game))return newSonnyMatch(names,options.game,Number(options.starter)||0);
  if(options.game==='fourinarow'){
   if(options.fourBot){if(names.length!==1)throw Error('Kies één speler voor een partij tegen de BOT.');names=[...names,'BOT'];}
   else if(names.length<2||names.length>4)throw Error('Kies 2 tot 4 spelers voor 4 op een rij.');
@@ -123,6 +125,7 @@ export function previewBobs27(state,hits=[]){
  return {target,value,hits:targetHits,used:darts.length,delta,score,complete,eliminated:complete&&score<=0,finished:complete&&target===25&&score>0};
 }
 export function applyTurn(state,turn){
+ if(sonnyGameIds.includes(state.game))return applySonnyTurn(state,turn);
  if(state.game==='fourinarow')return applyFourTurn(state,turn);
  if(state.game==='tenlives')return applyLivesDart(state,turn);
  if(state.game==='bobs27')return applyBobs27Turn(state,turn);

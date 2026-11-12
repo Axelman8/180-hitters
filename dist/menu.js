@@ -39,7 +39,7 @@ menuToggle.onclick=()=>{
  renderMenuToggle();
 };
 function compactForFourInRow(){
- if(menuCollapsed||!document.body.classList.contains('remote-control')||document.body.dataset.game!=='fourinarow')return;
+ if(menuCollapsed||!document.body.classList.contains('remote-control')||!['fourinarow','scram','killer','bull41','twentyone'].includes(document.body.dataset.game))return;
  menuCollapsed=true;
  try{localStorage.setItem('180hitters.menuCollapsed','true');}catch{}
  renderMenuToggle();

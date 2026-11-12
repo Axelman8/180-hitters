@@ -136,6 +136,10 @@ jobs:
           180-Hitters-NUC-Cameras-Ubuntu-amd64.deb.sha256
           packaging/CAMERA-INSTALLATIE.txt
           packaging/INSTALLER-HELP.txt
+          demo/180-Hitters-Scram-uitleg.mp4
+          demo/180-Hitters-Killer-uitleg.mp4
+          demo/180-Hitters-Bull-41-uitleg.mp4
+          demo/180-Hitters-21-uitleg.mp4
           --title "180 Hitters ${GITHUB_REF_NAME}"
           --generate-notes
 

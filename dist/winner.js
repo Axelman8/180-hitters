@@ -11,7 +11,7 @@ function clearWinner(){
 }
 dialog.addEventListener('close',()=>{if(!dialog.open)clearWinner();});
 export function showWinner(state){
- if(state.phase!=='won'||state.winner===null||state.training121||['bobs27','tenlives','fourinarow'].includes(state.game)){clearWinner();return;}
+ if(state.phase!=='won'||state.winner===null||state.training121||['bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone'].includes(state.game)){clearWinner();return;}
  clearEffect();
  renderMatchSummary(state,dialog);
  if(dialog.classList.contains('winner-party'))return;
