@@ -34,11 +34,13 @@ with tempfile.TemporaryDirectory() as tmp:
               const killer=base('killer',['A','B'],[{name:'A',player:0,leg:1,score:0,darts:3,role:'killer',labels:'5 / D5 / T5'}],{winner:0,players:[{name:'A',remaining:0,killerNumber:5,killerLetters:6,killerEliminated:false},{name:'B',remaining:0,killerNumber:6,killerLetters:0,killerEliminated:true}]});
               const bull=base('bull41',['A','B'],[{name:'A',player:0,leg:1,score:59,darts:3,role:'score',labels:'T20 / D20 / Mis'}],{players:[{name:'A',remaining:0,bull41Score:59},{name:'B',remaining:0,bull41Score:0}]});
               const twentyone=base('twentyone',['A'],[{name:'A',player:0,leg:1,score:0,darts:2,role:'21',labels:'T20 / Bull'}],{players:[{name:'A',remaining:0,twentyOneAdjusted:2,twentyOneTriples:1}]});
-              return [x,cricket,tactics,bobs,training,gotcha,four,scram,killer,bull,twentyone].map(state=>{const report=buildGameReport(state),images=createGameReportImages(state);return {title:report.title,players:report.players.length,bars:report.bars.length,headers:report.headers,rows:report.rows.length,images:images.images.length,width:images.images[0].canvas.width};});
+              return [x,cricket,tactics,bobs,training,gotcha,four,scram,killer,bull,twentyone].map(state=>{const report=buildGameReport(state),images=createGameReportImages(state);return {title:report.title,firstName:report.players[0].name,players:report.players.length,bars:report.bars.length,headers:report.headers,rows:report.rows.length,images:images.images.length,width:images.images[0].canvas.width};});
             }""")
             assert [item['title'] for item in reports] == ['X01-partijoverzicht','Cricket-partijoverzicht','Tactics-partijoverzicht',"Bob's 27-overzicht",'121-trainingsoverzicht','Gotcha-partijoverzicht','4-op-een-rij-overzicht','Scram-overzicht','Killer-overzicht','Bull / 41-overzicht','21-overzicht']
+            assert reports[6]['firstName'] == 'A'
             assert all(item['players'] >= 1 and item['bars'] >= 1 and item['rows'] >= 1 for item in reports)
             assert all(item['images'] >= 2 and item['width'] == 1080 for item in reports)
+            page.wait_for_timeout(1200)  # Let the initial empty NUC state finish syncing.
             page.evaluate("""async()=>{const {renderGameReport}=await import('/game-reports.js');const dialog=document.querySelector('#result-dialog'),state={game:'bobs27',players:[{name:'Axel',remaining:31}],history:[{name:'Axel',leg:1,target:1,hits:2,darts:3,remaining:31,labels:'D1 / D1 / Mis'}],starter:0,leg:1,startedAt:Date.now()-10000};renderGameReport(state,dialog);dialog.showModal();}""")
             expect(page.locator('#game-report')).to_be_visible()
             expect(page.locator('.game-report-share')).to_have_text('Delen als afbeeldingen')

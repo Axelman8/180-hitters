@@ -258,7 +258,7 @@ function renderFourGame(){
  $('setup').hidden=true;$('game').hidden=false;$('players').hidden=true;$('fourinarow-root').hidden=false;
  document.body.classList.remove('cricket-game','training-game');mode='dart';
  const current=state.players[state.active];$('match-label').textContent=`4 OP EEN RIJ / RONDE ${state.round}`;
- $('turn-label').hidden=false;$('turn-label').textContent=state.phase==='playing'?`${current.fourSymbol} ${current.name} is aan de beurt`:state.winner===null?'Gelijkspel':`${state.players[state.winner].name} heeft 4 op een rij!`;
+ $('turn-label').hidden=false;$('turn-label').textContent=state.phase==='playing'?`${current.name} is aan de beurt`:state.winner===null?'Gelijkspel':`${state.players[state.winner].name} heeft 4 op een rij!`;
  $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
  renderFourInRow($('fourinarow-root'),state,dartList,{multiplier,hit:addFourDart,miss:()=>addFourDart(null),remove:()=>{dartList.pop();renderFourGame();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderFourGame();}});
 }
@@ -270,7 +270,7 @@ function addSonnyDart(number=0){
 function renderSonny(){
  if(!state||!sonnyGameIds.includes(state.game))return;
  $('setup').hidden=true;$('game').hidden=false;$('players').hidden=true;$('fourinarow-root').hidden=true;$('sonny-root').hidden=false;document.body.classList.remove('cricket-game','training-game');mode='dart';
- const current=state.players[state.active];$('match-label').textContent=sonnyGameNames[state.game].toUpperCase();$('turn-label').hidden=false;$('turn-label').textContent=`${current.sonnySymbol} ${current.name} is aan de beurt`;
+ const current=state.players[state.active];$('match-label').textContent=sonnyGameNames[state.game].toUpperCase();$('turn-label').hidden=false;$('turn-label').textContent=`${current.name} is aan de beurt`;
  $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
  renderSonnyGame($('sonny-root'),state,dartList,{multiplier,hit:addSonnyDart,miss:()=>addSonnyDart(0),remove:()=>{dartList.pop();renderSonny();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderSonny();}});
 }
@@ -586,7 +586,7 @@ function showResult(){
   renderGameReport(state,$('result-dialog'));$('continue').textContent='Nieuwe partij';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
  if(state.game==='fourinarow'){
-  $('result-title').textContent=state.winner===null?'Gelijkspel':`${state.players[state.winner].fourSymbol} ${state.players[state.winner].name} wint!`;
+  $('result-title').textContent=state.winner===null?'Gelijkspel':`${state.players[state.winner].name} wint!`;
   $('result-text').textContent=state.winner===null?'Alle vakken zijn verdeeld zonder vier op een rij.':`${state.players[state.winner].name} heeft vier vakken horizontaal, verticaal of diagonaal verbonden.`;
   renderGameReport(state,$('result-dialog'));$('continue').textContent='Nieuwe partij';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;
   if(!$('result-dialog').open)$('result-dialog').showModal();return;

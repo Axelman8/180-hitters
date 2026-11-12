@@ -45,7 +45,7 @@ function gotchaReport(state){
 }
 
 function fourInRowReport(state){
- const players=state.players.map((player,index)=>{const turns=turnsByPlayer(state,index),cells=state.fourOwners.filter(owner=>owner===index).length,darts=turns.reduce((sum,turn)=>sum+(turn.darts||0),0),claims=turns.reduce((sum,turn)=>sum+(turn.captured?.length||0),0);return {name:`${player.fourSymbol||''} ${player.name}`.trim(),stats:[['Vakken veroverd',String(cells)],['Claims',String(claims)],['Darts totaal',String(darts)],['Punten geraakt',String(turns.reduce((sum,turn)=>sum+(turn.score||0),0))]]};});
+ const players=state.players.map((player,index)=>{const turns=turnsByPlayer(state,index),cells=state.fourOwners.filter(owner=>owner===index).length,darts=turns.reduce((sum,turn)=>sum+(turn.darts||0),0),claims=turns.reduce((sum,turn)=>sum+(turn.captured?.length||0),0);return {name:player.name,stats:[['Vakken veroverd',String(cells)],['Claims',String(claims)],['Darts totaal',String(darts)],['Punten geraakt',String(turns.reduce((sum,turn)=>sum+(turn.score||0),0))]]};});
  const rows=annotatedTurns(state).map((turn,index)=>[String(index+1),state.players[turn.playerIndex]?.name||turn.name,turn.labels||'—',String(turn.darts||0),String(turn.captured?.length||0)]);
  return {title:'4-op-een-rij-overzicht',subtitle:'Veroverde vakken en alle gespeelde beurten',players,bars:[{title:'Vakken per speler',items:players.map((player,index)=>({label:player.name,value:state.fourOwners.filter(owner=>owner===index).length,display:`${state.fourOwners.filter(owner=>owner===index).length} vakken`}))}],headers:['Beurt','Speler','Gegooid','Darts','Vakken'],rows};
 }
