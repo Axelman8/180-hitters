@@ -79,7 +79,7 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: Axelman8 <noreply@users.noreply.github.com>
-Depends: python3 (>= 3.10), python3-dbus, python3-gi, bluez, systemd, sudo, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center, v4l-utils, policykit-1
+Depends: python3 (>= 3.10), python3-dbus, python3-gi, bluez, systemd, sudo, adduser, xdg-utils, xdg-user-dirs, libglib2.0-bin, python3-tk, curl, ca-certificates, gnome-control-center, v4l-utils, polkitd | policykit-1
 Recommends: firefox-esr | firefox | chromium | chromium-browser
 Homepage: https://github.com/Axelman8/180-hitters
 Description: 180 Hitters touchscreen darts scoreboard
