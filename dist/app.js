@@ -10,6 +10,7 @@ import {renderScreenOverview} from './screen-overview.js';
 import {replayTurns} from './replay.js';
 import {celebrateScore} from './celebration.js';
 import {showWinner} from './winner.js';
+import {renderFourInRow,fourCellLabel} from './four-in-row.js';
 import {newMatch,applyTurn,nextLeg,validX01Total,checkout,setupShot,possibleTotal,makeDart,previewTurn,previewCricket,previewGotcha,previewBobs27,playerStats} from './engine.js';
 const phoneLayout=matchMedia('(max-width:600px)');
 function mobileLayout(){document.body.classList.toggle('remote-control',!!window.DartsAndroid||new URLSearchParams(location.search).has('android')||new URLSearchParams(location.search).get('remote')==='1'||phoneLayout.matches);}
@@ -42,7 +43,7 @@ $('toggle-history').onclick=()=>{historyOpen=!historyOpen;try{localStorage.setIt
 renderHistoryMenu();
 let state=null,undo=[],future=[],pendingTurns=[],pendingReason='',editingPending=false,historyNavigation=false,entry='',dartList=[],multiplier=1,mode='total',preferredMode='total',modeOverride=null,editTurn=null,gotchaRule='end',editingCurrentMatch=false;
 const cricket=()=>state&&['cricket','tactics'].includes(state.game);
-const totalAllowed=()=>!!state&&!['bobs27','tenlives'].includes(state.game);
+const totalAllowed=()=>!!state&&!['bobs27','tenlives','fourinarow'].includes(state.game);
 function renderLivesGame(){renderLives(state,{dart:hit=>commit({trainingHit:hit}),misses:count=>commit({trainingMisses:count}),undo:()=>$('undo').click(),redo:()=>goForward(),canUndo:undo.length>0,canRedo:future.length>0,toggle:()=>$('toggle-input').click()});}
 
 const namesOfRules={single:'Straight',double:'Double',master:'Master'};
@@ -58,7 +59,7 @@ const draftOwner=Date.now().toString(36)+Math.random().toString(36).slice(2);
 let sharedDraft=null,draftSequence=0,draftWrites=0;
 async function publishDraft(){
  if(!state||state.phase!=='playing'||!ready||busy)return;
- const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult})=>({number,mult})),entry:mode==='total'&&!cricket()?entry:''};
+ const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult,cell,label})=>({number,mult,cell,label})),entry:mode==='total'&&!cricket()?entry:''};
  draftWrites++;
  try{const res=await fetch('/api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(4000)});if(!res.ok&&payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer de stand.');}catch{if(payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer je verbinding.');}
  finally{draftWrites--;}
@@ -129,7 +130,7 @@ async function synchronize(){
    const hits=draft?.hits||[];
    const nextEntry=draft?draft.entry||'':editTurn&&!editTurn.hits?String(editTurn.score??0):'';
    if(entry!==nextEntry){entry=nextEntry;renderInput();}
-   const next=hits.map(d=>makeDart(d.number,d.mult));
+   const next=state?.game==='fourinarow'?structuredClone(hits):hits.map(d=>makeDart(d.number,d.mult));
    if(JSON.stringify(next)!==JSON.stringify(dartList)){
     sharedDraft=null;dartList=next;multiplier=1;
     if(next.length&&!(cricket()&&mode==='total'))setMode('dart');
@@ -160,6 +161,7 @@ function button(text,handler){const b=document.createElement('button');b.type='b
 function resetInput(){entry='';dartList=[];multiplier=1;message();renderInput();}
 function renderInput(){
  if(state?.game==='tenlives'){renderLivesGame();return;}
+ if(state?.game==='fourinarow'){renderFourGame();return;}
  $('training-status').hidden=!state?.training121&&state?.game!=='bobs27';
  if(state?.training121){
   const live=previewTurn(state,dartList),used=state.trainingDarts+(live.bust?3:dartList.length);
@@ -230,6 +232,24 @@ function renderBobs27(){
  $('checkout-note').textContent=`Drie pijlen. Iedere treffer is +${v.value}; bij nul treffers gaat ${v.value} van je score af. Bij 0 of lager stopt de training.`;
  $('checkout').replaceChildren(...[target,`${v.hits} raak`].map(t=>{const b=document.createElement('b');b.textContent=t;return b;}));
  $('board-keys').querySelectorAll('button').forEach(b=>b.disabled=pending.length===3||state.phase!=='playing');
+}
+function fourDart(cell){
+ const id=state.fourBoard[cell],mult=id==='bb'?2:id.startsWith('sb')?1:multiplier,prefix=mult===2?'D':mult===3?'T':'';
+ return {cell,mult,number:id==='bb'||id.startsWith('sb')?25:Number(id.slice(1)),label:id==='bb'?'BB':prefix+fourCellLabel(id)};
+}
+function addFourDart(cell=null){
+ if(dartList.length>=3)return;
+ dartList.push(cell===null?{cell:null,mult:1,number:0,label:'Mis'}:fourDart(cell));
+ if(dartList.length===3)void commit({hits:[...dartList]});else{renderFourGame();publishDraft();}
+}
+function renderFourGame(){
+ if(!state||state.game!=='fourinarow')return;
+ $('setup').hidden=true;$('game').hidden=false;$('players').hidden=true;$('fourinarow-root').hidden=false;
+ document.body.classList.remove('cricket-game','training-game');mode='dart';
+ const current=state.players[state.active];$('match-label').textContent=`4 OP EEN RIJ / RONDE ${state.round}`;
+ $('turn-label').hidden=false;$('turn-label').textContent=state.phase==='playing'?`${current.fourSymbol} ${current.name} is aan de beurt`:state.winner===null?'Gelijkspel':`${state.players[state.winner].name} heeft 4 op een rij!`;
+ $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
+ renderFourInRow($('fourinarow-root'),state,dartList,{multiplier,hit:addFourDart,miss:()=>addFourDart(null),remove:()=>{dartList.pop();renderFourGame();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderFourGame();}});
 }
 function renderGotcha(){
  const pending=state.phase==='playing'?dartList:[],v=previewGotcha(state,pending),p=v.players[state.active];
@@ -325,6 +345,10 @@ function render(){
  $('edit-match').hidden=!state||state.phase==='won';
  $('team-manager').hidden=!state||state.phase==='won'||!state.teamMode;
  if(!state){showSetup();return;}
+ if(state.game==='fourinarow'){
+  renderFourGame();if(state.phase!=='playing')showResult();return;
+ }
+ $('players').hidden=false;$('fourinarow-root').hidden=true;
  if(state.game==='tenlives'){
   mode='dart';
   $('setup').hidden=true;$('game').hidden=false;document.body.classList.remove('cricket-game');document.body.classList.add('training-game');
@@ -383,7 +407,7 @@ function render(){
  renderPendingTurns();renderInput();if(state.phase!=='playing')showResult();
 }
 function sameTurn(a,b){
- const normal=t=>t?.hits?{hits:t.hits.map(({number,mult})=>({number,mult}))}:{score:t?.score,darts:t?.darts??3,forceBust:!!t?.forceBust};
+ const normal=t=>t?.hits?{hits:t.hits.map(({number,mult,cell})=>({number,mult,cell}))}:{score:t?.score,darts:t?.darts??3,forceBust:!!t?.forceBust};
  return JSON.stringify(normal(a))===JSON.stringify(normal(b));
 }
 function laterTurns(){
@@ -488,7 +512,7 @@ $('bust').onclick=()=>commit(cricket()||state?.game==='bobs27'?{hits:[makeDart(0
 function restoreTurnInput(){
  if(!editTurn)return;
  entry=editTurn.hits?'':String(editTurn.score??0);
- dartList=(editTurn.hits||[]).map(d=>makeDart(d.number,d.mult));
+ dartList=state?.game==='fourinarow'?structuredClone(editTurn.hits||[]):(editTurn.hits||[]).map(d=>makeDart(d.number,d.mult));
 }
 function recoverTurn(history){
  if(history?.input)return structuredClone(history.input);
@@ -530,6 +554,12 @@ function showResult(){
  $('continue').classList.remove('result-local-continue');
  $('result-dialog').querySelector('#lives-summary')?.remove();
  $('result-dialog').querySelector('#game-report')?.remove();
+ if(state.game==='fourinarow'){
+  $('result-title').textContent=state.winner===null?'Gelijkspel':`${state.players[state.winner].fourSymbol} ${state.players[state.winner].name} wint!`;
+  $('result-text').textContent=state.winner===null?'Alle vakken zijn verdeeld zonder vier op een rij.':`${state.players[state.winner].name} heeft vier vakken horizontaal, verticaal of diagonaal verbonden.`;
+  $('continue').textContent='Nieuwe partij';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;
+  if(!$('result-dialog').open)$('result-dialog').showModal();return;
+ }
  if(state.game==='tenlives'){
   $('result-title').textContent=state.winner===null?'Training afgelopen':state.players[state.winner].name+' wint!';
   $('result-text').textContent=(state.winner===null?'Alle spelers zijn hun levens kwijt. ':'Bull geraakt! ')+state.players.map(p=>`${p.name}: ${p.lives} levens, ${p.darts} pijlen`).join(' ? ');
@@ -599,28 +629,31 @@ function names(){
  starterOptions();
 }
 function settings(){
- const training=$('game-type').value==='training',gotcha=training&&$('training-type').value==='gotcha',bobs=training&&$('training-type').value==='bobs27',x=$('game-type').value==='x01';
+ const training=$('game-type').value==='training',gotcha=training&&$('training-type').value==='gotcha',bobs=training&&$('training-type').value==='bobs27',x=$('game-type').value==='x01',four=$('game-type').value==='fourinarow',fourBot=four&&$('four-bot').value==='bot';
  if(training&&$('participant-mode').value==='teams'){$('participant-mode').value='individual';names();}
- $('participant-mode-label').hidden=training;
+ $('participant-mode-label').hidden=training||four;
  $('count-label').textContent=teamMode()?'Aantal teams':'Aantal spelers';
  document.querySelectorAll('[data-x01]').forEach(el=>el.hidden=!x);
  $('game-type').closest('label').hidden=training;
- $('scoring-label').hidden=x||training;
+ $('scoring-label').hidden=x||training||four;
+ $('four-bot-label').hidden=!four;
  $('lives-mode-label').hidden=!(training&&$('training-type').value==='tenlives');
  $('gotcha-target-label').hidden=!gotcha;$('gotcha-out-label').hidden=!gotcha;
  $('training-label').hidden=!training;$('training-help').hidden=!training;
  $('training-help').textContent=training&&$('training-type').value==='tenlives'?'Hitters Challenge: Doubles of Triples van 20 t/m 10, daarna Bull (50). Raak: resterende pogingen plus 3. Mis je alle pogingen, dan ??n doel terug of op 20 ??n leven kwijt; daarna de volgende speler.':gotcha?'Gotcha: 2 tot 4 spelers beginnen op 0. Tel per pijl op naar de gekozen doelscore. Kies Straight-out, Double-out of Master-out. Gelijk aan een tegenstander? Die gaat naar 0. Te hoog, een ongeldige finish of 1 punt over bij Double/Master-out is bust: je eigen score gaat terug naar het begin van de beurt; eerdere Gotcha-treffers blijven staan.':bobs?"Bob's 27: 1 tot 4 spelers. Iedereen gooit drie pijlen op D1 t/m D20 en daarna Bull. Iedere treffer telt de dubbelwaarde erbij. Geen treffer trekt die waarde af. Bij 0 of lager valt die speler af.":'121: 1 tot 4 spelers, elk met een eigen niveau. Bij meerdere spelers wisselt de beurt na iedere drie darts; iedereen behoudt zijn eigen poging van maximaal negen darts. Dubbel-uit. Gelukt: +1 plus overgebleven darts. Niet gelukt: -1, minimaal 121. Een bust verbruikt de rest van je beurt.';
- $('count').querySelector('option[value="1"], option:first-child').disabled=gotcha||teamMode();
- for(const id of ['match-mode','max-rounds','count','starter'])$(id).closest('label').hidden=training&&!['count','starter'].includes(id);
- document.querySelector('.setup-help:not(#training-help)').hidden=training;
- $('set-legs-label').hidden=training||$('match-mode').value!=='sets';
- $('target-label').hidden=training||$('match-mode').value==='off';
+ $('count').querySelector('option[value="1"], option:first-child').disabled=gotcha||teamMode()||(four&&!fourBot);
+ for(const id of ['match-mode','max-rounds','count','starter'])$(id).closest('label').hidden=(training||four)&&!['count','starter'].includes(id);
+ document.querySelector('.setup-help:not(#training-help)').hidden=training||four;
+ $('set-legs-label').hidden=training||four||$('match-mode').value!=='sets';
+ $('target-label').hidden=training||four||$('match-mode').value==='off';
  $('target-text').textContent=$('match-mode').value==='sets'?'Sets nodig om te winnen':'Legs nodig om te winnen';
  if((gotcha||teamMode())&&Number($('count').value)<2){$('count').value='2';names();}
+ if(fourBot&&$('count').value!=='1'){$('count').value='1';names();}
+ if(four&&!fourBot&&Number($('count').value)<2){$('count').value='2';names();}
 
 }
 
-$('training-type').onchange=settings;$('game-type').onchange=settings;$('match-mode').onchange=settings;$('participant-mode').onchange=()=>{if(teamMode()&&Number($('count').value)<2)$('count').value='2';names();settings();};$('count').onchange=names;names();settings();$('settings').onclick=()=>{if(state&&state.phase!=='won'){if(!$('new-match-dialog').open)$('new-match-dialog').showModal();}else showSetup();};
+$('training-type').onchange=settings;$('four-bot').onchange=settings;$('game-type').onchange=settings;$('match-mode').onchange=settings;$('participant-mode').onchange=()=>{if(teamMode()&&Number($('count').value)<2)$('count').value='2';names();settings();};$('count').onchange=names;names();settings();$('settings').onclick=()=>{if(state&&state.phase!=='won'){if(!$('new-match-dialog').open)$('new-match-dialog').showModal();}else showSetup();};
 $('new-match-cancel').onclick=()=>$('new-match-dialog').close();
 $('new-match-confirm').onclick=()=>{$('new-match-dialog').close();showSetup();};$('cancel').onclick=()=>{editingCurrentMatch=false;setupCopy(false);render();};
 
@@ -646,8 +679,9 @@ function editCurrentMatch(){
  $('match-mode').value=state.matchMode||'legs';selectValue('legs',state.target);
  selectValue('set-legs',state.legsPerSet||3);selectValue('max-rounds',state.maxRounds||0);
  $('lives-mode').value=state.livesMode||'double';
+ $('four-bot').value=state.fourBot?'bot':'players';
  $('participant-mode').value=state.teamMode?'teams':'individual';
- $('count').value=String(state.players.length);names();
+ $('count').value=String(state.fourBot?1:state.players.length);names();
  if(state.teamMode){
   [...$('names').querySelectorAll('.team-editor')].forEach((team,index)=>{
    team.querySelector('input[data-team-name]').value=state.players[index].name;
@@ -707,8 +741,10 @@ $('setup-form').onsubmit=async e=>{
  const teams=teamMode()?[...$('names').querySelectorAll('.team-editor')].map(team=>({name:team.querySelector('input[data-team-name]').value.trim(),members:[...team.querySelectorAll('input[data-member-name]')].map(input=>input.value.trim()).filter(Boolean)})):[];
  const players=teamMode()?teams.map(team=>team.name):participantNameInputs().map(input=>input.value.trim()).filter(Boolean);
  if(players.length!==Number($('count').value)||teams.some(team=>!team.name||team.members.length<1||team.members.length>5)){$('team-validation').hidden=false;$('team-validation').textContent='Geef ieder team een naam en voeg per team 1 tot maximaal 5 spelers toe.';return;}$('team-validation').hidden=true;
- const gotcha=$('game-type').value==='training'&&$('training-type').value==='gotcha',bobs=$('game-type').value==='training'&&$('training-type').value==='bobs27';
- const proposed=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
+ const gotcha=$('game-type').value==='training'&&$('training-type').value==='gotcha',bobs=$('game-type').value==='training'&&$('training-type').value==='bobs27',four=$('game-type').value==='fourinarow';
+ let previousFourBoard=state?.game==='fourinarow'?state.fourBoard:null;try{previousFourBoard=previousFourBoard||JSON.parse(localStorage.getItem('180hitters.lastFourBoard'));}catch{}
+ const proposed=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,fourBot:four&&$('four-bot').value==='bot',previousFourBoard,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
+ if(four)try{localStorage.setItem('180hitters.lastFourBoard',JSON.stringify(proposed.fourBoard));}catch{}
  proposed.teamMode=teamMode();if(proposed.teamMode)proposed.players=proposed.players.map((player,index)=>({...player,members:teams[index].members}));
  if(editingCurrentMatch){
   const compatible=state.game===proposed.game&&state.start===proposed.start&&state.players.length===proposed.players.length&&!!state.training121===!!proposed.training121&&(state.livesMode||'double')===(proposed.livesMode||'double')&&state.starter===proposed.starter&&!!state.teamMode===!!proposed.teamMode;

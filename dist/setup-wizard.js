@@ -3,12 +3,13 @@ const games=[
  ['x01','X01','Van je startscore naar nul.','Wedstrijd','Begin op de gekozen startscore en speel precies naar nul. Kies zelf de beginregel, uitgooiregel, bullwaarde en partijvorm.'],
  ['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd','Raak 15, 16, 17, 18, 19, 20 en bull elk drie keer. Op een gesloten doel scoor je punten zolang een tegenstander dat doel nog niet heeft gesloten.'],
  ['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd','Raak 10 tot en met 20 en bull elk drie keer. Op een gesloten doel scoor je punten zolang een tegenstander dat doel nog niet heeft gesloten.'],
+ ['fourinarow','4 op een rij','Verover vier vakken op rij.','Wedstrijd','Verover vakken met drie marks: single telt 1, dubbel 2 en triple 3. Maak als eerste vier vakken horizontaal, verticaal of diagonaal.'],
  ['121','121','Checkouttraining met negen darts.','Training','Gooi jouw niveau binnen maximaal negen darts uit met dubbel-uit. Bij meerdere spelers wisselt de beurt na iedere drie darts en behoudt iedereen zijn eigen poging.'],
  ['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training','Bouw je score op tot de gekozen doelscore. Kom je precies gelijk met een tegenstander, dan zet je die speler terug op nul.'],
  ['tenlives','Hitters Challenge','20 t/m 10 en Bull. Bewaar je levens.','Training','Speel Doubles of Triples van 20 naar 10 en daarna Bull. Een treffer geeft extra pogingen; mis je het doel, dan ga je terug of verlies je een leven.'],
  ['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training','Start op 27 en gooi drie pijlen op iedere dubbel van D1 tot en met D20 en daarna Bull. Treffers tellen erbij; volledig missen trekt de dubbelwaarde af.']
 ];
-const fields=['lives-mode','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','participant-mode','count'];
+const fields=['lives-mode','four-bot','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','participant-mode','count'];
 let step=0,slot=0,teamSlot=0,memberSlot=0,venueRoster=[],mobileRoster=[],selected='x01';
 const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';
 let applying=false,sendTimer,sendBusy=false,pendingSetup=undefined,seenVersion=-1,mirroring=false,localSetupOwner=false;
@@ -16,7 +17,7 @@ const root=document.createElement('section');root.id='setup-wizard';$('setup').a
 function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;}
 function button(text,action,cls){const node=el('button',text,cls);node.type='button';node.onclick=action;return node;}
 function change(id,value){$(id).value=String(value);$(id).dispatchEvent(new Event('change',{bubbles:true}));}
-function isTeams(){return $('participant-mode').value==='teams'&&!['121','gotcha','bobs27','tenlives'].includes(selected);}
+function isTeams(){return $('participant-mode').value==='teams'&&!['121','gotcha','bobs27','tenlives','fourinarow'].includes(selected);}
 function teamEditors(){return [...$('names').querySelectorAll('.team-editor')];}
 function names(){return isTeams()?[...$('names').querySelectorAll('input[data-team-name]')]:[...$('names').children].filter(node=>node.tagName==='LABEL').map(label=>label.querySelector('input'));}
 function memberInputs(index=teamSlot){return [...(teamEditors()[index]?.querySelectorAll('input[data-member-name]')||[])];}
@@ -101,18 +102,18 @@ function render(){
   const game=games.find(item=>item[0]===selected);
   content.append(el('p',game?.[4]||'','wizard-info wizard-game-description'));
   content.append(el('p',games.find(game=>game[0]===selected)?.[1]+' · tik op een tegel om te kiezen','wizard-hint'));
-  const main=[['lives-mode','Doubles of Triples'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
+  const main=[['lives-mode','Doubles of Triples'],['four-bot','Tegen wie speel je?'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
   for(const [id,title] of main){const group=options(id,title);if(group)content.append(group);}
   if(selected==='tenlives')content.append(el('p','Iedereen begint met 10 levens en 3 pogingen op 20. Raak: resterende pijlen + 3 naar het volgende doel. Pogingen op: één doel terug; alleen op 20 kost dit een leven. Dan wisselt de speler. Bull (50) wint.','wizard-info'));
   if(selected==='121')content.append(el('p','Negen darts om uit te gooien. Je niveau begint bij 121.','wizard-info'));
   if(selected==='bobs27')content.append(el('p',"Start op 27. Gooi drie pijlen op D1 t/m D20 en daarna bull. Treffer: punten erbij; volledig missen: punten eraf.",'wizard-info'));
  }else{
-  if(!['121','gotcha','bobs27','tenlives'].includes(selected)){const mode=options('participant-mode','Spelers of teams');if(mode)content.append(mode);}
+  if(!['121','gotcha','bobs27','tenlives','fourinarow'].includes(selected)){const mode=options('participant-mode','Spelers of teams');if(mode)content.append(mode);}
   const count=options('count',isTeams()?'Aantal teams':'Aantal spelers');if(count)content.append(count);
   if(isTeams())renderTeams(content);else renderIndividuals(content);
   const starter=options('starter','Wie begint?');if(starter)content.append(starter);
   const summary=el('div',undefined,'wizard-summary');summary.append(el('strong',games.find(game=>game[0]===selected)?.[1]));
-  const ids=selected==='tenlives'?['lives-mode']:selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:selected==='bobs27'?[]:['scoring','match-mode','legs'];
+  const ids=selected==='tenlives'?['lives-mode']:selected==='fourinarow'?['four-bot']:selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:selected==='bobs27'?[]:['scoring','match-mode','legs'];
   summary.append(el('p',ids.filter(id=>!$(id).closest('label').hidden).map(id=>id==='legs'?`Eerste tot ${$(id).value} ${$('match-mode').value==='sets'?'sets':'legs'}`:$(id).selectedOptions[0]?.textContent).join(' · ')),el('p',isTeams()?teamDraft().map(team=>`${team.name}: ${team.members.filter(Boolean).join(', ')}`).join(' | '):names().map(input=>input.value).join(' → ')));content.append(summary);
  }
  const actions=el('div',undefined,'wizard-actions');actions.append(button(step?'← Terug':'Terug naar partij',()=>step?move(step-1):$('cancel').click(),'wizard-back'));if(!step)actions.firstChild.hidden=$('cancel').hidden;

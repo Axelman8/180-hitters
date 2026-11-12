@@ -397,7 +397,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
         if not isinstance(match, dict) or not isinstance(match.get('undo'), list):
             raise ValueError('Ongeldige partij')
         state = match.get('state')
-        if not isinstance(state, dict) or state.get('version') != 2 or state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives'):
+        if not isinstance(state, dict) or state.get('version') != 2 or state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives','fourinarow'):
             raise ValueError('Ongeldig spel')
         players = state.get('players')
         if not isinstance(players, list) or not 1 <= len(players) <= 4 or any(not isinstance(p, dict) or not isinstance(p.get('name'), str) for p in players):
@@ -813,7 +813,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if self.path == '/api/setup':
                     value = incoming.get('value')
                     if value is not None:
-                        if not isinstance(value, dict) or value.get('selected') not in ('x01','cricket','tactics','121','gotcha','bobs27','tenlives') or type(value.get('step')) is not int or not 0 <= value['step'] <= 2:
+                        if not isinstance(value, dict) or value.get('selected') not in ('x01','cricket','tactics','121','gotcha','bobs27','tenlives','fourinarow') or type(value.get('step')) is not int or not 0 <= value['step'] <= 2:
                             raise ValueError()
                         if not isinstance(value.get('names'), list) or not 1 <= len(value['names']) <= 4 or any(not isinstance(n, str) or len(n) > 24 for n in value['names']):
                             raise ValueError()
@@ -966,7 +966,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         if incoming['revision'] != current['revision']:
                             return self.reply(409, current)
                         state = (current['match'] or {}).get('state', {})
-                        if state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives') or state.get('phase') != 'playing':
+                        if state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives','fourinarow') or state.get('phase') != 'playing':
                             return self.reply(409, current)
                         if seq <= sequences.get(owner, -1):
                             return self.reply(200, {'ok': True})

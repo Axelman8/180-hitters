@@ -16,8 +16,8 @@ with tempfile.TemporaryDirectory() as tmp:
     if page.locator('#toggle-toolbar').get_attribute('aria-expanded')=='false':page.locator('#toggle-toolbar').click()
     if not page.locator('#settings').is_visible():page.locator('#header-menu details[data-menu="play"] summary').click()
     page.locator('#settings').click();page.locator('#new-match-confirm').click()
-   descriptions={'X01':'gekozen startscore','Cricket':'15, 16, 17, 18, 19, 20','Tactics':'10 tot en met 20','121':'maximaal negen darts','Gotcha':'tegenstander','Hitters Challenge':'20 naar 10',"Bob's 27":'Start op 27'}
-   for game in ['X01','Cricket','Tactics','121','Gotcha',"Bob's 27"]:
+   descriptions={'X01':'gekozen startscore','Cricket':'15, 16, 17, 18, 19, 20','Tactics':'10 tot en met 20','4 op een rij':'drie marks','121':'maximaal negen darts','Gotcha':'tegenstander','Hitters Challenge':'20 naar 10',"Bob's 27":'Start op 27'}
+   for game in ['X01','Cricket','Tactics','4 op een rij','121','Gotcha',"Bob's 27"]:
     if game!='X01':
      open_setup()
     page.locator('.wizard-game').filter(has=page.get_by_text(game,exact=True)).click()
@@ -44,8 +44,8 @@ with tempfile.TemporaryDirectory() as tmp:
     if game=='X01':page.screenshot(path=str(root.parent/'darts-wizard-players.png'),full_page=True)
     page.locator('.wizard-next').click();expect(page.locator('#setup')).to_be_hidden()
     match=page.request.get('http://127.0.0.1:8788/api/state').json()['match']['state']
-    assert [x['name'] for x in match['players']]==['Ed','Frank'] and match['active']==1
-    assert match['game']==({'X01':'x01','Cricket':'cricket','Tactics':'tactics','121':'x01','Gotcha':'gotcha',"Bob's 27":'bobs27'}[game])
+    assert [x['name'] for x in match['players']]==['Ed','Frank'] and match['active']==1,(game,[x['name'] for x in match['players']],match['active'])
+    assert match['game']==({'X01':'x01','Cricket':'cricket','Tactics':'tactics','4 op een rij':'fourinarow','121':'x01','Gotcha':'gotcha',"Bob's 27":'bobs27'}[game])
     if game=='X01':assert match['start']==301 and match['inMode']=='double'
    open_setup()
    page.locator('.wizard-game').filter(has=page.get_by_text('Hitters Challenge',exact=True)).click()

@@ -108,6 +108,7 @@ The app checks GitHub for newer releases. NUC releases are updated independently
 - Straight, double, or master in
 - Straight, double, or master out
 - Cricket with Standard, Cut Throat, or No Score scoring
+- 4 in a Row on a randomized 5x5 board for two to four players, or one player against an approximately 50-average bot
 - Tactics with targets 10–20 and bull
 - 121 nine-dart checkout training for one to four players
 - Gotcha with targets 301, 401, 501, 601, or 701
@@ -117,6 +118,8 @@ The app checks GitHub for newer releases. NUC releases are updated independently
 - Optional round limits and complete-round tie-breaking
 
 X01 supports turn-total entry and per-dart entry. Double/master-in and 50/50-bull configurations require per-dart input so opening and finishing rules can be validated correctly. Busts restore the state from before the turn and count as three darts for averages.
+
+The 4 in a Row mode uses twenty randomized number cells, four separate outer-bull corner cells, and bull in the center. A single, double, or triple contributes one, two, or three marks. Three marks permanently captures a cell; the first player with four captured cells horizontally, vertically, or diagonally wins. The NUC presents the board while Android provides target-by-target input. See the [Dutch video explanation](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-4-op-een-rij-uitleg.mp4).
 
 Checkout suggestions use the selected finishing rule. Double-out routes are based on the numerical Winmau PDC Checkout Table, with legal alternatives when the published route does not fit the number of darts or selected bull mode.
 
