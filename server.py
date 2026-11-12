@@ -408,13 +408,23 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         with urlopen('http://127.0.0.1:8790/health',timeout=1):break
                     except (URLError,OSError):time.sleep(.2)
                 else:raise RuntimeError('Online relay kon niet starten.')
-                online['tunnel']=subprocess.Popen([str(binary),'tunnel','--no-autoupdate','--url','http://127.0.0.1:8790'],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
+                online['tunnel']=subprocess.Popen([str(binary),'tunnel','--no-autoupdate','--protocol','http2','--edge-ip-version','4','--url','http://127.0.0.1:8790'],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
                 deadline=time.time()+45
                 while time.time()<deadline:
                     line=online['tunnel'].stdout.readline()
                     found=re.search(r'https://[a-z0-9-]+\.trycloudflare\.com',line or '')
                     if found:
-                        online.update(status='ready',url=found.group(0));return
+                        public_url=found.group(0)
+                        # cloudflared prints the hostname before DNS is always
+                        # reachable. Do not offer an invitation that still fails.
+                        for _ in range(40):
+                            if online['tunnel'].poll() is not None: break
+                            try:
+                                with urlopen(public_url+'/health',timeout=3) as response:
+                                    if response.status==200:
+                                        online.update(status='ready',url=public_url);return
+                            except (URLError,OSError): time.sleep(.5)
+                        raise RuntimeError('De uitnodigingslink werd niet bereikbaar. Controleer de internetverbinding en probeer opnieuw.')
                     if online['tunnel'].poll() is not None:break
                 raise RuntimeError('Tijdelijke internettunnel gaf geen adres terug.')
             except Exception as error:
@@ -1111,7 +1121,11 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 self.reply(500, {'error': 'Opslaan op de NUC mislukt'})
 
     print(f'Oche Darts Touch: http://{host}:{port}', flush=True)
-    ThreadingHTTPServer((host, port), Handler).serve_forever()
+    httpd=ThreadingHTTPServer((host, port), Handler)
+    try: httpd.serve_forever()
+    finally:
+        stop_online()
+        httpd.server_close()
 
 
 if __name__ == '__main__':
