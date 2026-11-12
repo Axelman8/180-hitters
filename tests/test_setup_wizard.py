@@ -12,11 +12,18 @@ with tempfile.TemporaryDirectory() as tmp:
    for name in ['Frank','Ed']:
     page.request.post('http://127.0.0.1:8788/api/players',data={'action':'add','name':name})
    page.reload();expect(page.locator('#connection-status')).to_have_text('Verbonden met NUC')
+   def open_setup():
+    if page.locator('#toggle-toolbar').get_attribute('aria-expanded')=='false':page.locator('#toggle-toolbar').click()
+    if not page.locator('#settings').is_visible():page.locator('#header-menu details[data-menu="play"] summary').click()
+    page.locator('#settings').click();page.locator('#new-match-confirm').click()
+   descriptions={'X01':'gekozen startscore','Cricket':'15, 16, 17, 18, 19, 20','Tactics':'10 tot en met 20','121':'maximaal negen darts','Gotcha':'tegenstander','Hitters Challenge':'20 naar 10',"Bob's 27":'Start op 27'}
    for game in ['X01','Cricket','Tactics','121','Gotcha',"Bob's 27"]:
     if game!='X01':
-     page.locator('#settings').click();page.locator('#new-match-confirm').click()
+     open_setup()
     page.locator('.wizard-game').filter(has=page.get_by_text(game,exact=True)).click()
     expect(page.locator('#setup-wizard h1')).to_have_text('Maak het jouw partij')
+    expect(page.locator('.wizard-game-description')).to_contain_text(descriptions[game])
+    assert page.locator('.wizard-game-description').count()==1
     if game=='X01':
      page.get_by_role('group',name='Startscore',exact=True).get_by_role('button',name='301',exact=True).click()
      page.get_by_role('group',name='Beginnen',exact=True).get_by_role('button',name='Dubbel-in',exact=True).click()
@@ -40,13 +47,18 @@ with tempfile.TemporaryDirectory() as tmp:
     assert [x['name'] for x in match['players']]==['Ed','Frank'] and match['active']==1
     assert match['game']==({'X01':'x01','Cricket':'cricket','Tactics':'tactics','121':'x01','Gotcha':'gotcha',"Bob's 27":'bobs27'}[game])
     if game=='X01':assert match['start']==301 and match['inMode']=='double'
+   open_setup()
+   page.locator('.wizard-game').filter(has=page.get_by_text('Hitters Challenge',exact=True)).click()
+   expect(page.locator('.wizard-game-description')).to_contain_text(descriptions['Hitters Challenge'])
    page.reload();expect(page.locator('#connection-status')).to_have_text('Verbonden met NUC')
-   page.locator('#settings').click();page.locator('#new-match-confirm').click()
+   open_setup()
    page.locator('.wizard-game').filter(has=page.get_by_text('X01',exact=True)).click()
    expect(page.get_by_role('group',name='Startscore',exact=True).get_by_role('button',name='301',exact=True)).to_have_attribute('aria-pressed','true')
    page.request.post('http://127.0.0.1:8788/api/display',data={'inputCollapsed':True})
    desktop=b.new_page(viewport={'width':1080,'height':1920});desktop.goto('http://127.0.0.1:8788/')
    expect(desktop.locator('#connection-status')).to_have_text('Verbonden met NUC')
+   if desktop.locator('#toggle-toolbar').get_attribute('aria-expanded')=='false':desktop.locator('#toggle-toolbar').click()
+   if not desktop.locator('#settings').is_visible():desktop.locator('#header-menu details[data-menu="play"] summary').click()
    desktop.locator('#settings').click();desktop.locator('#new-match-confirm').click()
    expect(desktop.locator('#category-match')).to_be_hidden();expect(desktop.locator('#setup-wizard')).to_be_visible()
    expect(desktop.locator('#game')).to_be_hidden()

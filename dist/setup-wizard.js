@@ -1,5 +1,13 @@
 const $=id=>document.getElementById(id);
-const games=[['x01','X01','Van je startscore naar nul.','Wedstrijd'],['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd'],['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd'],['121','121','Checkouttraining met negen darts.','Training'],['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training'],['tenlives','Hitters Challenge','20 t/m 10 en Bull. Bewaar je levens.','Training'],['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training']];
+const games=[
+ ['x01','X01','Van je startscore naar nul.','Wedstrijd','Begin op de gekozen startscore en speel precies naar nul. Kies zelf de beginregel, uitgooiregel, bullwaarde en partijvorm.'],
+ ['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd','Raak 15, 16, 17, 18, 19, 20 en bull elk drie keer. Op een gesloten doel scoor je punten zolang een tegenstander dat doel nog niet heeft gesloten.'],
+ ['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd','Raak 10 tot en met 20 en bull elk drie keer. Op een gesloten doel scoor je punten zolang een tegenstander dat doel nog niet heeft gesloten.'],
+ ['121','121','Checkouttraining met negen darts.','Training','Gooi jouw niveau binnen maximaal negen darts uit met dubbel-uit. Bij meerdere spelers wisselt de beurt na iedere drie darts en behoudt iedereen zijn eigen poging.'],
+ ['gotcha','Gotcha','Bereik je doel en pak tegenstanders.','Training','Bouw je score op tot de gekozen doelscore. Kom je precies gelijk met een tegenstander, dan zet je die speler terug op nul.'],
+ ['tenlives','Hitters Challenge','20 t/m 10 en Bull. Bewaar je levens.','Training','Speel Doubles of Triples van 20 naar 10 en daarna Bull. Een treffer geeft extra pogingen; mis je het doel, dan ga je terug of verlies je een leven.'],
+ ['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training','Start op 27 en gooi drie pijlen op iedere dubbel van D1 tot en met D20 en daarna Bull. Treffers tellen erbij; volledig missen trekt de dubbelwaarde af.']
+];
 const fields=['lives-mode','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','participant-mode','count'];
 let step=0,slot=0,teamSlot=0,memberSlot=0,venueRoster=[],mobileRoster=[],selected='x01';
 const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';
@@ -18,6 +26,7 @@ function remember(){try{localStorage.setItem('darts.setup.preferences',JSON.stri
 function chooseGame(id){
  selected=id;const training=['121','gotcha','bobs27','tenlives'].includes(id);
  $(training?'category-training':'category-match').click();
+ selected=id;
  change('game-type',training?'training':id);$('setup-form').hidden=false;
  if(training)change('training-type',id);else change('game-type',id);
  remember();
@@ -89,6 +98,8 @@ function render(){
   if(document.body.classList.contains('editing-current-match'))content.append(el('p','Je past de huidige partij aan. De app behoudt de stand waar dat technisch mogelijk is en waarschuwt vóór een wijziging waarvoor de score opnieuw moet beginnen.','wizard-info'));
   for(const category of ['Wedstrijd','Training']){content.append(el('h2',category));const tiles=el('div',undefined,'wizard-games');for(const [id,name,description,cat] of games.filter(game=>game[3]===category)){const tile=button('',()=>{chooseGame(id);move(1);},'wizard-game');tile.setAttribute('aria-pressed',String(selected===id));tile.append(el('strong',name),el('span',description),el('small','Kiezen →'));tiles.append(tile);}content.append(tiles);}
  }else if(step===1){
+  const game=games.find(item=>item[0]===selected);
+  content.append(el('p',game?.[4]||'','wizard-info wizard-game-description'));
   content.append(el('p',games.find(game=>game[0]===selected)?.[1]+' · tik op een tegel om te kiezen','wizard-hint'));
   const main=[['lives-mode','Doubles of Triples'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
   for(const [id,title] of main){const group=options(id,title);if(group)content.append(group);}
