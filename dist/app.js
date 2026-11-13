@@ -104,6 +104,14 @@ function receive(data){
  resetInput();restoreTurnInput();render();
  document.dispatchEvent(new Event('match-synchronized'));
 }
+// The online relay already knows the final state before the regular local
+// polling cycle sees its new revision. Show the shared winner screen directly
+// on both devices, while the saved local state remains the source of truth.
+document.addEventListener('online-match-finished',event=>{
+ const match=event.detail;
+ if(!match?.state||match.state.phase!=='won')return;
+ restore(match);confirmed=match;cache();resetInput();render();
+});
 async function persist(keepModeOverride=false,restoredTurn=null){
  editTurn=restoredTurn;
  // Only restored historical input temporarily overrides the saved preference.

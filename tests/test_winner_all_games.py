@@ -11,6 +11,10 @@ with tempfile.TemporaryDirectory() as tmp:
         with sync_playwright() as p:
             browser=p.chromium.launch();page=browser.new_page(viewport={'width':393,'height':852});page.goto('http://127.0.0.1:8813/?remote=1')
             states=page.evaluate("""async()=>{const {newMatch}=await import('/engine.js');const {newSonnyMatch}=await import('/sonny-games.js');const done=s=>({...s,phase:'won',winner:0,completedAt:Date.now()});return [done(newMatch(['Anna','Bert'],0,'single',1,{game:'fourinarow'})),...['scram','killer','bull41','twentyone'].map(game=>done(newSonnyMatch(game==='twentyone'?['Anna']:['Anna','Bert'],game))),done(newMatch(['Anna','Bert'],0,'single',1,{game:'tenlives',livesMode:'double'}))]}""")
+            page.evaluate("state=>document.dispatchEvent(new CustomEvent('online-match-finished',{detail:{state,undo:[]}}))",states[0])
+            expect(page.locator('#result-dialog')).to_have_class(__import__('re').compile(r'.*winner-party.*'))
+            expect(page.locator('#result-dialog #result-title')).to_contain_text('Anna')
+            page.locator('#result-dialog').evaluate('(dialog)=>dialog.close()')
             for index,state in enumerate(states):
                 current=page.request.get('http://127.0.0.1:8813/api/state').json()
                 assert page.request.post('http://127.0.0.1:8813/api/state',data={'revision':current['revision'],'match':{'state':state,'undo':[]}}).ok

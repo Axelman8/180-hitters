@@ -40,6 +40,7 @@ public final class MainActivity extends Activity {
     private BluetoothClient bluetooth;
     private AppUpdater updater;
     private String pendingOnlineInvite="";
+    private boolean pendingClubInvitations;
     private SharedPreferences preferences;
     private String mode;
     private boolean webPaused;
@@ -52,10 +53,11 @@ public final class MainActivity extends Activity {
         super.onCreate(state);
         preferences = getSharedPreferences("axelman8", MODE_PRIVATE);
         ClubRequestWorker.createChannel(this);
-        if(!preferences.getString("club_admin_token","").isEmpty()) ClubRequestWorker.schedule(this);
+        if(!preferences.getString("club_admin_token","").isEmpty()||!preferences.getString("club_access_token","").isEmpty()) ClubRequestWorker.schedule(this);
         bluetooth = new BluetoothClient();
         updater = new AppUpdater(this);
         readOnlineInvite(getIntent());
+        pendingClubInvitations=getIntent()!=null&&getIntent().getBooleanExtra("open_club_invitations",false);
         String savedBluetooth = preferences.getString("bluetooth_address", null);
         if (savedBluetooth != null) bluetooth.select(savedBluetooth);
         try { localServer = new LocalDartsServer(this, bluetooth); }
@@ -207,7 +209,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onDestroy(){if(localServer!=null)localServer.stop(); if(bluetooth!=null)bluetooth.shutdown(); if(web!=null)web.destroy(); super.onDestroy();}
 
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);readOnlineInvite(intent);if(web!=null)web.reload();}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);readOnlineInvite(intent);if(intent!=null&&intent.getBooleanExtra("open_club_invitations",false))pendingClubInvitations=true;if(web!=null)web.reload();}
     private void readOnlineInvite(Intent intent){
         Uri uri=intent==null?null:intent.getData();String code=uri==null?null:uri.getQueryParameter("dartbaan");
         if(code!=null&&code.matches("[A-Za-z2-9]{6}"))pendingOnlineInvite="https://180-hitters-online.180-hitters-online.workers.dev/?dartbaan="+code.toUpperCase();
@@ -230,6 +232,7 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void chooseMode(){runOnUiThread(MainActivity.this::showModeChooser);}
         @JavascriptInterface public boolean isLocalMode(){return "local".equals(mode);}
         @JavascriptInterface public String takeOnlineInvite(){String value=pendingOnlineInvite;pendingOnlineInvite="";return value;}
+        @JavascriptInterface public boolean takeClubInvitationOpen(){boolean value=pendingClubInvitations;pendingClubInvitations=false;return value;}
         @JavascriptInterface public String getConnectionMode(){return mode==null?"local":mode;}
         @JavascriptInterface public String getConnectionInfo(){
             try {
@@ -252,6 +255,11 @@ public final class MainActivity extends Activity {
             preferences.edit().putString("club_admin_token",adminToken).apply();
             runOnUiThread(()->{ClubRequestWorker.createChannel(MainActivity.this);if(!preferences.getBoolean("club_notifications_asked",false))requestClubNotificationPermission();ClubRequestWorker.schedule(MainActivity.this);});
         }
+        @JavascriptInterface public void configureClubPlayerNotifications(String accessToken){
+            if(accessToken==null||accessToken.length()<40||accessToken.length()>200)return;
+            preferences.edit().putString("club_access_token",accessToken).apply();
+            runOnUiThread(()->{ClubRequestWorker.createChannel(MainActivity.this);if(!preferences.getBoolean("club_notifications_asked",false))requestClubNotificationPermission();ClubRequestWorker.schedule(MainActivity.this);});
+        }
         @JavascriptInterface public boolean clubNotificationsEnabled(){return ClubRequestWorker.allowed(MainActivity.this);}
         @JavascriptInterface public void requestClubNotifications(){runOnUiThread(MainActivity.this::requestClubNotificationPermission);}
         @JavascriptInterface public void notifyClubRequests(int pending){
@@ -259,6 +267,13 @@ public final class MainActivity extends Activity {
             int previous=preferences.getInt("club_pending_notified",0);
             if(pending==0||ClubRequestWorker.allowed(MainActivity.this))preferences.edit().putInt("club_pending_notified",pending).apply();
             if(pending>0&&pending!=previous)ClubRequestWorker.show(MainActivity.this,pending);
+        }
+        @JavascriptInterface public void notifyClubInvitation(String id,String fromName,String code){
+            if(id==null||id.isEmpty()||id.length()>100||code==null||!code.matches("[A-Z2-9]{6}"))return;
+            String key="club_invite_notified_"+id;
+            if(preferences.getBoolean(key,false)||!ClubRequestWorker.allowed(MainActivity.this))return;
+            preferences.edit().putBoolean(key,true).apply();
+            ClubRequestWorker.showInvitation(MainActivity.this,id,fromName,code);
         }
         @JavascriptInterface public void shareText(String text){
             if(text==null||text.isEmpty()||text.length()>4000)return;
