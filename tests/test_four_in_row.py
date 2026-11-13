@@ -14,6 +14,8 @@ with tempfile.TemporaryDirectory() as tmp:
             screen = browser.new_page(viewport={'width':1280, 'height':900})
             phone.goto('http://127.0.0.1:8802/?remote=1')
             state = phone.evaluate("""async()=>{const {newMatch}=await import('/engine.js');return newMatch(['Anna','Bert'],0,'single',1,{game:'fourinarow'})}""")
+            camera_progress = phone.evaluate("""async state=>{const {applyCameraEvent}=await import('/autoscoring-rules.js');let match={state,undo:[]},draft=null,lengths=[];for(let i=0;i<3;i++){const result=applyCameraEvent(match,draft,{kind:'dart',hit:{number:20,mult:1}});lengths.push(result.hits.length);match=result.match;draft={hits:result.hits};}return {lengths,claimed:match.state.fourOwners[match.state.fourBoard.indexOf('n20')]};}""",state)
+            assert camera_progress == {'lengths':[1,2,0],'claimed':0}, camera_progress
             current = phone.request.get('http://127.0.0.1:8802/api/state').json()
             response = phone.request.post('http://127.0.0.1:8802/api/state', data={'revision':current['revision'],'match':{'state':state,'undo':[]}})
             assert response.ok
@@ -45,9 +47,14 @@ with tempfile.TemporaryDirectory() as tmp:
             phone.set_viewport_size({'width':393,'height':852})
             first = phone.locator('.four-cell[data-kind="number"]').first
             first_cell = first.get_attribute('data-cell')
+            expect(phone.locator('.four-darts span').nth(0)).to_have_attribute('aria-current','step')
             first.click()
-            expect(screen.locator(f'.four-cell[data-cell="{first_cell}"] .four-progress .player-0')).to_have_text('•')
-            first.click(); first.click()
+            expect(screen.locator(f'.four-cell[data-cell="{first_cell}"] .four-progress .player-0')).to_have_text('\u25cb')
+            expect(phone.locator('.four-darts span').nth(1)).to_have_attribute('aria-current','step')
+            first.click()
+            expect(screen.locator(f'.four-cell[data-cell="{first_cell}"] .four-progress .player-0')).to_have_text('\u25cb\u25cb')
+            expect(phone.locator('.four-darts span').nth(2)).to_have_attribute('aria-current','step')
+            first.click()
             expect(phone.locator('#turn-label')).to_contain_text('Bert')
             expect(phone.locator('.four-cell.owned.player-0')).to_have_count(1)
             expect(screen.locator('.four-cell.owned.player-0')).to_have_count(1)

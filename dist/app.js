@@ -812,7 +812,7 @@ cameraControls(async event=>{
   const base=await response.json();
   const result=applyCameraEvent(base.match,base.draft,event);
   const res=await fetch('/api/autoscoring/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:base.revision,event:event.id,...result}),signal:AbortSignal.timeout(5000)});
-  if(res.ok){const data=await res.json();receive(data);dartList=(data.draft?.hits||[]).map(d=>makeDart(d.number,d.mult));if(dartList.length)setMode('dart');renderInput();}
+  if(res.ok){const data=await res.json();receive(data);dartList=state?.game==='fourinarow'?structuredClone(data.draft?.hits||[]):(data.draft?.hits||[]).map(d=>makeDart(d.number,d.mult));if(dartList.length)setMode('dart');document.dispatchEvent(new CustomEvent('dart-draft-observed',{detail:data.draft||null}));if(state?.game==='fourinarow')renderFourGame();else renderInput();}
   else if(![409,423].includes(res.status)){const data=await res.json();throw Error(data.error||'Cameraworp niet opgeslagen. Controleer de beurt.');}
  }catch(e){
   // A lost response is retried through the server receipt, never guessed locally.
