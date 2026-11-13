@@ -83,6 +83,7 @@ with tempfile.TemporaryDirectory() as tmp:
    expect(active.locator('#online-host-section')).to_be_hidden();expect(active.locator('#online-join-section')).to_be_hidden()
    expect(active.locator('#online-code')).to_have_text('ABC234');expect(active.locator('#online-share')).to_be_visible()
    expect(active.locator('#online-club-invite')).to_be_visible()
+   expect(active.locator('#online-invitation-symbol option')).to_have_text(['○ Rondje','× Kruis','△ Driehoek','□ Vierkant'])
    expect(active.locator('#online-discard')).to_have_count(0);expect(active.locator('#online-leave')).to_have_count(0)
    expect(active.get_by_text('Dartbaan verlaten en wedstrijd weggooien',exact=True)).to_have_count(1)
    assert 'http' not in active.locator('#online-active').inner_text().lower()
