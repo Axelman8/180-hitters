@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "180-hitters-online",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-12",
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "DartRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DartRoom"] }],
+  "observability": { "enabled": true }
+}

@@ -234,7 +234,7 @@ The signing keystore and passwords are intentionally excluded from version contr
 
 180 Hitters is an independent scoring application. Its game settings use the official [Autodarts X01 documentation](https://docs.autodarts.com/game-modes/x01/) and [Cricket/Tactics documentation](https://docs.autodarts.com/game-modes/cricket-tactics/) as functional references, but it is not an Autodarts client and does not connect to Autodarts accounts or services.
 
-Camera detection, online opponents, matchmaking, leagues, bots, AI refereeing, and long-term match archives are outside the current scope.
+The four-in-a-row game supports private online lanes for two to four players through the free Cloudflare service documented in [`cloudflare/README.md`](cloudflare/README.md). Public matchmaking, leagues, AI refereeing, and long-term cloud archives remain outside the current scope. Camera detection is provided locally by the optional NUC camera package.
 
 ### Camera repair and 50 Hz calibration (Linux NUC)
 

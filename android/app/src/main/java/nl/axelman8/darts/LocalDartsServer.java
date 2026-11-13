@@ -28,10 +28,12 @@ final class LocalDartsServer extends NanoHTTPD {
     private final File playersFile;
     private final File displayFile;
     private final File venueFile;
+    private final File onlineFile;
     private JSONObject state;
     private JSONArray players;
     private JSONObject display;
     private JSONObject venue;
+    private JSONObject online;
     private JSONObject setup = new JSONObject();
     private JSONObject draft;
     private long draftTime;
@@ -44,10 +46,12 @@ final class LocalDartsServer extends NanoHTTPD {
         playersFile = new File(context.getFilesDir(), "local-players.json");
         displayFile = new File(context.getFilesDir(), "local-display.json");
         venueFile = new File(context.getFilesDir(), "local-venue.json");
+        onlineFile = new File(context.getFilesDir(), "local-online.json");
         state = readObject(stateFile, new JSONObject().put("revision", 0).put("match", JSONObject.NULL));
         players = readArray(playersFile, new JSONArray());
         display = readObject(displayFile, new JSONObject().put("inputCollapsed", false));
         venue = readObject(venueFile, defaultVenue());
+        online = readObject(onlineFile, defaultOnline());
         setup.put("version", 0).put("value", JSONObject.NULL);
         start(SOCKET_READ_TIMEOUT, false);
     }
@@ -121,6 +125,8 @@ final class LocalDartsServer extends NanoHTTPD {
             case "/api/setup": return json(Response.Status.OK, new JSONObject(setup.toString()).put("revision", state.getInt("revision")));
             case "/api/network": return json(Response.Status.OK, new JSONObject().put("urls", new JSONArray()));
             case "/api/network/control": return json(Response.Status.SERVICE_UNAVAILABLE, new JSONObject().put("error", "Alleen beschikbaar op de NUC"));
+            case "/api/online/local": return json(Response.Status.OK, new JSONObject(online.toString()));
+            case "/api/online/tunnel": return json(Response.Status.OK, new JSONObject().put("status", "central").put("url", "").put("error", ""));
             default:
                 if (path.startsWith("/api/")) return json(Response.Status.NOT_FOUND, new JSONObject().put("error", "Onbekend verzoek"));
                 return asset(path);
@@ -191,6 +197,25 @@ final class LocalDartsServer extends NanoHTTPD {
                 setup.put("version", setup.optInt("version") + 1).put("value", incoming.opt("value"));
                 return json(Response.Status.OK, setup);
             }
+            case "/api/online/local": {
+                boolean active = incoming.optBoolean("active", false);
+                JSONObject updated = defaultOnline().put("active", active);
+                if (active) {
+                    int role = incoming.optInt("role", -1);
+                    String code = incoming.optString("code", "").trim().toUpperCase();
+                    String base = incoming.optString("base", "").trim();
+                    String key = incoming.optString("key", "").trim();
+                    if (role < 0 || role > 3 || !code.matches("[A-Z2-9]{6}") ||
+                            !base.startsWith("https://") || key.isEmpty()) {
+                        return json(Response.Status.BAD_REQUEST, new JSONObject().put("error", "Ongeldige online dartbaan"));
+                    }
+                    updated.put("ready", incoming.optBoolean("ready", false)).put("role", role)
+                            .put("code", code).put("base", base).put("key", key)
+                            .put("remoteRevision", Math.max(0, incoming.optInt("remoteRevision", 0)));
+                }
+                writeAtomic(onlineFile, updated.toString()); online = updated;
+                return json(Response.Status.OK, online);
+            }
             case "/api/kiosk/open":
             case "/api/network/switch": return json(Response.Status.SERVICE_UNAVAILABLE, new JSONObject().put("error", "Alleen beschikbaar op de NUC"));
             default: return json(Response.Status.NOT_FOUND, new JSONObject().put("error", "Onbekend verzoek"));
@@ -233,6 +258,10 @@ final class LocalDartsServer extends NanoHTTPD {
                 .put("screensaverEnabled", true).put("logoData", "").put("backgroundData", "")
                 .put("clubWifiName", "").put("clubWifiQr", "")
                 .put("hotspotName", "180 Hitters wifi").put("hotspotPassword", "");
+    }
+    private static JSONObject defaultOnline() throws JSONException {
+        return new JSONObject().put("active", false).put("ready", false).put("role", JSONObject.NULL)
+                .put("code", "").put("base", "").put("key", "").put("remoteRevision", 0);
     }
     private static JSONObject cleanVenue(JSONObject input) throws JSONException {
         JSONObject result=new JSONObject();

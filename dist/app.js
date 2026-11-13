@@ -101,6 +101,7 @@ function receive(data){
  restore(data.match);cache();
  for(const d of document.querySelectorAll('dialog[open]'))if(!['autoscoring-dialog','players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
  resetInput();restoreTurnInput();render();
+ document.dispatchEvent(new Event('match-synchronized'));
 }
 async function persist(keepModeOverride=false,restoredTurn=null){
  editTurn=restoredTurn;
@@ -114,7 +115,7 @@ async function persist(keepModeOverride=false,restoredTurn=null){
   if(res.status===409){receive(data);connection(true,connectedLabel);message('Een ander apparaat heeft de partij gewijzigd. Controleer de stand en voer je beurt opnieuw in.');return false;}
   if(!res.ok)throw Error(data.error||'Opslaan mislukt');
   if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
-  revision=data.revision;confirmed=data.match;sharedDraft=null;cache();connection(true,savedLabel);return true;
+  revision=data.revision;confirmed=data.match;sharedDraft=null;cache();connection(true,savedLabel);document.dispatchEvent(new Event('match-persisted'));return true;
  }catch(e){restore(confirmed);resetInput();render();connection(false,'Geen bevestiging van NUC - wacht op verbinding');message('Controleer de stand zodra de verbinding terug is voordat je opnieuw invoert.');return false;}
  finally{busy=false;}
 }

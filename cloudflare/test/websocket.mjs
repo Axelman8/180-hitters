@@ -1,0 +1,18 @@
+const base=(process.env.ONLINE_TEST_BASE||'http://127.0.0.1:8787').replace(/\/$/,'');
+const match={undo:[],state:{version:2,game:'fourinarow',phase:'playing',active:0,winner:null,history:[],players:[{name:'A'},{name:'B'}],fourBoard:Array(25).fill('bb'),fourOwners:Array(25).fill(null)}};
+const create=await fetch(base+'/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Axel',match})});
+if(create.status!==201)throw Error(`Dartbaan maken gaf HTTP ${create.status}: ${await create.text()}`);
+const host=await create.json(),url=`${base.replace(/^http/,'ws')}/rooms/${host.code}/socket?key=${encodeURIComponent(host.key)}`;
+const socket=new WebSocket(url);
+const messages=[];
+const next=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Realtime bericht bleef uit')),10000);socket.addEventListener('message',event=>{clearTimeout(timer);messages.push(JSON.parse(event.data));resolve(messages.at(-1));},{once:true});});
+await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',()=>reject(Error('WebSocket kon niet verbinden')),{once:true});});
+const initial=await next();
+if(initial.joined!==1)throw Error('Onjuiste beginstatus via WebSocket');
+const broadcast=next();
+const join=await fetch(`${base}/rooms/${host.code}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Bert'})});
+if(!join.ok)throw Error(`Deelnemen gaf HTTP ${join.status}`);
+const update=await broadcast;
+if(update.joined!==2||update.capacity!==2)throw Error('Deelname werd niet realtime doorgegeven');
+socket.close();
+console.log('PASS: Cloudflare WebSocket broadcasts realtime dartbaan updates');

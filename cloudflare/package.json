@@ -1,0 +1,14 @@
+{
+  "name": "180-hitters-online",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "check": "wrangler deploy --dry-run",
+    "test:remote": "python test/integration.py && node test/websocket.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.46.0"
+  }
+}
