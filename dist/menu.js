@@ -51,6 +51,7 @@ compactForFourInRow();
 
 const definitions=[
  ['play','Spelen'],
+ ['online','Online darten'],
  ['connections','Verbindingen'],
  ['application','Applicatie']
 ];
@@ -69,7 +70,8 @@ for(const [key,label] of definitions){
 }
 
 const order={
- play:['settings','online-game','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
+ play:['settings','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
+ online:['online-host-open','online-join-open'],
  connections:['android-app-action','take-control','connection-health','mouse-control-open','bluetooth-open','network-open'],
  application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','screen-orientation','desktop-update-action','android-update-action','camera-test','venue-open']
 };
@@ -77,6 +79,7 @@ const order={
 function destination(node){
  const id=node.id;
  if(order.play.includes(id))return groups.play;
+ if(order.online.includes(id))return groups.online;
  if(id==='android-app-action')return window.DartsAndroid?groups.connections:groups.application;
  if(order.connections.includes(id))return groups.connections;
  if(order.application.includes(id))return groups.application;

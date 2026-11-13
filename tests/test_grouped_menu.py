@@ -17,11 +17,21 @@ with tempfile.TemporaryDirectory() as tmp:
     page.locator('#toggle-toolbar').click();expect(page.locator('#header-menu')).to_be_hidden()
     expect(page.locator('#toggle-toolbar')).to_have_text('Menu openen')
     page.locator('#toggle-toolbar').click();expect(page.locator('#header-menu')).to_be_visible()
-    expect(page.locator('#header-menu summary')).to_have_text(['Spelen','Verbindingen','Applicatie'])
+    expect(page.locator('#header-menu summary')).to_have_text(['Spelen','Online darten','Verbindingen','Applicatie'])
     expect(page.locator('#header-menu details[open]')).to_have_count(0)
     page.locator('summary',has_text='Spelen').click();expect(page.locator('#settings')).to_be_visible()
     assert page.locator('#edit-match').evaluate("e=>e.closest('details').dataset.menu")=='play'
     assert page.locator('#team-manager').evaluate("e=>e.closest('details').dataset.menu")=='play'
+    page.locator('summary',has_text='Online darten').click()
+    expect(page.locator('#online-host-open')).to_have_text('Dartbaan aanmaken')
+    expect(page.locator('#online-join-open')).to_have_text('Deelnemen aan online dartbaan')
+    assert page.locator('#online-host-open').evaluate("e=>e.closest('details').dataset.menu")=='online'
+    page.locator('#online-host-open').click();expect(page.locator('#online-dialog')).to_be_visible()
+    expect(page.locator('#online-host-section')).to_be_visible();expect(page.locator('#online-join-section')).to_be_hidden()
+    page.locator('#online-close').click()
+    page.locator('summary',has_text='Online darten').click();page.locator('#online-join-open').click()
+    expect(page.locator('#online-host-section')).to_be_hidden();expect(page.locator('#online-join-section')).to_be_visible()
+    page.locator('#online-close').click()
     page.locator('summary',has_text='Verbindingen').click();expect(page.locator('#network-open')).to_be_visible()
     assert page.locator('#bluetooth-open').evaluate("e=>e.closest('details').dataset.menu")=='connections'
     page.locator('summary',has_text='Applicatie').click();expect(page.locator('#android-app-action')).to_be_visible()
