@@ -23,12 +23,17 @@ with tempfile.TemporaryDirectory() as tmp:
     page.locator('#toggle-toolbar').click();expect(page.locator('#header-menu')).to_be_visible()
     expect(page.locator('#header-menu summary')).to_have_text(['Spelen','Online darten','Verbindingen','Applicatie'])
     expect(page.locator('#header-menu details[open]')).to_have_count(0)
+    page.evaluate("document.dispatchEvent(new CustomEvent('discard-current-match'))")
+    expect(page.locator('#header-menu details[data-menu="play"]')).to_have_attribute('open','')
+    expect(page.locator('#setup')).to_be_visible()
+    page.locator('summary',has_text='Spelen').click()
     page.locator('summary',has_text='Spelen').click();expect(page.locator('#settings')).to_be_visible()
     assert page.locator('#edit-match').evaluate("e=>e.closest('details').dataset.menu")=='play'
     assert page.locator('#team-manager').evaluate("e=>e.closest('details').dataset.menu")=='play'
     page.locator('summary',has_text='Online darten').click()
     expect(page.locator('#online-host-open')).to_have_text('Dartbaan aanmaken')
     expect(page.locator('#online-join-open')).to_have_text('Deelnemen aan online dartbaan')
+    expect(page.locator('#online-leave-open')).to_be_hidden()
     assert page.locator('#online-host-open').evaluate("e=>e.closest('details').dataset.menu")=='online'
     page.locator('#online-host-open').click();expect(page.locator('#online-dialog')).to_be_visible()
     expect(page.locator('#online-video-open')).to_be_visible()
@@ -72,10 +77,12 @@ with tempfile.TemporaryDirectory() as tmp:
    active.locator('#online-starter').evaluate('element=>element.hidden=true')
    active.locator('summary',has_text='Online darten').click()
    expect(active.locator('#online-host-open')).to_have_text('Actieve dartbaan openen')
-   expect(active.locator('#online-join-open')).to_be_hidden();expect(active.locator('#online-new-open')).to_be_visible();active.locator('#online-host-open').click()
+   expect(active.locator('#online-join-open')).to_be_hidden();expect(active.locator('#online-new-open')).to_be_visible();expect(active.locator('#online-leave-open')).to_have_text('Dartbaan verlaten en wedstrijd weggooien')
+   assert active.locator('#online-leave-open').evaluate("e=>e.closest('details').dataset.menu")=='online'
+   active.locator('#online-host-open').click()
    expect(active.locator('#online-host-section')).to_be_hidden();expect(active.locator('#online-join-section')).to_be_hidden()
    expect(active.locator('#online-code')).to_have_text('ABC234');expect(active.locator('#online-share')).to_be_visible()
-   expect(active.locator('#online-discard')).to_have_text('Dartbaan verlaten en spel weggooien')
+   expect(active.locator('#online-discard')).to_have_text('Dartbaan verlaten en wedstrijd weggooien')
    assert 'http' not in active.locator('#online-active').inner_text().lower()
    active.locator('#online-close').click();active.locator('summary',has_text='Online darten').click();active.locator('#online-new-open').click()
    expect(active.locator('#online-new')).to_be_visible();expect(active.locator('#online-title')).to_have_text('Nieuwe dartbaan aanmaken')

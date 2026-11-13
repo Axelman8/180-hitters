@@ -159,7 +159,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-video-dialog, #club-open, #club-dialog, #online-host-open, #online-new-open, #online-join-open, #online-dialog, #online-starter')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-video-dialog, #club-open, #club-dialog, #online-host-open, #online-new-open, #online-join-open, #online-leave-open, #online-dialog, #online-starter')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
@@ -797,7 +797,7 @@ $('setup-form').onsubmit=async e=>{
  editingCurrentMatch=false;setupCopy(false);mode=totalAllowed()?preferredMode:'dart';if(!await persist())return;resetInput();render();
 };
 document.addEventListener('show-shared-setup',()=>{for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();});
-document.addEventListener('discard-current-match',event=>{if(event.detail)receive(event.detail);for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();});
+document.addEventListener('discard-current-match',event=>{if(event.detail)receive(event.detail);for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();document.dispatchEvent(new Event('open-play-menu'));});
 document.addEventListener('close-shared-setup',()=>render());
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{message('Gebruik F11 voor volledig scherm.');}};
  document.addEventListener('keydown',e=>{if(!state||state.phase!=='playing'||!$('setup').hidden||document.querySelector('dialog[open]')||mode!=='total')return;if(/^\d$/.test(e.key)){e.preventDefault();addDigit(e.key);}else if(e.key==='Backspace'){e.preventDefault();$('backspace').click();}else if(e.key==='Enter'){e.preventDefault();totalSubmit();}});

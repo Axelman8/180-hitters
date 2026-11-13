@@ -68,10 +68,16 @@ for(const [key,label] of definitions){
   if(event.target.closest('button,a'))group.open=false;
  });
 }
+document.addEventListener('open-play-menu',()=>{
+ menuCollapsed=false;
+ try{localStorage.setItem('180hitters.menuCollapsed','false');}catch{}
+ renderMenuToggle();
+ for(const group of menu.children)group.open=group.dataset.menu==='play';
+});
 
 const order={
  play:['settings','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
- online:['club-open','online-host-open','online-new-open','online-join-open'],
+ online:['club-open','online-host-open','online-new-open','online-join-open','online-leave-open'],
  connections:['android-app-action','take-control','connection-health','mouse-control-open','bluetooth-open','network-open'],
  application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','screen-orientation','desktop-update-action','android-update-action','camera-test','venue-open']
 };

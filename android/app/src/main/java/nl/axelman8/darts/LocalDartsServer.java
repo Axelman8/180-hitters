@@ -36,6 +36,7 @@ final class LocalDartsServer extends NanoHTTPD {
     private JSONObject online;
     private JSONObject setup = new JSONObject();
     private JSONObject draft;
+    private final Map<String, Long> draftSequences = new HashMap<>();
     private long draftTime;
 
     LocalDartsServer(Context context, BluetoothClient bluetooth) throws IOException, JSONException {
@@ -64,6 +65,7 @@ final class LocalDartsServer extends NanoHTTPD {
         writeAtomic(stateFile, updated.toString());
         state = updated;
         draft = null;
+        draftSequences.clear();
     }
 
     synchronized String exportTransfer() throws JSONException {
@@ -144,18 +146,22 @@ final class LocalDartsServer extends NanoHTTPD {
                 JSONObject matchState = match.optJSONObject("state");
                 if (matchState == null || matchState.optInt("version") != 2) return json(Response.Status.BAD_REQUEST, new JSONObject().put("error", "Ongeldige partij"));
                 JSONObject updated = new JSONObject().put("revision", state.getInt("revision") + 1).put("match", match);
-                writeAtomic(stateFile, updated.toString()); state = updated; draft = null;
+                writeAtomic(stateFile, updated.toString()); state = updated; draft = null; draftSequences.clear();
                 return json(Response.Status.OK, state);
             }
             case "/api/match/discard": {
                 JSONObject updated = new JSONObject().put("revision", state.getInt("revision") + 1).put("match", JSONObject.NULL);
-                writeAtomic(stateFile, updated.toString()); state = updated; draft = null;
+                writeAtomic(stateFile, updated.toString()); state = updated; draft = null; draftSequences.clear();
                 setup.put("version", setup.optInt("version") + 1).put("value", JSONObject.NULL);
                 return json(Response.Status.OK, state);
             }
             case "/api/draft": {
                 if (incoming.getInt("revision") != state.getInt("revision")) return json(Response.Status.CONFLICT, state);
-                draft = new JSONObject().put("owner", incoming.optString("owner"))
+                String owner = incoming.getString("owner"); long sequence = incoming.getLong("seq");
+                if (owner.isEmpty() || owner.length() > 80 || sequence < 0) return json(Response.Status.BAD_REQUEST, new JSONObject().put("error", "Ongeldige live worp"));
+                if (sequence <= draftSequences.getOrDefault(owner, -1L)) return json(Response.Status.OK, new JSONObject().put("ok", true).put("stale", true));
+                draftSequences.put(owner, sequence);
+                draft = new JSONObject().put("owner", owner)
                         .put("hits", incoming.optJSONArray("hits") == null ? new JSONArray() : incoming.getJSONArray("hits"))
                         .put("entry", incoming.optString("entry")).put("revision", state.getInt("revision"));
                 draftTime = System.currentTimeMillis();

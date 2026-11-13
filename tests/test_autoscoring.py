@@ -91,7 +91,7 @@ with tempfile.TemporaryDirectory() as tmp:
                 except AssertionError:
                     print('Camera:',cam(),'Browser errors:',errors,flush=True)
                     raise
-                phone.locator('#camera-game-on').wait_for(state='visible')
+                phone.locator('#camera-game-on').wait_for(state='attached')
                 return s
             setup()
             page.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
@@ -168,6 +168,20 @@ with tempfile.TemporaryDirectory() as tmp:
             Mock.value=state([(1,2),(0,1),(0,1)])
             wait(lambda:len(get()['match']['state']['history'])==1)
             assert get()['match']['state']['players'][0]['remaining']==29
+            # 4 op een rij must retain the complete live visit: dart two may
+            # never replace dart one on either the NUC or the remote controls.
+            setup('fourinarow')
+            Mock.value=state([(20,1)])
+            wait(lambda:len((get().get('draft') or {}).get('hits',[]))==1)
+            phone.wait_for_function("document.querySelectorAll('.four-darts span')[1]?.getAttribute('aria-current') === 'step'")
+            assert phone.locator('.four-darts span').nth(0).inner_text()=='20'
+            Mock.value=state([(20,1),(19,1)])
+            wait(lambda:len((get().get('draft') or {}).get('hits',[]))==2)
+            phone.wait_for_function("document.querySelectorAll('.four-darts span')[2]?.getAttribute('aria-current') === 'step'")
+            assert phone.locator('.four-darts span').nth(0).inner_text()=='20'
+            assert phone.locator('.four-darts span').nth(1).inner_text()=='19'
+            Mock.value=state([(20,1),(19,1),(18,1)])
+            wait(lambda:len(get()['match']['state']['history'])==1)
             setup(extra={'training121':True})
             Mock.value=state([(20,3),(11,3),(14,2)])
             wait(lambda:len(get()['match']['state']['history'])==1)
@@ -196,6 +210,7 @@ with tempfile.TemporaryDirectory() as tmp:
             assert Mock.value['running'] is True
             # Only the header contains camera controls; Settings has no duplicate.
             assert phone.locator('#autoscoring-open').count()==0
+            if phone.locator('#toggle-toolbar').get_attribute('aria-expanded')=='false': phone.locator('#toggle-toolbar').click()
             phone.locator('#camera-game-off').click()
             wait(lambda:not cam()['enabled'])
             phone.locator('#camera-game-on').click()
