@@ -3,7 +3,7 @@ const MAX_AGE = 8 * 60 * 60 * 1000;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type,X-Club-Token',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Cache-Control': 'no-store'
 };
@@ -31,11 +31,33 @@ function cleanMatch(value, allowFinished = true) {
 
 function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
 
+async function registry(env, path, value = {}, request = null) {
+  if (!env.CLUB_CODE || !env.ADMIN_SETUP_CODE) return path === '/authorize' ? { approved: true, name: value.name || '' } : null;
+  const headers = { 'Content-Type': 'application/json', 'X-Client-IP': request?.headers.get('CF-Connecting-IP') || 'unknown' };
+  const result = await env.CLUB.get(env.CLUB.idFromName('global')).fetch(`https://club.internal${path}`, {
+    method: 'POST', headers, body: JSON.stringify(value)
+  });
+  const data = await result.json();
+  if (!result.ok) return { error: data.error || 'Clubtoegang geweigerd.', status: result.status };
+  return data;
+}
+
+async function approvedMember(env, accessToken, request, name = '') {
+  const result = await registry(env, '/authorize', { accessToken, name }, request);
+  return result?.approved ? result : null;
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     const url = new URL(request.url);
     if (url.pathname === '/health') return response({ ok: true, service: '180-hitters-online' });
+    if (url.pathname.startsWith('/club/') && request.method === 'POST') {
+      const allowed = new Set(['/club/register', '/club/status', '/club/admin/activate', '/club/admin/list', '/club/admin/action']);
+      if (!allowed.has(url.pathname)) return response({ error: 'Onbekend clubverzoek.' }, 404);
+      const result = await registry(env, url.pathname.slice(5), await request.json(), request);
+      return result?.error ? response({ error: result.error }, result.status) : response(result || { error: 'Clubregistratie is niet ingesteld.' }, result ? 200 : 503);
+    }
     if (url.pathname === '/' && request.method === 'GET') {
       const roomCode = String(url.searchParams.get('dartbaan') || '').toUpperCase();
       if (!/^[A-Z2-9]{6}$/.test(roomCode)) return response({ error: 'Ongeldige of ontbrekende dartbaancode.' }, 400);
@@ -43,14 +65,19 @@ export default {
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
     }
     if (url.pathname === '/lobby' && request.method === 'GET') {
+      if (!await approvedMember(env, request.headers.get('X-Club-Token'), request)) return response({ error: 'Registreer of wacht op goedkeuring voordat je online dart.' }, 403);
       return env.LOBBY.get(env.LOBBY.idFromName('global')).fetch(request);
     }
     if (url.pathname === '/rooms' && request.method === 'POST') {
+      const incoming = await request.json();
+      const member = await approvedMember(env, incoming.accessToken, request, incoming.name);
+      if (!member) return response({ error: 'Alleen goedgekeurde clubspelers kunnen een dartbaan aanmaken.' }, 403);
+      incoming.name = member.name;
+      if (incoming.match?.state?.players?.[0]) incoming.match.state.players[0].name = member.name;
       let roomCode = code();
-      const body = await request.text();
       const id = env.ROOMS.idFromName(roomCode);
       return env.ROOMS.get(id).fetch(new Request(`${url.origin}/create?code=${roomCode}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(incoming)
       }));
     }
     const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|leave|starter|draft|state|socket|close))?$/i);
@@ -58,6 +85,13 @@ export default {
     const roomCode = match[1].toUpperCase();
     const id = env.ROOMS.idFromName(roomCode);
     const target = new URL(request.url); target.pathname = match[2] || '/room';
+    if (request.method === 'POST' && match[3] === 'join') {
+      const incoming = await request.json();
+      const member = await approvedMember(env, incoming.accessToken, request, incoming.name);
+      if (!member) return response({ error: 'Alleen goedgekeurde clubspelers kunnen deelnemen.' }, 403);
+      incoming.name = member.name;
+      return env.ROOMS.get(id).fetch(new Request(target, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(incoming) }));
+    }
     return env.ROOMS.get(id).fetch(new Request(target, request));
   }
 };
@@ -255,5 +289,88 @@ export class Lobby {
     await this.state.storage.put('rooms', rooms);
     return response({ rooms: Object.values(rooms).filter(room => room.joined < room.capacity)
       .sort((a, b) => b.updated - a.updated) });
+  }
+}
+
+export class ClubRegistry {
+  constructor(state, env) { this.state = state; this.env = env; }
+
+  async members() { return await this.state.storage.get('members') || []; }
+  cleanName(value) {
+    const name = String(value || '').trim().replace(/\s+/g, ' ');
+    if (name.length < 2 || name.length > 24 || /[\u0000-\u001f<>]/.test(name)) throw new Error('Gebruik een naam van 2 tot 24 tekens.');
+    return name;
+  }
+  publicMember(member) {
+    return { id: member.id, name: member.name, status: member.status, isAdmin: !!member.isAdmin,
+      createdAt: member.createdAt, updatedAt: member.updatedAt };
+  }
+  async save(members) { await this.state.storage.put('members', members); }
+  async fetch(request) {
+    try {
+      if (request.method !== 'POST') return response({ error: 'Onbekend clubverzoek.' }, 404);
+      const url = new URL(request.url), incoming = await request.json(), now = Date.now();
+      const members = await this.members();
+      if (url.pathname === '/register') {
+        if (String(incoming.clubCode || '') !== String(this.env.CLUB_CODE || '')) return response({ error: 'De clubcode is niet juist.' }, 403);
+        const ip = request.headers.get('X-Client-IP') || 'unknown', day = Math.floor(now / 86400000), rateKey = `rate:${ip}`;
+        const rate = await this.state.storage.get(rateKey) || { day, count: 0 };
+        if (rate.day !== day) Object.assign(rate, { day, count: 0 });
+        if (++rate.count > 3) return response({ error: 'Vanaf dit netwerk zijn vandaag te veel aanvragen gedaan.' }, 429);
+        await this.state.storage.put(rateKey, rate);
+        const name = this.cleanName(incoming.name);
+        if (members.some(member => member.name.localeCompare(name, 'nl', { sensitivity: 'base' }) === 0 && member.status !== 'rejected')) return response({ error: 'Deze spelersnaam is al geregistreerd of wacht op goedkeuring.' }, 409);
+        if (members.filter(member => member.status === 'pending').length >= 20) return response({ error: 'Er wachten te veel aanvragen. Probeer het later opnieuw.' }, 429);
+        const member = { id: crypto.randomUUID(), name, status: 'pending', requestToken: `${crypto.randomUUID()}${crypto.randomUUID()}`,
+          accessToken: null, isAdmin: false, createdAt: now, updatedAt: now };
+        members.push(member); await this.save(members);
+        return response({ member: this.publicMember(member), requestToken: member.requestToken }, 201);
+      }
+      if (url.pathname === '/status') {
+        const token = String(incoming.requestToken || incoming.accessToken || '');
+        const member = members.find(item => item.requestToken === token || item.accessToken === token);
+        if (!member) return response({ error: 'Registratie niet gevonden.' }, 404);
+        return response({ member: this.publicMember(member), accessToken: member.status === 'approved' ? member.accessToken : null });
+      }
+      if (url.pathname === '/authorize') {
+        const member = members.find(item => item.accessToken && item.accessToken === incoming.accessToken && item.status === 'approved');
+        return member ? response({ approved: true, id: member.id, name: member.name, isAdmin: !!member.isAdmin }) : response({ approved: false }, 403);
+      }
+      if (url.pathname === '/admin/activate') {
+        if (String(incoming.adminCode || '') !== String(this.env.ADMIN_SETUP_CODE || '')) return response({ error: 'De beheerderscode is niet juist.' }, 403);
+        let adminToken = await this.state.storage.get('adminToken');
+        if (!adminToken) { adminToken = `${crypto.randomUUID()}${crypto.randomUUID()}`; await this.state.storage.put('adminToken', adminToken); }
+        let member = members.find(item => item.isAdmin);
+        if (!member) {
+          const name = this.cleanName(incoming.name || 'Axelman8');
+          member = { id: crypto.randomUUID(), name, status: 'approved', requestToken: null,
+            accessToken: `${crypto.randomUUID()}${crypto.randomUUID()}`, isAdmin: true, createdAt: now, updatedAt: now };
+          members.push(member); await this.save(members);
+        }
+        return response({ adminToken, accessToken: member.accessToken, member: this.publicMember(member) });
+      }
+      const adminToken = await this.state.storage.get('adminToken');
+      if (!adminToken || incoming.adminToken !== adminToken) return response({ error: 'Beheerderstoegang geweigerd.' }, 403);
+      if (url.pathname === '/admin/list') return response({ members: members.map(member => this.publicMember(member)), pending: members.filter(member => member.status === 'pending').length });
+      if (url.pathname === '/admin/action') {
+        const index = members.findIndex(member => member.id === incoming.id);
+        if (index < 0) return response({ error: 'Gebruiker niet gevonden.' }, 404);
+        const action = incoming.action, member = members[index];
+        if (member.isAdmin && ['block', 'reject', 'delete'].includes(action)) return response({ error: 'Het beheerdersaccount kan niet worden verwijderd.' }, 409);
+        if (action === 'delete') members.splice(index, 1);
+        else if (['approve', 'reject', 'block'].includes(action)) {
+          const approved = members.filter(item => item.status === 'approved').length;
+          if (action === 'approve' && approved >= 30) return response({ error: 'De clublimiet van 30 gebruikers is bereikt.' }, 409);
+          member.status = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'blocked';
+          if (action === 'approve' && !member.accessToken) member.accessToken = `${crypto.randomUUID()}${crypto.randomUUID()}`;
+          member.updatedAt = now;
+        } else return response({ error: 'Onbekende beheeractie.' }, 400);
+        await this.save(members);
+        return response({ members: members.map(item => this.publicMember(item)), pending: members.filter(item => item.status === 'pending').length });
+      }
+      return response({ error: 'Onbekend clubverzoek.' }, 404);
+    } catch (error) {
+      return response({ error: error?.message || 'Ongeldige clubgegevens.' }, 400);
+    }
   }
 }

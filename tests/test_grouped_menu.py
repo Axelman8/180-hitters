@@ -10,7 +10,11 @@ with tempfile.TemporaryDirectory() as tmp:
    b=p.chromium.launch()
    for width,height,query in [(320,740,'?remote=1'),(393,852,'?remote=1'),(768,850,'?remote=1'),(1080,1920,'')]:
     print('Testing',width,flush=True)
-    page=b.new_page(viewport={'width':width,'height':height});page.goto('http://127.0.0.1:8788/'+query)
+    page=b.new_page(viewport={'width':width,'height':height})
+    page.add_init_script("localStorage.setItem('180hitters.club.v1',JSON.stringify({accessToken:'test-access',member:{id:'1',name:'Axel',status:'approved'}}))")
+    page.route('**/club/status',lambda route:route.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps({'accessToken':'test-access','member':{'id':'1','name':'Axel','status':'approved'}})))
+    page.route('**/lobby',lambda route:route.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body='{"rooms":[]}'))
+    page.goto('http://127.0.0.1:8788/'+query)
     expect(page.locator('#header-menu')).to_be_visible()
     expect(page.locator('#toggle-toolbar')).to_be_visible()
     expect(page.locator('#toggle-toolbar')).to_have_text('Menu inklappen')
@@ -55,7 +59,9 @@ with tempfile.TemporaryDirectory() as tmp:
     expect(page.locator('#header-menu details[open]')).to_have_count(0)
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     page.close()
-   active=b.new_page(viewport={'width':393,'height':852});active.add_init_script("window.WebSocket=class{static OPEN=1;static CONNECTING=0;constructor(){this.readyState=3}close(){}}");active.goto('http://127.0.0.1:8788/?remote=1')
+   active=b.new_page(viewport={'width':393,'height':852});active.add_init_script("window.WebSocket=class{static OPEN=1;static CONNECTING=0;constructor(){this.readyState=3}close(){}};localStorage.setItem('180hitters.club.v1',JSON.stringify({accessToken:'test-access',member:{id:'1',name:'Axel',status:'approved'}}))")
+   active.route('**/club/status',lambda route:route.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps({'accessToken':'test-access','member':{'id':'1','name':'Axel','status':'approved'}})))
+   active.goto('http://127.0.0.1:8788/?remote=1')
    active.evaluate("""async()=>fetch('/api/online/local',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:true,ready:false,role:0,code:'ABC234',base:'https://180-hitters-online.180-hitters-online.workers.dev',key:'12345678901234567890',remoteRevision:1})})""")
    pending={'code':'ABC234','revision':2,'joined':2,'capacity':2,'public':True,'starter':None,'starterPending':True,'match':{'undo':[],'state':{'version':2,'game':'fourinarow','phase':'playing','active':0,'history':[],'players':[{'name':'Axel'},{'name':'Bert'}],'fourBoard':['bb']*25,'fourOwners':[None]*25}}}
    def room_route(route):route.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps(pending))

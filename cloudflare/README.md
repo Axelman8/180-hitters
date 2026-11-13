@@ -20,6 +20,23 @@ The production endpoint is:
 The Android app, tablet interface and NUC client use the same endpoint. A lane
 expires automatically eight hours after its last activity.
 
+## Club access
+
+Online play uses a small private club registry in a SQLite Durable Object. A
+player enters the shared club code, the administrator approves the request,
+and the device receives its own access token. Registration is limited per IP
+address and both pending and approved account totals are capped.
+
+Set the two Worker secrets before deploying:
+
+```sh
+npx wrangler secret put CLUB_CODE
+npx wrangler secret put ADMIN_SETUP_CODE
+```
+
+The first secret is shared with club members. The second is only used by the
+administrator to activate the approval screen on a device.
+
 ## Verification
 
 With `ONLINE_TEST_BASE` set to the deployed endpoint, run:

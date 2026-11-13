@@ -6,12 +6,15 @@
   "durable_objects": {
     "bindings": [
       { "name": "ROOMS", "class_name": "DartRoom" },
-      { "name": "LOBBY", "class_name": "Lobby" }
+      { "name": "LOBBY", "class_name": "Lobby" },
+      { "name": "CLUB", "class_name": "ClubRegistry" }
     ]
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["DartRoom"] },
-    { "tag": "v2", "new_sqlite_classes": ["Lobby"] }
+    { "tag": "v2", "new_sqlite_classes": ["Lobby"] },
+    { "tag": "v3", "new_sqlite_classes": ["ClubRegistry"] }
   ],
+  "secrets": { "required": ["CLUB_CODE", "ADMIN_SETUP_CODE"] },
   "observability": { "enabled": true }
 }
