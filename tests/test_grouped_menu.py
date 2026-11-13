@@ -27,6 +27,10 @@ with tempfile.TemporaryDirectory() as tmp:
     expect(page.locator('#online-join-open')).to_have_text('Deelnemen aan online dartbaan')
     assert page.locator('#online-host-open').evaluate("e=>e.closest('details').dataset.menu")=='online'
     page.locator('#online-host-open').click();expect(page.locator('#online-dialog')).to_be_visible()
+    expect(page.locator('#online-video-open')).to_be_visible()
+    page.locator('#online-video-open').click();expect(page.locator('#online-video-dialog')).to_be_visible()
+    expect(page.locator('#online-video-dialog video')).to_have_attribute('src','https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Online-darten-uitleg.mp4')
+    page.locator('#online-video-dialog').get_by_role('button',name='Sluiten').click()
     expect(page.locator('#online-host-section')).to_be_visible();expect(page.locator('#online-join-section')).to_be_hidden()
     expect(page.locator('#online-public')).to_be_checked()
     expect(page.locator('#online-share')).to_be_hidden()

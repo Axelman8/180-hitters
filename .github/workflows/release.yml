@@ -148,6 +148,7 @@ jobs:
           demo/180-Hitters-Gotcha-uitleg.mp4
           demo/180-Hitters-Hitters-Challenge-uitleg.mp4
           demo/180-Hitters-Bobs-27-uitleg.mp4
+          demo/180-Hitters-Online-darten-uitleg.mp4
           --title "180 Hitters ${GITHUB_REF_NAME}"
           --generate-notes
 
