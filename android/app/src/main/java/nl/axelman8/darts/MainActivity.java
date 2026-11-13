@@ -34,6 +34,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class MainActivity extends Activity {
+    private static final int NOTIFICATION_PERMISSION_REQUEST=42;
     private WebView web;
     private LocalDartsServer localServer;
     private BluetoothClient bluetooth;
@@ -50,6 +51,8 @@ public final class MainActivity extends Activity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         preferences = getSharedPreferences("axelman8", MODE_PRIVATE);
+        ClubRequestWorker.createChannel(this);
+        if(!preferences.getString("club_admin_token","").isEmpty()) ClubRequestWorker.schedule(this);
         bluetooth = new BluetoothClient();
         updater = new AppUpdater(this);
         readOnlineInvite(getIntent());
@@ -113,6 +116,28 @@ public final class MainActivity extends Activity {
 
     private boolean hasBluetoothPermission() {
         return Build.VERSION.SDK_INT < 31 || checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestClubNotificationPermission() {
+        ClubRequestWorker.createChannel(this);
+        if(ClubRequestWorker.allowed(this)){ClubRequestWorker.schedule(this);return;}
+        if(Build.VERSION.SDK_INT<33||checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)==PackageManager.PERMISSION_GRANTED){openClubNotificationSettings();return;}
+        boolean asked=preferences.getBoolean("club_notifications_asked",false);
+        if(!asked||shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)){
+            preferences.edit().putBoolean("club_notifications_asked",true).apply();
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},NOTIFICATION_PERMISSION_REQUEST);
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("Meldingen inschakelen")
+                .setMessage("Meldingen zijn voor 180 Hitters uitgeschakeld. Schakel Clubaanvragen in zodat je nieuwe spelers direct ziet.")
+                .setPositiveButton("Meldinginstellingen",(dialog,which)->openClubNotificationSettings()).setNegativeButton("Later",null).show();
+    }
+
+    private void openClubNotificationSettings(){startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName()));}
+
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
+        super.onRequestPermissionsResult(requestCode,permissions,results);
+        if(requestCode==NOTIFICATION_PERMISSION_REQUEST&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)ClubRequestWorker.schedule(this);
     }
 
     private void chooseBluetooth() {
@@ -222,6 +247,19 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void repairConnection(){if(bluetooth!=null)bluetooth.closeSocket();}
         @JavascriptInterface public String getControlToken(){return "d7c87006c31f4da2a4348eeb05b59c8b";}
         @JavascriptInterface public void checkForUpdate(){runOnUiThread(()->updater.check(true));}
+        @JavascriptInterface public void configureClubNotifications(String adminToken){
+            if(adminToken==null||adminToken.length()<40||adminToken.length()>200)return;
+            preferences.edit().putString("club_admin_token",adminToken).apply();
+            runOnUiThread(()->{ClubRequestWorker.createChannel(MainActivity.this);if(!preferences.getBoolean("club_notifications_asked",false))requestClubNotificationPermission();ClubRequestWorker.schedule(MainActivity.this);});
+        }
+        @JavascriptInterface public boolean clubNotificationsEnabled(){return ClubRequestWorker.allowed(MainActivity.this);}
+        @JavascriptInterface public void requestClubNotifications(){runOnUiThread(MainActivity.this::requestClubNotificationPermission);}
+        @JavascriptInterface public void notifyClubRequests(int pending){
+            if(pending<0||pending>30)return;
+            int previous=preferences.getInt("club_pending_notified",0);
+            if(pending==0||ClubRequestWorker.allowed(MainActivity.this))preferences.edit().putInt("club_pending_notified",pending).apply();
+            if(pending>0&&pending!=previous)ClubRequestWorker.show(MainActivity.this,pending);
+        }
         @JavascriptInterface public void shareText(String text){
             if(text==null||text.isEmpty()||text.length()>4000)return;
             runOnUiThread(()->{try {
