@@ -746,7 +746,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if self.path == '/api/online/local':
                     active=incoming.get('active');ready=incoming.get('ready',False);role=incoming.get('role');code=incoming.get('code','');base=incoming.get('base','');key=incoming.get('key','');remote_revision=incoming.get('remoteRevision',0)
                     if type(active) is not bool or type(ready) is not bool or (active and (type(role) is not int or not 0<=role<=3)) or not isinstance(code,str) or len(code)>12 or not isinstance(key,str) or len(key)>100 or type(remote_revision) is not int:raise ValueError()
-                    if active and (not re.fullmatch(r'https://[a-z0-9-]+\.trycloudflare\.com',base) or not re.fullmatch(r'[A-Z2-9]{6}',code) or len(key)<20):raise ValueError()
+                    allowed_base = re.fullmatch(r'https://(?:[a-z0-9-]+\.trycloudflare\.com|180-hitters-online\.180-hitters-online\.workers\.dev)', base)
+                    if active and (not allowed_base or not re.fullmatch(r'[A-Z2-9]{6}',code) or len(key)<20):raise ValueError()
                     with lock:
                         online_local.update(active=active,ready=ready if active else False,role=role if active else None,code=code if active else '',base=base if active else '',key=key if active else '',remoteRevision=remote_revision if active else 0)
                         follow_camera()
