@@ -53,7 +53,7 @@ export default {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body
       }));
     }
-    const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|leave|state|socket|close))?$/i);
+    const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|leave|starter|state|socket|close))?$/i);
     if (!match) return response({ error: 'Onbekend verzoek.' }, 404);
     const roomCode = match[1].toUpperCase();
     const id = env.ROOMS.idFromName(roomCode);
@@ -74,7 +74,8 @@ export class DartRoom {
   public(room) {
     return { code: room.code, revision: room.revision, match: room.match,
       joined: room.keys.filter(Boolean).length, capacity: room.keys.length, updated: room.updated,
-      public: room.public !== false };
+      public: room.public !== false, starter: Number.isInteger(room.starter) ? room.starter : null,
+      starterPending: !room.started && room.keys.every(Boolean) };
   }
   async updateLobby(room, remove = false) {
     const lobby = this.env.LOBBY.get(this.env.LOBBY.idFromName('global'));
@@ -103,7 +104,7 @@ export class DartRoom {
         for (let index = 1; index < match.state.players.length; index++) match.state.players[index].name = `Wachten op speler ${index + 1}`;
         const keys = [crypto.randomUUID(), ...Array(match.state.players.length - 1).fill(null)];
         const room = { code: url.searchParams.get('code'), keys, match, revision: 1,
-          updated: Date.now(), public: incoming.public !== false };
+          updated: Date.now(), public: incoming.public !== false, started: false, starter: null };
         await this.save(room);
         await this.updateLobby(room);
         return response({ ...this.public(room), key: keys[0], role: 0 }, 201);
@@ -137,6 +138,21 @@ export class DartRoom {
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
         return response({ ...this.public(room), key: room.keys[role], role });
       }
+      if (request.method === 'POST' && url.pathname === '/starter') {
+        const incoming = await request.json();
+        if (!room.keys.includes(incoming.key)) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
+        if (room.started) return response({ error: 'De startspeler is al gekozen.' }, 409);
+        if (!room.keys.every(Boolean)) return response({ error: 'Wacht tot alle spelers aanwezig zijn.' }, 409);
+        const starter = incoming.starter;
+        if (!Number.isInteger(starter) || starter < 0 || starter >= room.keys.length) throw new Error('Kies een geldige speler.');
+        if (room.match.state.history.length) throw new Error('De partij is al begonnen.');
+        room.starter = starter;
+        room.match.state.active = starter;
+        room.started = true;
+        room.revision++;
+        await this.save(room); await this.updateLobby(room); await this.broadcast(room);
+        return response(this.public(room));
+      }
       if (request.method === 'POST' && url.pathname === '/leave') {
         const incoming = await request.json();
         const role = room.keys.indexOf(incoming.key);
@@ -152,6 +168,7 @@ export class DartRoom {
         const incoming = await request.json();
         const role = room.keys.indexOf(incoming.key);
         if (role < 0) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
+        if (!room.started || !room.keys.every(Boolean)) return response({ error: 'Wacht tot alle spelers aanwezig zijn en de startspeler is gekozen.' }, 409);
         if (incoming.revision !== room.revision) return response(this.public(room), 409);
         const next = cleanMatch(incoming.match), old = room.match.state, state = next.state;
         if (old.active !== role) return response({ error: 'De tegenstander is aan de beurt.' }, 403);

@@ -77,7 +77,7 @@ if(remote){
  // Read-only on followers, while device menus and the takeover button remain usable.
  for(const type of ['click','keydown','submit','change','input'])document.addEventListener(type,event=>{
   if(canControl()||!event.isTrusted)return;
- if(event.target.closest('#result-later,.result-local-continue,.lives-summary-share,.game-report-share,#archive-report-dialog,#connection-health,#connection-health-dialog,#mouse-control-open,#mouse-control-dialog,#camera-game-controls,#autoscoring-open,#autoscoring-dialog,#desktop-update-action,#desktop-update-dialog,#transfer-dialog,#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#players-list,#players-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock,.wizard-video-link,#game-video-dialog,#online-host-open,#online-new-open,#online-join-open,#online-dialog'))return;
+ if(event.target.closest('#result-later,.result-local-continue,.lives-summary-share,.game-report-share,#archive-report-dialog,#connection-health,#connection-health-dialog,#mouse-control-open,#mouse-control-dialog,#camera-game-controls,#autoscoring-open,#autoscoring-dialog,#desktop-update-action,#desktop-update-dialog,#transfer-dialog,#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#players-list,#players-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock,.wizard-video-link,#game-video-dialog,#online-host-open,#online-new-open,#online-join-open,#online-dialog,#online-starter'))return;
   event.preventDefault();event.stopImmediatePropagation();
  },true);
 }

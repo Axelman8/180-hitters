@@ -51,11 +51,14 @@ with tempfile.TemporaryDirectory() as tmp:
     expect(page.locator('#header-menu details[open]')).to_have_count(0)
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     page.close()
-   active=b.new_page(viewport={'width':393,'height':852});active.goto('http://127.0.0.1:8788/?remote=1')
+   active=b.new_page(viewport={'width':393,'height':852});active.add_init_script("window.WebSocket=class{static OPEN=1;static CONNECTING=0;constructor(){this.readyState=3}close(){}}");active.goto('http://127.0.0.1:8788/?remote=1')
    active.evaluate("""async()=>fetch('/api/online/local',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:true,ready:false,role:0,code:'ABC234',base:'https://180-hitters-online.180-hitters-online.workers.dev',key:'12345678901234567890',remoteRevision:1})})""")
-   remote={'code':'ABC234','revision':1,'joined':1,'capacity':2,'public':True,'match':{'undo':[],'state':{'version':2,'game':'fourinarow','phase':'playing','active':0,'history':[],'players':[{'name':'Axel'},{'name':'Wachten op speler 2'}],'fourBoard':['bb']*25,'fourOwners':[None]*25}}}
-   active.route('https://180-hitters-online.180-hitters-online.workers.dev/rooms/ABC234*',lambda route:route.fulfill(status=200,content_type='application/json',body=json.dumps(remote)))
-   active.reload();active.locator('summary',has_text='Online darten').click()
+   pending={'code':'ABC234','revision':2,'joined':2,'capacity':2,'public':True,'starter':None,'starterPending':True,'match':{'undo':[],'state':{'version':2,'game':'fourinarow','phase':'playing','active':0,'history':[],'players':[{'name':'Axel'},{'name':'Bert'}],'fourBoard':['bb']*25,'fourOwners':[None]*25}}}
+   def room_route(route):route.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps(pending))
+   active.route('**/rooms/ABC234*',room_route)
+   active.reload();expect(active.locator('#online-starter-name')).to_have_text('Wie begint?');expect(active.locator('#online-starter-options button')).to_have_text(['Axel','Bert'])
+   active.locator('#online-starter').evaluate('element=>element.hidden=true')
+   active.locator('summary',has_text='Online darten').click()
    expect(active.locator('#online-host-open')).to_have_text('Actieve dartbaan openen')
    expect(active.locator('#online-join-open')).to_be_hidden();expect(active.locator('#online-new-open')).to_be_visible();active.locator('#online-host-open').click()
    expect(active.locator('#online-host-section')).to_be_hidden();expect(active.locator('#online-join-section')).to_be_hidden()
