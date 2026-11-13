@@ -60,19 +60,40 @@ current = request(f"/rooms/{host['code']}?key={host['key']}")[1]
 starter = current['starter']
 keys = [host['key'], *[guest['key'] for guest in guests]]
 wrong_role = (starter + 1) % 4
+assert request(f"/rooms/{host['code']}/draft", 'POST',
+               {'key': keys[wrong_role], 'seq': 1, 'hits': []})[0] == 403
+status, first_dart = request(f"/rooms/{host['code']}/draft", 'POST',
+                             {'key': keys[starter], 'seq': 1,
+                              'hits': [{'number': 20, 'mult': 1, 'cell': 3, 'label': '20'}]})
+assert status == 200 and first_dart['draft']['role'] == starter and len(first_dart['draft']['hits']) == 1
+status, second_dart = request(f"/rooms/{host['code']}/draft", 'POST',
+                              {'key': keys[starter], 'seq': 2,
+                               'hits': [{'number': 20, 'mult': 1, 'cell': 3, 'label': '20'},
+                                        {'number': 5, 'mult': 2, 'cell': 8, 'label': 'D5'}]})
+assert status == 200 and len(second_dart['draft']['hits']) == 2
 wrong = copy.deepcopy(current['match'])
 wrong['state']['history'].append({'player': wrong_role})
 wrong['state']['active'] = (wrong_role + 1) % 4
 assert request(f"/rooms/{host['code']}/state", 'POST',
                {'key': keys[wrong_role], 'revision': current['revision'], 'match': wrong})[0] == 403
-won = copy.deepcopy(current['match'])
-won['state']['history'].append({'player': starter, 'darts': 1})
-won['state'].update(phase='won', winner=starter)
+stuck = copy.deepcopy(current['match'])
+stuck['state']['history'].append({'player': starter, 'darts': 3})
+assert request(f"/rooms/{host['code']}/state", 'POST',
+               {'key': keys[starter], 'revision': current['revision'], 'match': stuck})[0] == 400
+played = copy.deepcopy(current['match'])
+played['state']['history'].append({'player': starter, 'darts': 3})
+played['state']['active'] = wrong_role
+status, advanced = request(f"/rooms/{host['code']}/state", 'POST',
+                           {'key': keys[starter], 'revision': current['revision'], 'match': played})
+assert status == 200 and advanced['match']['state']['active'] == wrong_role and advanced['draft'] is None
+won = copy.deepcopy(advanced['match'])
+won['state']['history'].append({'player': wrong_role, 'darts': 1})
+won['state'].update(phase='won', winner=wrong_role)
 status, final = request(f"/rooms/{host['code']}/state", 'POST',
-                        {'key': keys[starter], 'revision': current['revision'], 'match': won})
+                        {'key': keys[wrong_role], 'revision': advanced['revision'], 'match': won})
 assert status == 200 and final['match']['state']['phase'] == 'won'
 assert request(f"/rooms/{host['code']}/close", 'POST', {'key': guests[0]['key']})[0] == 403
 assert request(f"/rooms/{host['code']}/close", 'POST', {'key': host['key']}) == (200, {'ok': True, 'closed': True})
 assert request(f"/rooms/{host['code']}?key={host['key']}")[0] == 404
 assert all(room['code'] != host['code'] for room in request('/lobby')[1]['rooms'])
-print('PASS: lobby, chosen starter, leave/rejoin, four players, turn ownership and close work')
+print('PASS: lobby, starter, live darts, automatic next turn, ownership and close work')

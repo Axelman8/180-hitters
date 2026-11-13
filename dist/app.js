@@ -62,6 +62,7 @@ let sharedDraft=null,draftSequence=0,draftWrites=0;
 async function publishDraft(){
  if(!state||state.phase!=='playing'||!ready||busy)return;
  const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult,cell,label})=>({number,mult,cell,label})),entry:mode==='total'&&!cricket()?entry:''};
+ document.dispatchEvent(new CustomEvent('dart-draft-changed',{detail:payload}));
  draftWrites++;
  try{const res=await fetch('/api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(4000)});if(!res.ok&&payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer de stand.');}catch{if(payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer je verbinding.');}
  finally{draftWrites--;}
@@ -130,6 +131,7 @@ async function synchronize(){
   else if(data.revision!==revision)receive(data);
   if(!draftWrites&&requestedDraftSequence===draftSequence){
    const draft=data.draft?.revision===revision?data.draft:null;
+   document.dispatchEvent(new CustomEvent('dart-draft-observed',{detail:draft}));
    const hits=draft?.hits||[];
    const nextEntry=draft?draft.entry||'':editTurn&&!editTurn.hits?String(editTurn.score??0):'';
    if(entry!==nextEntry){entry=nextEntry;renderInput();}

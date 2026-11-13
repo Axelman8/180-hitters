@@ -53,7 +53,7 @@ export default {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body
       }));
     }
-    const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|leave|starter|state|socket|close))?$/i);
+    const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|leave|starter|draft|state|socket|close))?$/i);
     if (!match) return response({ error: 'Onbekend verzoek.' }, 404);
     const roomCode = match[1].toUpperCase();
     const id = env.ROOMS.idFromName(roomCode);
@@ -75,7 +75,7 @@ export class DartRoom {
     return { code: room.code, revision: room.revision, match: room.match,
       joined: room.keys.filter(Boolean).length, capacity: room.keys.length, updated: room.updated,
       public: room.public !== false, starter: Number.isInteger(room.starter) ? room.starter : null,
-      starterPending: !room.started && room.keys.every(Boolean) };
+      starterPending: !room.started && room.keys.every(Boolean), draft: room.draft || null };
   }
   async updateLobby(room, remove = false) {
     const lobby = this.env.LOBBY.get(this.env.LOBBY.idFromName('global'));
@@ -104,7 +104,7 @@ export class DartRoom {
         for (let index = 1; index < match.state.players.length; index++) match.state.players[index].name = `Wachten op speler ${index + 1}`;
         const keys = [crypto.randomUUID(), ...Array(match.state.players.length - 1).fill(null)];
         const room = { code: url.searchParams.get('code'), keys, match, revision: 1,
-          updated: Date.now(), public: incoming.public !== false, started: false, starter: null };
+          updated: Date.now(), public: incoming.public !== false, started: false, starter: null, draft: null };
         await this.save(room);
         await this.updateLobby(room);
         return response({ ...this.public(room), key: keys[0], role: 0 }, 201);
@@ -149,8 +149,30 @@ export class DartRoom {
         room.starter = starter;
         room.match.state.active = starter;
         room.started = true;
+        room.draft = null;
         room.revision++;
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
+        return response(this.public(room));
+      }
+      if (request.method === 'POST' && url.pathname === '/draft') {
+        const incoming = await request.json();
+        const role = room.keys.indexOf(incoming.key);
+        if (role < 0) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
+        if (!room.started || !room.keys.every(Boolean)) return response({ error: 'De partij is nog niet gestart.' }, 409);
+        if (room.match.state.phase !== 'playing') return response({ error: 'De partij is afgelopen.' }, 409);
+        if (room.match.state.active !== role) return response({ error: 'De tegenstander is aan de beurt.' }, 403);
+        const seq = incoming.seq, hits = incoming.hits;
+        if (!Number.isSafeInteger(seq) || seq < 0 || !Array.isArray(hits) || hits.length > 3) throw new Error('Ongeldige live worp.');
+        const cleanHits = hits.map(hit => {
+          const number = hit?.number, mult = hit?.mult, cell = hit?.cell;
+          if (!Number.isInteger(number) || ![0, ...Array.from({ length: 20 }, (_, index) => index + 1), 25].includes(number) ||
+              ![1, 2, 3].includes(mult) || (number === 25 && mult === 3) ||
+              !(cell === null || Number.isInteger(cell) && cell >= 0 && cell < 25)) throw new Error('Ongeldige pijl in live worp.');
+          return { number, mult, cell: cell ?? null, label: String(hit.label || '').slice(0, 20) };
+        });
+        if (room.draft?.role === role && seq <= room.draft.seq) return response(this.public(room));
+        room.draft = { role, seq, hits: cleanHits };
+        await this.save(room); await this.broadcast(room);
         return response(this.public(room));
       }
       if (request.method === 'POST' && url.pathname === '/leave') {
@@ -177,7 +199,10 @@ export class DartRoom {
             !same(state.players.map(player => player.name), old.players.map(player => player.name))) {
           throw new Error('Alleen één nieuwe eigen beurt mag worden verzonden.');
         }
-        room.match = next; room.revision++;
+        const expectedActive = (role + 1) % room.keys.length;
+        if (state.phase === 'playing' && state.active !== expectedActive) throw new Error('Na de beurt moet de volgende speler aan de beurt zijn.');
+        if (state.phase === 'won' && (![role, null].includes(state.winner) || state.active !== role)) throw new Error('De winnaar en actieve speler komen niet overeen.');
+        room.match = next; room.draft = null; room.revision++;
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
         return response(this.public(room));
       }

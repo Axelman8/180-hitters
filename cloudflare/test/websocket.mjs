@@ -20,6 +20,11 @@ const starter=await fetch(`${base}/rooms/${host.code}/starter`,{method:'POST',he
 if(!starter.ok)throw Error(`Startspeler kiezen gaf HTTP ${starter.status}`);
 const started=await starterBroadcast;
 if(started.starter!==1||started.starterPending||started.match.state.active!==1)throw Error('De gekozen startspeler werd niet realtime doorgegeven');
+const draftBroadcast=next();
+const draft=await fetch(`${base}/rooms/${host.code}/draft`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:(await join.json()).key,seq:1,hits:[{number:20,mult:1,cell:3,label:'20'}]})});
+if(!draft.ok)throw Error(`Live pijl gaf HTTP ${draft.status}`);
+const live=await draftBroadcast;
+if(live.draft?.role!==1||live.draft.hits.length!==1)throw Error('De losse pijl werd niet realtime doorgegeven');
 const closedMessage=next();
 const closed=await fetch(`${base}/rooms/${host.code}/close`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:host.key})});
 if(!closed.ok)throw Error(`Sluiten gaf HTTP ${closed.status}`);
