@@ -28,9 +28,13 @@ with tempfile.TemporaryDirectory() as tmp:
     assert page.locator('#online-host-open').evaluate("e=>e.closest('details').dataset.menu")=='online'
     page.locator('#online-host-open').click();expect(page.locator('#online-dialog')).to_be_visible()
     expect(page.locator('#online-host-section')).to_be_visible();expect(page.locator('#online-join-section')).to_be_hidden()
+    expect(page.locator('#online-public')).to_be_checked()
+    expect(page.locator('#online-share')).to_be_hidden()
     page.locator('#online-close').click()
     page.locator('summary',has_text='Online darten').click();page.locator('#online-join-open').click()
     expect(page.locator('#online-host-section')).to_be_hidden();expect(page.locator('#online-join-section')).to_be_visible()
+    expect(page.locator('#online-lobby-refresh')).to_be_visible()
+    expect(page.locator('#online-lobby')).to_be_visible()
     page.locator('#online-close').click()
     page.locator('summary',has_text='Verbindingen').click();expect(page.locator('#network-open')).to_be_visible()
     assert page.locator('#bluetooth-open').evaluate("e=>e.closest('details').dataset.menu")=='connections'

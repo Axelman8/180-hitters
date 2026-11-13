@@ -38,6 +38,7 @@ public final class MainActivity extends Activity {
     private LocalDartsServer localServer;
     private BluetoothClient bluetooth;
     private AppUpdater updater;
+    private String pendingOnlineInvite="";
     private SharedPreferences preferences;
     private String mode;
     private boolean webPaused;
@@ -51,6 +52,7 @@ public final class MainActivity extends Activity {
         preferences = getSharedPreferences("axelman8", MODE_PRIVATE);
         bluetooth = new BluetoothClient();
         updater = new AppUpdater(this);
+        readOnlineInvite(getIntent());
         String savedBluetooth = preferences.getString("bluetooth_address", null);
         if (savedBluetooth != null) bluetooth.select(savedBluetooth);
         try { localServer = new LocalDartsServer(this, bluetooth); }
@@ -180,6 +182,12 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onDestroy(){if(localServer!=null)localServer.stop(); if(bluetooth!=null)bluetooth.shutdown(); if(web!=null)web.destroy(); super.onDestroy();}
 
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);readOnlineInvite(intent);if(web!=null)web.reload();}
+    private void readOnlineInvite(Intent intent){
+        Uri uri=intent==null?null:intent.getData();String code=uri==null?null:uri.getQueryParameter("dartbaan");
+        if(code!=null&&code.matches("[A-Za-z2-9]{6}"))pendingOnlineInvite="https://180-hitters-online.180-hitters-online.workers.dev/?dartbaan="+code.toUpperCase();
+    }
+
     private final class Bridge {
         @JavascriptInterface public void prepareNucTransfer(){runOnUiThread(()->{
             if(!"local".equals(mode))return;
@@ -196,6 +204,7 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void clearPendingNucTransfer(){preferences.edit().remove("pending_nuc_transfer").commit();}
         @JavascriptInterface public void chooseMode(){runOnUiThread(MainActivity.this::showModeChooser);}
         @JavascriptInterface public boolean isLocalMode(){return "local".equals(mode);}
+        @JavascriptInterface public String takeOnlineInvite(){String value=pendingOnlineInvite;pendingOnlineInvite="";return value;}
         @JavascriptInterface public String getConnectionMode(){return mode==null?"local":mode;}
         @JavascriptInterface public String getConnectionInfo(){
             try {
@@ -213,6 +222,15 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void repairConnection(){if(bluetooth!=null)bluetooth.closeSocket();}
         @JavascriptInterface public String getControlToken(){return "d7c87006c31f4da2a4348eeb05b59c8b";}
         @JavascriptInterface public void checkForUpdate(){runOnUiThread(()->updater.check(true));}
+        @JavascriptInterface public void shareText(String text){
+            if(text==null||text.isEmpty()||text.length()>4000)return;
+            runOnUiThread(()->{try {
+                Intent send=new Intent(Intent.ACTION_SEND).setType("text/plain")
+                        .putExtra(Intent.EXTRA_SUBJECT,"180 Hitters dartbaan")
+                        .putExtra(Intent.EXTRA_TEXT,text);
+                startActivity(Intent.createChooser(send,"Uitnodiging delen"));
+            } catch(Exception error){Toast.makeText(MainActivity.this,"Geen app gevonden om de uitnodiging te delen.",Toast.LENGTH_LONG).show();}});
+        }
         @JavascriptInterface public void logShare(String message){Log.i("180HittersShare",message==null?"":message);}
         @JavascriptInterface public boolean beginPngShareCollection(){
             synchronized(shareLock){

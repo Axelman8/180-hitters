@@ -22,14 +22,28 @@ match = {'undo': [], 'state': {'version': 2, 'game': 'fourinarow', 'phase': 'pla
     'active': 0, 'winner': None, 'history': [],
     'players': [{'name': 'A'}, {'name': 'B'}, {'name': 'C'}, {'name': 'D'}],
     'fourBoard': ['bb'] * 25, 'fourOwners': [None] * 25}}
-status, host = request('/rooms', 'POST', {'name': 'Axel', 'match': match})
+status, host = request('/rooms', 'POST', {'name': 'Axel', 'match': match, 'public': True})
 assert status == 201 and host['role'] == 0 and host['joined'] == 1 and host['capacity'] == 4
+with urlopen(Request(BASE + f"/?dartbaan={host['code']}", headers={'User-Agent': '180-Hitters-integration-test'}), timeout=10) as landing:
+    page = landing.read().decode()
+assert landing.status == 200 and host['code'] in page and 'hitters180://join' in page
+assert any(room['code'] == host['code'] and room['host'] == 'Axel' for room in request('/lobby')[1]['rooms'])
+status, private = request('/rooms', 'POST', {'name': 'Privé', 'match': copy.deepcopy(match), 'public': False})
+assert status == 201 and all(room['code'] != private['code'] for room in request('/lobby')[1]['rooms'])
+assert request(f"/rooms/{private['code']}/close", 'POST', {'key': private['key']})[0] == 200
 guests = []
 for name in ('Bert', 'Cato', 'Daan'):
     status, guest = request(f"/rooms/{host['code']}/join", 'POST', {'name': name})
     assert status == 200
     guests.append(guest)
 assert request(f"/rooms/{host['code']}/join", 'POST', {'name': 'Extra'})[0] == 409
+assert all(room['code'] != host['code'] for room in request('/lobby')[1]['rooms'])
+assert request(f"/rooms/{host['code']}/leave", 'POST', {'key': guests[-1]['key']}) == (200, {'ok': True, 'left': True})
+assert any(room['code'] == host['code'] and room['joined'] == 3 for room in request('/lobby')[1]['rooms'])
+assert request(f"/rooms/{host['code']}?key={guests[-1]['key']}")[0] == 404
+status, replacement = request(f"/rooms/{host['code']}/join", 'POST', {'name': 'Daan opnieuw'})
+assert status == 200 and replacement['role'] == 3
+guests[-1] = replacement
 current = request(f"/rooms/{host['code']}?key={host['key']}")[1]
 wrong = copy.deepcopy(current['match'])
 wrong['state']['history'].append({'player': 1})
@@ -45,4 +59,5 @@ assert status == 200 and final['match']['state']['phase'] == 'won'
 assert request(f"/rooms/{host['code']}/close", 'POST', {'key': guests[0]['key']})[0] == 403
 assert request(f"/rooms/{host['code']}/close", 'POST', {'key': host['key']}) == (200, {'ok': True, 'closed': True})
 assert request(f"/rooms/{host['code']}?key={host['key']}")[0] == 404
-print('PASS: Cloudflare dartbaan supports four players, turn ownership and a winning final dart')
+assert all(room['code'] != host['code'] for room in request('/lobby')[1]['rooms'])
+print('PASS: public lobby, private lanes, leave/rejoin, four players, turn ownership and close work')
