@@ -1,5 +1,5 @@
 from pathlib import Path
-import subprocess,sys,time,tempfile
+import subprocess,sys,time,tempfile,json
 from playwright.sync_api import sync_playwright,expect
 root=Path.cwd()
 with tempfile.TemporaryDirectory() as tmp:
@@ -53,12 +53,16 @@ with tempfile.TemporaryDirectory() as tmp:
     page.close()
    active=b.new_page(viewport={'width':393,'height':852});active.goto('http://127.0.0.1:8788/?remote=1')
    active.evaluate("""async()=>fetch('/api/online/local',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:true,ready:false,role:0,code:'ABC234',base:'https://180-hitters-online.180-hitters-online.workers.dev',key:'12345678901234567890',remoteRevision:1})})""")
+   remote={'code':'ABC234','revision':1,'joined':1,'capacity':2,'public':True,'match':{'undo':[],'state':{'version':2,'game':'fourinarow','phase':'playing','active':0,'history':[],'players':[{'name':'Axel'},{'name':'Wachten op speler 2'}],'fourBoard':['bb']*25,'fourOwners':[None]*25}}}
+   active.route('https://180-hitters-online.180-hitters-online.workers.dev/rooms/ABC234*',lambda route:route.fulfill(status=200,content_type='application/json',body=json.dumps(remote)))
    active.reload();active.locator('summary',has_text='Online darten').click()
    expect(active.locator('#online-host-open')).to_have_text('Actieve dartbaan openen')
-   expect(active.locator('#online-join-open')).to_be_hidden();active.locator('#online-host-open').click()
+   expect(active.locator('#online-join-open')).to_be_hidden();expect(active.locator('#online-new-open')).to_be_visible();active.locator('#online-host-open').click()
    expect(active.locator('#online-host-section')).to_be_hidden();expect(active.locator('#online-join-section')).to_be_hidden()
    expect(active.locator('#online-code')).to_have_text('ABC234');expect(active.locator('#online-share')).to_be_visible()
    assert 'http' not in active.locator('#online-active').inner_text().lower()
+   active.locator('#online-close').click();active.locator('summary',has_text='Online darten').click();active.locator('#online-new-open').click()
+   expect(active.locator('#online-new')).to_be_visible();expect(active.locator('#online-title')).to_have_text('Nieuwe dartbaan aanmaken')
    active.close()
    native=b.new_page(viewport={'width':393,'height':852})
    native.add_init_script("window.DartsAndroid={chooseMode:()=>window.modeChosen=true,checkForUpdate:()=>window.updateChosen=true}")
