@@ -77,7 +77,7 @@ document.addEventListener('open-play-menu',()=>{
 
 const order={
  play:['settings','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
- online:['club-open','online-host-open','online-new-open','online-join-open','online-leave-open'],
+ online:['club-open','online-invitations-open','online-host-open','online-new-open','online-join-open','online-leave-open'],
  connections:['android-app-action','take-control','connection-health','mouse-control-open','bluetooth-open','network-open'],
  application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','screen-orientation','desktop-update-action','android-update-action','camera-test','venue-open']
 };

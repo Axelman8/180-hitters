@@ -11,6 +11,10 @@ const $=id=>document.getElementById(id);
 const notificationButton=document.createElement('button');notificationButton.id='club-notifications';notificationButton.className='wide';notificationButton.textContent='Meldingen inschakelen';notificationButton.hidden=true;dialog.insertBefore(notificationButton,$('club-status'));
 export const clubAccessToken=()=>account.accessToken||'';
 export const clubPlayerName=()=>account.member?.name||'';
+export const listClubPlayers=async()=>account.accessToken?(await api('/club/players',{accessToken:account.accessToken})).players||[]:[];
+export const sendClubInvitation=async(recipientId,code)=>api('/club/invite',{accessToken:account.accessToken,recipientId,code});
+export const listClubInvitations=async()=>account.accessToken?(await api('/club/invitations',{accessToken:account.accessToken})).invitations||[]:[];
+export const dismissClubInvitation=async id=>api('/club/invite/dismiss',{accessToken:account.accessToken,id});
 export function openClubDialog(){render();dialog.showModal();void refresh();}
 export async function requireClubAccess(){if(account.accessToken){try{await refresh();if(account.member?.status==='approved')return true;}catch{}}openClubDialog();$('club-status').textContent='Vraag eerst toegang aan of wacht op goedkeuring.';return false;}
 function statusLabel(value){return value==='approved'?'Goedgekeurd':value==='pending'?'Wacht op goedkeuring':value==='blocked'?'Geblokkeerd':'Afgewezen';}
@@ -21,4 +25,4 @@ open.onclick=openClubDialog;$('club-close').onclick=()=>dialog.close();$('club-r
 notificationButton.onclick=()=>{window.DartsAndroid?.requestClubNotifications?.();setTimeout(render,800);};
 $('club-request').onclick=async()=>{const button=$('club-request');button.disabled=true;try{const data=await api('/club/register',{name:$('club-name').value.trim(),clubCode:$('club-code').value.trim()});account={...account,member:data.member,requestToken:data.requestToken};save();render();$('club-status').textContent='Aanvraag verstuurd. Axel kan deze nu goedkeuren.';}catch(error){$('club-status').textContent=error.message;}finally{button.disabled=false;}};
 $('club-activate').onclick=async()=>{const button=$('club-activate');button.disabled=true;try{const data=await api('/club/admin/activate',{name:$('club-admin-name').value.trim(),adminCode:$('club-admin-code').value});account={...account,member:data.member,accessToken:data.accessToken,adminToken:data.adminToken};save();window.DartsAndroid?.configureClubNotifications?.(account.adminToken);render();await loadMembers();$('club-status').textContent='Beheerder geactiveerd.';}catch(error){$('club-status').textContent=error.message;}finally{button.disabled=false;}};
-if(account.adminToken)window.DartsAndroid?.configureClubNotifications?.(account.adminToken);render();setInterval(()=>{if(account.requestToken||account.adminToken)void refresh();},30000);
+if(account.adminToken)window.DartsAndroid?.configureClubNotifications?.(account.adminToken);render();setInterval(()=>{if(account.requestToken||account.accessToken||account.adminToken)void refresh();},30000);

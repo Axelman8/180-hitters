@@ -54,7 +54,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/health') return response({ ok: true, service: '180-hitters-online' });
     if (url.pathname.startsWith('/club/') && request.method === 'POST') {
-      const allowed = new Set(['/club/register', '/club/status', '/club/admin/activate', '/club/admin/list', '/club/admin/action']);
+      const allowed = new Set(['/club/register', '/club/status', '/club/players', '/club/invite', '/club/invitations', '/club/invite/dismiss', '/club/admin/activate', '/club/admin/list', '/club/admin/action']);
       if (!allowed.has(url.pathname)) return response({ error: 'Onbekend clubverzoek.' }, 404);
       const result = await registry(env, url.pathname.slice(5), await request.json(), request);
       return result?.error ? response({ error: result.error }, result.status) : response(result || { error: 'Clubregistratie is niet ingesteld.' }, result ? 200 : 503);
@@ -342,6 +342,37 @@ export class ClubRegistry {
       if (url.pathname === '/authorize') {
         const member = members.find(item => item.accessToken && item.accessToken === incoming.accessToken && item.status === 'approved');
         return member ? response({ approved: true, id: member.id, name: member.name, isAdmin: !!member.isAdmin }) : response({ approved: false }, 403);
+      }
+      const current = members.find(item => item.accessToken && item.accessToken === incoming.accessToken && item.status === 'approved');
+      if (url.pathname === '/players') {
+        if (!current) return response({ error: 'Clubtoegang geweigerd.' }, 403);
+        return response({ players: members.filter(item => item.status === 'approved' && item.id !== current.id)
+          .map(item => ({ id: item.id, name: item.name })).sort((a, b) => a.name.localeCompare(b.name, 'nl')) });
+      }
+      if (url.pathname === '/invite') {
+        if (!current) return response({ error: 'Clubtoegang geweigerd.' }, 403);
+        const recipient = members.find(item => item.id === incoming.recipientId && item.status === 'approved');
+        const roomCode = String(incoming.code || '').trim().toUpperCase();
+        if (!recipient || recipient.id === current.id) return response({ error: 'Kies een geldige clubspeler.' }, 400);
+        if (!/^[A-Z2-9]{6}$/.test(roomCode)) return response({ error: 'De dartbaancode is ongeldig.' }, 400);
+        const key = `invites:${recipient.id}`, existing = await this.state.storage.get(key) || [];
+        const active = existing.filter(invite => now - invite.createdAt < MAX_AGE && invite.code !== roomCode);
+        const invite = { id: crypto.randomUUID(), fromId: current.id, fromName: current.name, code: roomCode, createdAt: now };
+        active.push(invite); await this.state.storage.put(key, active.slice(-20));
+        return response({ ok: true, invite });
+      }
+      if (url.pathname === '/invitations') {
+        if (!current) return response({ error: 'Clubtoegang geweigerd.' }, 403);
+        const key = `invites:${current.id}`, existing = await this.state.storage.get(key) || [];
+        const active = existing.filter(invite => now - invite.createdAt < MAX_AGE);
+        if (active.length !== existing.length) await this.state.storage.put(key, active);
+        return response({ invitations: active.sort((a, b) => b.createdAt - a.createdAt) });
+      }
+      if (url.pathname === '/invite/dismiss') {
+        if (!current) return response({ error: 'Clubtoegang geweigerd.' }, 403);
+        const key = `invites:${current.id}`, existing = await this.state.storage.get(key) || [];
+        await this.state.storage.put(key, existing.filter(invite => invite.id !== incoming.id));
+        return response({ ok: true });
       }
       if (url.pathname === '/admin/activate') {
         if (String(incoming.adminCode || '') !== String(this.env.ADMIN_SETUP_CODE || '')) return response({ error: 'De beheerderscode is niet juist.' }, 403);
