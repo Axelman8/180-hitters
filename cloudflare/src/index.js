@@ -1,5 +1,6 @@
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_AGE = 8 * 60 * 60 * 1000;
+const FOUR_SYMBOLS = ['○', '×', '△', '□'];
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -135,6 +136,8 @@ export class DartRoom {
         if (!name) throw new Error('Vul jouw naam in.');
         const match = cleanMatch(incoming.match, false);
         match.state.players[0].name = name;
+        match.state.players[0].fourSymbol = FOUR_SYMBOLS.includes(incoming.symbol) ? incoming.symbol :
+          FOUR_SYMBOLS.includes(match.state.players[0].fourSymbol) ? match.state.players[0].fourSymbol : FOUR_SYMBOLS[0];
         for (let index = 1; index < match.state.players.length; index++) match.state.players[index].name = `Wachten op speler ${index + 1}`;
         const keys = [crypto.randomUUID(), ...Array(match.state.players.length - 1).fill(null)];
         const room = { code: url.searchParams.get('code'), keys, match, revision: 1,
@@ -166,8 +169,12 @@ export class DartRoom {
         if (!name) throw new Error('Vul jouw naam in.');
         const role = room.keys.indexOf(null);
         if (role < 0) return response({ error: 'Deze dartbaan is al vol.' }, 409);
+        const occupied = room.match.state.players.filter((player, index) => room.keys[index]).map(player => player.fourSymbol);
+        const symbol = FOUR_SYMBOLS.includes(incoming.symbol) ? incoming.symbol : FOUR_SYMBOLS.find(value => !occupied.includes(value));
+        if (!symbol || occupied.includes(symbol)) return response({ error: 'Dit symbool is al gekozen. Kies een ander symbool.' }, 409);
         room.keys[role] = crypto.randomUUID();
         room.match.state.players[role].name = name;
+        room.match.state.players[role].fourSymbol = symbol;
         room.revision++;
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
         return response({ ...this.public(room), key: room.keys[role], role });

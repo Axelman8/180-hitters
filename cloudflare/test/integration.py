@@ -22,8 +22,9 @@ match = {'undo': [], 'state': {'version': 2, 'game': 'fourinarow', 'phase': 'pla
     'active': 0, 'winner': None, 'history': [],
     'players': [{'name': 'A'}, {'name': 'B'}, {'name': 'C'}, {'name': 'D'}],
     'fourBoard': ['bb'] * 25, 'fourOwners': [None] * 25}}
-status, host = request('/rooms', 'POST', {'name': 'Axel', 'match': match, 'public': True})
+status, host = request('/rooms', 'POST', {'name': 'Axel', 'symbol': '□', 'match': match, 'public': True})
 assert status == 201 and host['role'] == 0 and host['joined'] == 1 and host['capacity'] == 4
+assert host['match']['state']['players'][0]['fourSymbol'] == '□'
 with urlopen(Request(BASE + f"/?dartbaan={host['code']}", headers={'User-Agent': '180-Hitters-integration-test'}), timeout=10) as landing:
     page = landing.read().decode()
 assert landing.status == 200 and host['code'] in page and 'hitters180://join' in page
@@ -36,9 +37,10 @@ status, private = request('/rooms', 'POST', {'name': 'Privé', 'match': copy.dee
 assert status == 201 and all(room['code'] != private['code'] for room in request('/lobby')[1]['rooms'])
 assert request(f"/rooms/{private['code']}/close", 'POST', {'key': private['key']})[0] == 200
 guests = []
-for name in ('Bert', 'Cato', 'Daan'):
-    status, guest = request(f"/rooms/{host['code']}/join", 'POST', {'name': name})
+for name, symbol in zip(('Bert', 'Cato', 'Daan'), ('○', '△', '×')):
+    status, guest = request(f"/rooms/{host['code']}/join", 'POST', {'name': name, 'symbol': symbol})
     assert status == 200
+    assert guest['match']['state']['players'][guest['role']]['fourSymbol'] == symbol
     guests.append(guest)
 assert guests[-1]['starter'] is None and guests[-1]['starterPending'] is True
 assert request(f"/rooms/{host['code']}/state", 'POST',
@@ -53,7 +55,7 @@ assert all(room['code'] != host['code'] for room in request('/lobby')[1]['rooms'
 assert request(f"/rooms/{host['code']}/leave", 'POST', {'key': guests[-1]['key']}) == (200, {'ok': True, 'left': True})
 assert any(room['code'] == host['code'] and room['joined'] == 3 for room in request('/lobby')[1]['rooms'])
 assert request(f"/rooms/{host['code']}?key={guests[-1]['key']}")[0] == 404
-status, replacement = request(f"/rooms/{host['code']}/join", 'POST', {'name': 'Daan opnieuw'})
+status, replacement = request(f"/rooms/{host['code']}/join", 'POST', {'name': 'Daan opnieuw', 'symbol': '×'})
 assert status == 200 and replacement['role'] == 3
 guests[-1] = replacement
 current = request(f"/rooms/{host['code']}?key={host['key']}")[1]

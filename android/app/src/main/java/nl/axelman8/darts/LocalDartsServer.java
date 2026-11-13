@@ -147,6 +147,12 @@ final class LocalDartsServer extends NanoHTTPD {
                 writeAtomic(stateFile, updated.toString()); state = updated; draft = null;
                 return json(Response.Status.OK, state);
             }
+            case "/api/match/discard": {
+                JSONObject updated = new JSONObject().put("revision", state.getInt("revision") + 1).put("match", JSONObject.NULL);
+                writeAtomic(stateFile, updated.toString()); state = updated; draft = null;
+                setup.put("version", setup.optInt("version") + 1).put("value", JSONObject.NULL);
+                return json(Response.Status.OK, state);
+            }
             case "/api/draft": {
                 if (incoming.getInt("revision") != state.getInt("revision")) return json(Response.Status.CONFLICT, state);
                 draft = new JSONObject().put("owner", incoming.optString("owner"))

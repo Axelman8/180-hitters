@@ -797,6 +797,7 @@ $('setup-form').onsubmit=async e=>{
  editingCurrentMatch=false;setupCopy(false);mode=totalAllowed()?preferredMode:'dart';if(!await persist())return;resetInput();render();
 };
 document.addEventListener('show-shared-setup',()=>{for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();});
+document.addEventListener('discard-current-match',event=>{if(event.detail)receive(event.detail);for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();});
 document.addEventListener('close-shared-setup',()=>render());
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{message('Gebruik F11 voor volledig scherm.');}};
  document.addEventListener('keydown',e=>{if(!state||state.phase!=='playing'||!$('setup').hidden||document.querySelector('dialog[open]')||mode!=='total')return;if(/^\d$/.test(e.key)){e.preventDefault();addDigit(e.key);}else if(e.key==='Backspace'){e.preventDefault();$('backspace').click();}else if(e.key==='Enter'){e.preventDefault();totalSubmit();}});
@@ -809,10 +810,11 @@ cameraControls(async event=>{
  try{
   const response=await fetch('/api/state',{signal:AbortSignal.timeout(4000)});
   if(!response.ok)return;
-  const base=await response.json();
-  const result=applyCameraEvent(base.match,base.draft,event);
+  const base=await response.json(),serverHits=base.draft?.hits||[],sameFourVisit=state?.game==='fourinarow'&&base.match?.state?.game==='fourinarow'&&base.match.state.startedAt===state.startedAt&&base.match.state.active===state.active;
+  const inputDraft=sameFourVisit&&dartList.length>serverHits.length?{...(base.draft||{}),hits:structuredClone(dartList)}:base.draft;
+  const result=applyCameraEvent(base.match,inputDraft,event),expectedHits=structuredClone(result.hits||[]);
   const res=await fetch('/api/autoscoring/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:base.revision,event:event.id,...result}),signal:AbortSignal.timeout(5000)});
-  if(res.ok){const data=await res.json();receive(data);dartList=state?.game==='fourinarow'?structuredClone(data.draft?.hits||[]):(data.draft?.hits||[]).map(d=>makeDart(d.number,d.mult));if(dartList.length)setMode('dart');document.dispatchEvent(new CustomEvent('dart-draft-observed',{detail:data.draft||null}));if(state?.game==='fourinarow')renderFourGame();else renderInput();}
+  if(res.ok){const data=await res.json();receive(data);const receivedHits=data.draft?.hits||[],stableHits=!result.closed&&expectedHits.length>receivedHits.length?expectedHits:receivedHits;dartList=state?.game==='fourinarow'?structuredClone(stableHits):stableHits.map(d=>makeDart(d.number,d.mult));if(dartList.length)setMode('dart');const liveDraft=dartList.length?{...(data.draft||{}),hits:structuredClone(dartList)}:null;document.dispatchEvent(new CustomEvent('dart-draft-observed',{detail:liveDraft}));if(state?.game==='fourinarow')renderFourGame();else renderInput();}
   else if(![409,423].includes(res.status)){const data=await res.json();throw Error(data.error||'Cameraworp niet opgeslagen. Controleer de beurt.');}
  }catch(e){
   // A lost response is retried through the server receipt, never guessed locally.

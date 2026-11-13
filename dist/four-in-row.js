@@ -91,18 +91,19 @@ export function applyFourTurn(state,turn){
 export function fourCellLabel(id){return label(id);}
 
 const el=(tag,text,cls)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;};
+const playerSymbol=(state,index)=>fourSymbols.includes(state.players[index]?.fourSymbol)?state.players[index].fourSymbol:fourSymbols[index];
 export function renderFourInRow(root,state,pending,actions){
  root.replaceChildren();
  const needsBullCorner=pending.some(hit=>hit.needsBullCorner);
- const legend=el('div',undefined,'four-legend');state.players.forEach((player,index)=>{const item=el('article',undefined,index===state.active?'active':'');item.style.setProperty('--player-color',`var(--four-p${index})`);item.append(el('b',fourSymbols[index],'four-symbol'),el('strong',player.name),player.bot?el('small','BOT · ±50 gemiddeld'):el('small',index===state.active?'Aan de beurt':''));legend.append(item);});root.append(legend);
+ const legend=el('div',undefined,'four-legend');state.players.forEach((player,index)=>{const item=el('article',undefined,index===state.active?'active':'');item.style.setProperty('--player-color',`var(--four-p${index})`);item.append(el('b',playerSymbol(state,index),'four-symbol'),el('strong',player.name),player.bot?el('small','BOT · ±50 gemiddeld'):el('small',index===state.active?'Aan de beurt':''));legend.append(item);});root.append(legend);
  const layout=el('div',undefined,'four-layout'),board=el('section',undefined,'four-board');board.setAttribute('aria-label','4 op een rij speelveld');
  const pendingMarks=new Map();for(const hit of pending)if(Number.isInteger(hit.cell)){const id=state.fourBoard[hit.cell];pendingMarks.set(hit.cell,(pendingMarks.get(hit.cell)||0)+(id==='bb'||id.startsWith('sb')?3:hit.mult));}
  state.fourBoard.forEach((id,index)=>{
   const owner=state.fourOwners[index],pendingClaim=owner===null&&(pendingMarks.get(index)||0)>=3,displayOwner=pendingClaim?state.active:owner,cell=el('button',undefined,'four-cell');cell.type='button';cell.dataset.cell=String(index);cell.dataset.kind=id==='bb'?'bb':id.startsWith('sb')?'sb':'number';
-  if(displayOwner!==null){cell.classList.add('owned',`player-${displayOwner}`);if(pendingClaim)cell.classList.add('pending-owned');cell.style.setProperty('--owner-color',`var(--four-p${displayOwner})`);cell.append(el('span',fourSymbols[displayOwner],'four-owner'));}
+  if(displayOwner!==null){cell.classList.add('owned',`player-${displayOwner}`);if(pendingClaim)cell.classList.add('pending-owned');cell.style.setProperty('--owner-color',`var(--four-p${displayOwner})`);cell.append(el('span',playerSymbol(state,displayOwner),'four-owner'));}
   else cell.append(el('strong',label(id)));
   if(state.fourWinningCells?.includes(index))cell.classList.add('winning');
-  const progress=el('span',undefined,'four-progress');progress.style.fontSize='clamp(18px,3.4vmin,34px)';progress.style.fontWeight='900';progress.style.lineHeight='1';progress.style.textShadow='0 1px 5px #000';if(!pendingClaim)state.players.forEach((player,playerIndex)=>{const marks=Math.min(3,(player.fourMarks[index]||0)+(playerIndex===state.active?(pendingMarks.get(index)||0):0));if(marks){const marker=el('i',fourSymbols[playerIndex].repeat(marks),`player-${playerIndex}`);marker.setAttribute('aria-label',`${player.name}: ${marks} van 3 treffers`);progress.append(marker);}});cell.append(progress);
+  const progress=el('span',undefined,'four-progress');progress.style.fontSize='clamp(18px,3.4vmin,34px)';progress.style.fontWeight='900';progress.style.lineHeight='1';progress.style.textShadow='0 1px 5px #000';if(!pendingClaim)state.players.forEach((player,playerIndex)=>{const marks=Math.min(3,(player.fourMarks[index]||0)+(playerIndex===state.active?(pendingMarks.get(index)||0):0));if(marks){const marker=el('i',playerSymbol(state,playerIndex).repeat(marks),`player-${playerIndex}`);marker.setAttribute('aria-label',`${player.name}: ${marks} van 3 treffers`);progress.append(marker);}});cell.append(progress);
   cell.disabled=state.phase!=='playing'||pendingClaim||!!state.players[state.active]?.bot||(needsBullCorner?(!id.startsWith('sb')||owner!==null):pending.length>=3);cell.onclick=()=>actions.hit(index);board.append(cell);
  });
  layout.append(board);

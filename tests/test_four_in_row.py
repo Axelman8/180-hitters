@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory() as tmp:
             phone = browser.new_page(viewport={'width':393, 'height':852})
             screen = browser.new_page(viewport={'width':1280, 'height':900})
             phone.goto('http://127.0.0.1:8802/?remote=1')
-            state = phone.evaluate("""async()=>{const {newMatch}=await import('/engine.js');return newMatch(['Anna','Bert'],0,'single',1,{game:'fourinarow'})}""")
+            state = phone.evaluate("""async()=>{const {newMatch}=await import('/engine.js');return newMatch(['Anna','Bert'],0,'single',1,{game:'fourinarow',fourSymbols:['□','△']})}""")
             camera_progress = phone.evaluate("""async state=>{const {applyCameraEvent}=await import('/autoscoring-rules.js');let match={state,undo:[]},draft=null,lengths=[];for(let i=0;i<3;i++){const result=applyCameraEvent(match,draft,{kind:'dart',hit:{number:20,mult:1}});lengths.push(result.hits.length);match=result.match;draft={hits:result.hits};}return {lengths,claimed:match.state.fourOwners[match.state.fourBoard.indexOf('n20')]};}""",state)
             assert camera_progress == {'lengths':[1,2,0],'claimed':0}, camera_progress
             current = phone.request.get('http://127.0.0.1:8802/api/state').json()
@@ -25,7 +25,7 @@ with tempfile.TemporaryDirectory() as tmp:
             assert phone.locator('.four-cell').count() == 25
             assert phone.locator('.four-cell[data-kind="sb"]').count() == 4
             assert phone.locator('.four-cell[data-kind="bb"]').count() == 1
-            expect(phone.locator('.four-symbol')).to_have_text(['○','×'])
+            expect(phone.locator('.four-symbol')).to_have_text(['□','△'])
             expect(phone.locator('#turn-label')).to_contain_text('Anna')
             expect(phone.locator('#controller-note')).to_have_text('Scorebediening actief')
             for width, height in [(320,640),(360,740),(393,852),(600,800),(736,872),(872,736),(884,1104),(1104,884),(768,1024),(1024,600)]:
@@ -49,10 +49,10 @@ with tempfile.TemporaryDirectory() as tmp:
             first_cell = first.get_attribute('data-cell')
             expect(phone.locator('.four-darts span').nth(0)).to_have_attribute('aria-current','step')
             first.click()
-            expect(screen.locator(f'.four-cell[data-cell="{first_cell}"] .four-progress .player-0')).to_have_text('\u25cb')
+            expect(screen.locator(f'.four-cell[data-cell="{first_cell}"] .four-progress .player-0')).to_have_text('□')
             expect(phone.locator('.four-darts span').nth(1)).to_have_attribute('aria-current','step')
             first.click()
-            expect(screen.locator(f'.four-cell[data-cell="{first_cell}"] .four-progress .player-0')).to_have_text('\u25cb\u25cb')
+            expect(screen.locator(f'.four-cell[data-cell="{first_cell}"] .four-progress .player-0')).to_have_text('□□')
             expect(phone.locator('.four-darts span').nth(2)).to_have_attribute('aria-current','step')
             first.click()
             expect(phone.locator('#turn-label')).to_contain_text('Bert')
@@ -90,6 +90,9 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(screen.locator('#result-dialog #game-report')).to_be_visible()
             expect(screen.locator('#result-dialog .game-report-share')).to_have_text('Delen als afbeeldingen')
             assert screen.locator('#result-dialog #match-summary').count() == 0
+            latest = phone.request.get('http://127.0.0.1:8802/api/state').json()
+            discarded = phone.request.post('http://127.0.0.1:8802/api/match/discard', data={})
+            assert discarded.ok and discarded.json()['match'] is None and discarded.json()['revision'] == latest['revision'] + 1
             browser.close()
             print('PASS: 5x5 field, symbols, three-mark capture, mobile-to-NUC sync and two-player visual')
     finally:

@@ -723,7 +723,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
+            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -752,6 +752,15 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         online_local.update(active=active,ready=ready if active else False,role=role if active else None,code=code if active else '',base=base if active else '',key=key if active else '',remoteRevision=remote_revision if active else 0)
                         follow_camera()
                     return self.reply(200,dict(online_local))
+                if self.path == '/api/match/discard':
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        updated = {**current, 'revision': current['revision'] + 1, 'match': None, 'cameraDraft': {}}
+                        durable_json(path, updated); current.update(updated)
+                        draft.update(value=None, time=time.monotonic()); sequences.clear()
+                        shared_setup.update(version=shared_setup['version']+1, value=None)
+                        follow_camera()
+                        return self.reply(200, current)
                 if self.path == '/api/autoscoring/reset':
                     with lock:
                         if not self.may_edit(incoming): return
