@@ -42,4 +42,7 @@ won['state'].update(phase='won', winner=0)
 status, final = request(f"/rooms/{host['code']}/state", 'POST',
                         {'key': host['key'], 'revision': current['revision'], 'match': won})
 assert status == 200 and final['match']['state']['phase'] == 'won'
+assert request(f"/rooms/{host['code']}/close", 'POST', {'key': guests[0]['key']})[0] == 403
+assert request(f"/rooms/{host['code']}/close", 'POST', {'key': host['key']}) == (200, {'ok': True, 'closed': True})
+assert request(f"/rooms/{host['code']}?key={host['key']}")[0] == 404
 print('PASS: Cloudflare dartbaan supports four players, turn ownership and a winning final dart')

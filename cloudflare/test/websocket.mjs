@@ -14,5 +14,9 @@ const join=await fetch(`${base}/rooms/${host.code}/join`,{method:'POST',headers:
 if(!join.ok)throw Error(`Deelnemen gaf HTTP ${join.status}`);
 const update=await broadcast;
 if(update.joined!==2||update.capacity!==2)throw Error('Deelname werd niet realtime doorgegeven');
+const closedMessage=next();
+const closed=await fetch(`${base}/rooms/${host.code}/close`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:host.key})});
+if(!closed.ok)throw Error(`Sluiten gaf HTTP ${closed.status}`);
+if(!(await closedMessage).closed)throw Error('Sluiten werd niet realtime doorgegeven');
 socket.close();
 console.log('PASS: Cloudflare WebSocket broadcasts realtime dartbaan updates');

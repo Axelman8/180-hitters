@@ -44,7 +44,7 @@ export default {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body
       }));
     }
-    const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|state|socket))?$/i);
+    const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|state|socket|close))?$/i);
     if (!match) return response({ error: 'Onbekend verzoek.' }, 404);
     const roomCode = match[1].toUpperCase();
     const id = env.ROOMS.idFromName(roomCode);
@@ -133,6 +133,16 @@ export class DartRoom {
         room.match = next; room.revision++;
         await this.save(room); await this.broadcast(room);
         return response(this.public(room));
+      }
+      if (request.method === 'POST' && url.pathname === '/close') {
+        const incoming = await request.json();
+        if (incoming.key !== room.keys[0]) return response({ error: 'Alleen de maker kan de dartbaan leegmaken.' }, 403);
+        const message = JSON.stringify({ closed: true, code: room.code, error: 'De maker heeft deze dartbaan gesloten.' });
+        for (const socket of this.state.getWebSockets()) {
+          try { socket.send(message); socket.close(1000, 'Dartbaan gesloten'); } catch {}
+        }
+        await this.state.storage.deleteAll();
+        return response({ ok: true, closed: true });
       }
       return response({ error: 'Onbekend verzoek.' }, 404);
     } catch (error) {
