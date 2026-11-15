@@ -12,6 +12,7 @@ import sys
 import tarfile
 import tempfile
 import time
+from urllib.error import HTTPError, URLError
 
 REPOSITORY = 'https://api.github.com/repos/axelman8/180-hitters/releases/latest'
 ROOT = Path(__file__).resolve().parent
@@ -162,6 +163,12 @@ def healthy_dist(directory):
                for name in required) and all(p.stat().st_size > 0 for p in directory.rglob('*') if p.is_file())
 
 
+def healthy_installation():
+    return healthy_dist(ROOT / 'dist') and all((ROOT / name).is_file() for name in (
+        'server.py', 'online-relay.py', 'autodarts_bridge.py', 'camera_research.py',
+        'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py', 'camera-calibrate-gui.py'))
+
+
 def durable_copy(source, target):
     # Verify staged data and flush it before making a new installation visible.
     source, target = Path(source), Path(target)
@@ -186,7 +193,12 @@ def install(bundle, version):
                 target = (extracted / member.name).resolve()
                 if extracted.resolve() not in target.parents and target != extracted.resolve():
                     raise ValueError('Onveilig pad in update')
-            archive.extractall(extracted, filter='data')
+                if not (member.isfile() or member.isdir()):
+                    raise ValueError('Update bevat een niet-ondersteund bestandstype')
+            # Older Ubuntu Python builds do not yet expose tarfile.data_filter.
+            # Paths and regular-file types are validated above in both cases.
+            options = {'filter': 'data'} if hasattr(tarfile, 'data_filter') else {}
+            archive.extractall(extracted, **options)
         required = ['dist', 'server.py', 'online-relay.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py', 'camera-calibrate-gui.py']
         if any(not (extracted / item).exists() for item in required):
             raise ValueError('NUC-update is niet compleet')
@@ -222,6 +234,45 @@ def install(bundle, version):
         # Keep the previous installation available for recovery after a restart.
 
 
+def restart_app(version):
+    """Only declare success after the new server is actually answering."""
+    system = ROOT == Path('/usr/lib/dartsapp') and Path('/run/systemd/system').is_dir()
+    prefix = ['systemctl'] if system else ['systemctl', '--user']
+    service = 'dartsapp.service' if system else 'oche-darts.service'
+    bridge = 'dartsapp-bluetooth.service' if system else 'oche-darts-bluetooth.service'
+    write_status(state='restarting', version=version, message=f'Versie {version} is geinstalleerd; de app herstart…')
+    subprocess.run([*prefix, 'restart', service], check=True, timeout=35)
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        try:
+            info = json.loads(fetch('http://127.0.0.1:8765/api/desktop-installation'))
+            if info.get('runningVersion') == version:
+                break
+        except (OSError, ValueError):
+            pass
+        time.sleep(.5)
+    else:
+        raise RuntimeError('Nieuwe versie is geinstalleerd, maar de app start niet. Gebruik het herstelpakket.')
+    # A missing/busy Bluetooth adapter must never hold up the scoreboard update.
+    try:
+        subprocess.run([*prefix, 'restart', '--no-block', bridge], check=False, timeout=8)
+    except (OSError, subprocess.SubprocessError) as error:
+        print('Bluetooth restart pending: ' + str(error), flush=True)
+    try: ensure_kiosk_browser()
+    except (OSError, subprocess.SubprocessError) as error:
+        print('Kiosk refresh pending: ' + str(error), flush=True)
+
+
+def update_error(error):
+    if isinstance(error, HTTPError):
+        if error.code in (403, 429):
+            return 'GitHub beperkt tijdelijk updateverzoeken. Probeer later opnieuw.'
+        return f'Download bij GitHub mislukt (HTTP {error.code}). Probeer opnieuw.'
+    if isinstance(error, (URLError, TimeoutError)):
+        return 'GitHub is niet bereikbaar. Verbind de NUC met internet; Bluetooth deelt het internet van de telefoon niet.'
+    return str(error)
+
+
 def main():
     try:
         (Path('/var/lib/dartsapp') / 'update.request').unlink(missing_ok=True)
@@ -237,7 +288,7 @@ def main():
             release = json.loads(fetch(REPOSITORY))
             latest = release['tag_name'].lstrip('vV')
             current = VERSION.read_text(encoding='utf-8').strip() if VERSION.exists() else '0.0.0'
-            if version_parts(latest) <= version_parts(current) and healthy_dist(ROOT / 'dist'):
+            if version_parts(latest) <= version_parts(current) and healthy_installation():
                 write_status(state='current', version=current, message=f'NUC is actueel ({current}).')
                 service_changed = ensure_system_helper()
                 ensure_camera_launcher()
@@ -246,6 +297,7 @@ def main():
                 ensure_kiosk_browser()
                 return
             assets = {asset['name']: asset['browser_download_url'] for asset in release['assets']}
+            write_status(state='downloading', version=latest, message=f'Versie {latest} downloaden…')
             with tempfile.TemporaryDirectory(prefix='180-hitters-download-') as directory:
                 bundle = Path(directory) / '180-hitters-nuc.tar.gz'
                 download(assets['180-hitters-nuc.tar.gz'], bundle)
@@ -254,18 +306,12 @@ def main():
                 if actual != expected: raise ValueError('Controlesom van NUC-update klopt niet')
                 write_status(state='installing', version=latest, message=f'NUC-versie {latest} installeren…')
                 install(bundle, latest)
-            write_status(state='updated', version=latest, message=f'NUC is bijgewerkt naar {latest}.')
             ensure_system_helper()
             ensure_camera_launcher()
-            if ROOT == Path('/usr/lib/dartsapp') and Path('/run/systemd/system').is_dir():
-                subprocess.run(['systemctl', 'restart', 'dartsapp-bluetooth.service'], check=False)
-                subprocess.run(['systemctl', 'restart', 'dartsapp.service'], check=False)
-            else:
-                subprocess.run(['systemctl', '--user', 'restart', 'oche-darts-bluetooth.service'], check=False)
-                subprocess.run(['systemctl', '--user', 'restart', 'oche-darts.service'], check=False)
-                ensure_kiosk_browser()
+            restart_app(latest)
+            write_status(state='updated', version=latest, message=f'NUC is bijgewerkt naar {latest}.')
         except Exception as error:
-            write_status(state='error', message=f'NUC-update mislukt: {error}')
+            write_status(state='error', message=f'NUC-update mislukt: {update_error(error)}')
             raise
 
 

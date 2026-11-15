@@ -1,4 +1,5 @@
 // Desktop installers use the OS installation flow; game data stays separate.
+import {updateNuc} from './nuc-update-client.js';
 const local=['127.0.0.1','localhost','[::1]'].includes(location.hostname);
 if(local&&!window.DartsAndroid)void init();
 
@@ -10,6 +11,16 @@ async function init(){
   installed=await response.json();
   if(!installed.nativeUpdate&&!['windows','linux'].includes(installed.platform))return;
  }catch{return;}
+ // Updates can also be started from a phone or by the background timer.
+ // Refresh this NUC screen only once the replacement server is ready.
+ const displayedVersion=installed.runningVersion||installed.version;
+ setInterval(async()=>{
+  try{
+   const r=await fetch('/api/desktop-installation',{cache:'no-store',signal:AbortSignal.timeout(5000)});
+   if(!r.ok)return;const data=await r.json(),version=data.runningVersion||data.version;
+   if(version&&displayedVersion&&version!==displayedVersion)location.reload();
+  }catch{}
+ },15000);
  if(installed.nativeUpdate){nativeUpdater(installed);return;}
  const button=document.createElement('button');
  button.id='desktop-update-action';button.type='button';button.textContent='Update controleren';
@@ -59,7 +70,7 @@ function nativeUpdater(installed){
  const button=document.createElement('button');
  button.id='desktop-update-action';button.type='button';button.textContent='Update';button.style.color='#ff7474';
  const dialog=document.createElement('dialog');dialog.id='desktop-update-dialog';
- dialog.innerHTML='<h2>180 Hitters bijwerken</h2><p role="status"></p><p>Controleer op de nieuwste versie en installeer deze automatisch. Spelers en opgeslagen partijen blijven bewaard. De app wordt tijdens de update kort opnieuw gestart.</p><button class="primary" type="button">Controleren en bijwerken</button> <button type="button">Sluiten</button>';
+ dialog.innerHTML='<h2>180 Hitters bijwerken</h2><p role="status"></p><p>Controleer op de nieuwste versie en installeer deze automatisch. De NUC heeft zelf internet nodig. Spelers en opgeslagen partijen blijven bewaard. De app start tijdens de update kort opnieuw.</p><button class="primary" type="button">Controleren en bijwerken</button> <button type="button">Sluiten</button>';
  const status=dialog.querySelector('[role="status"]'),start=dialog.querySelector('.primary'),close=dialog.querySelector('button:last-child');
  document.body.append(dialog);document.getElementById('top-actions').append(button);
  let busy=false;
@@ -67,29 +78,12 @@ function nativeUpdater(installed){
  close.onclick=()=>dialog.close();
  start.onclick=async()=>{
   if(busy)return;busy=true;start.disabled=true;
-  status.textContent='Update starten?';
   try{
-   const response=await fetch('/api/update/check',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(15000)});
-   const request=await response.json();if(!response.ok)throw new Error(request.error||'Update starten is niet gelukt.');
-   status.textContent=request.message;
-   const until=Date.now()+180000;
-   while(Date.now()<until){
-    await new Promise(resolve=>setTimeout(resolve,1000));
-    let data;
-    try{const response=await fetch('/api/update/status',{cache:'no-store',signal:AbortSignal.timeout(5000)});if(!response.ok)continue;data=await response.json();}
-    catch{status.textContent='Verbinding herstellen na de update?';continue;}
-    if((data.time||0)<request.requestedAt)continue;
-    status.textContent=data.message;
-    if(data.state==='error')throw new Error(data.message);
-    if(data.state==='current'){installed.version=data.version||installed.version;return;}
-    if(data.state==='updated'){
-     const ready=await fetch('/api/desktop-installation',{cache:'no-store',signal:AbortSignal.timeout(5000)}).catch(()=>null);
-     if(!ready?.ok)continue;
-     if((await ready.json()).version!==data.version)continue;
-     location.reload();return;
-    }
-   }
-   throw new Error('De update duurt langer dan verwacht. Open dit venster later opnieuw om te controleren.');
+   const result=await updateNuc({status:text=>{status.textContent=text;},request:async(path,options)=>{
+    const response=await fetch(path,{...options,signal:AbortSignal.timeout(15000)});
+    const data=await response.json();if(!response.ok)throw Error(data.error||'Update starten is niet gelukt.');return data;
+   }});
+   installed.version=result.version||installed.version;
   }catch(error){status.textContent=error.message;}
   finally{busy=false;start.disabled=false;}
  };

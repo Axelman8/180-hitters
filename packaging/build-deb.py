@@ -28,6 +28,7 @@ with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
     write('etc/sudoers.d/dartsapp-system', 'dartsapp ALL=(root) NOPASSWD: /usr/local/sbin/darts-system\n')
     (root / 'etc/sudoers.d/dartsapp-system').chmod(0o440)
     shutil.copy2('packaging/camera-setup.py', root / 'usr/lib/dartsapp/camera-setup.py')
+    shutil.copy2('packaging/migrate-legacy.py', root / 'usr/lib/dartsapp/migrate-legacy.py')
     shutil.copy2('camera-calibrate-gui.py', root / 'usr/lib/dartsapp/camera-calibrate-gui.py')
     (root / 'usr/sbin').mkdir(parents=True, exist_ok=True)
     shutil.copy2('calibreer-cameras.py', root / 'usr/sbin/calibreer-cameras')
@@ -157,6 +158,7 @@ if [ "$1" = configure ]; then
     adduser --system --group --home /var/lib/dartsapp --no-create-home dartsapp
   fi
   @CAMERA_ENABLE@
+  /usr/bin/python3 /usr/lib/dartsapp/migrate-legacy.py
   if [ -d /run/systemd/system ]; then
     systemctl daemon-reload
     systemctl enable dartsapp.service dartsapp-bluetooth.service dartsapp-update.path @CAMERA_SERVICE@

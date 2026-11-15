@@ -6,6 +6,7 @@ import tarfile
 import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
+import json,subprocess
 
 if os.name=='nt':sys.modules['fcntl']=SimpleNamespace()
 spec=importlib.util.spec_from_file_location('nuc_update',Path(__file__).resolve().parents[1]/'nuc-update.py')
@@ -41,6 +42,8 @@ with tempfile.TemporaryDirectory() as tmp, patch.object(updater.os,'sync',create
  assert (root/'dist/index.html').read_text()=='new'
  (root/'dist/app.js').write_bytes(b'')
  assert not updater.healthy_dist(root/'dist')
+ (root/'dist/app.js').write_text('new')
+ assert not updater.healthy_installation(),'Missing helper scripts must cause a repair instead of up-to-date'
  scratch=Path(tmp)/'temp';scratch.mkdir()
  stale=scratch/'180-hitters-download-old';stale.mkdir();(stale/'bundle').write_text('old')
  fresh=scratch/'180-hitters-update-current';fresh.mkdir()
@@ -53,3 +56,20 @@ with tempfile.TemporaryDirectory() as tmp, patch.object(updater.os,'sync',create
  assert "dist' / 'system-control.py'" in source
  assert 'dartsapp ALL=(root) NOPASSWD' in source
  print('PASS: staged update verified, backup retained, venue preserved, empty bundle rejected and damaged installation detected')
+
+# Readiness must describe the running process, not merely the version on disk.
+events=[];states=[]
+def command(args,**kwargs):
+ events.append((args,kwargs))
+ return SimpleNamespace(returncode=0)
+replies=iter([{'version':'1.9.25','runningVersion':'1.8.22'}, {'version':'1.9.25','runningVersion':'1.9.25'}])
+with patch.object(updater,'write_status',side_effect=lambda **v:states.append(v)),patch.object(updater.subprocess,'run',side_effect=command),patch.object(updater,'fetch',side_effect=lambda url:json.dumps(next(replies)).encode()),patch.object(updater.time,'sleep'),patch.object(updater,'ensure_kiosk_browser'):
+ updater.restart_app('1.9.25')
+assert events[0][0][-1]=='oche-darts.service'
+assert events[1][0][-1]=='oche-darts-bluetooth.service' and '--no-block' in events[1][0]
+assert states[0]['state']=='restarting' and all(s['state']!='updated' for s in states)
+with patch.object(updater,'write_status'),patch.object(updater.subprocess,'run',side_effect=subprocess.CalledProcessError(1,'restart')):
+ try:updater.restart_app('1.9.25')
+ except subprocess.CalledProcessError:pass
+ else:raise AssertionError('A failed server restart must not report success')
+print('PASS: server first, running-version readiness, nonblocking Bluetooth and failed-restart detection')

@@ -49,6 +49,10 @@ jobs:
           node tests/bot-adaptive.mjs
           node tests/solo-scoring.mjs
           node tests/camera-game-rules.mjs
+          node tests/nuc-update-client.mjs
+          python3 tests/test_nuc_update.py
+          python3 tests/test_legacy_migration.py
+          python3 tests/test_server_version.py
           python3 tests/test_nuc_keyboard.py
 
       - name: Set up Java 17

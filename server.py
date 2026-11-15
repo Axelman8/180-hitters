@@ -394,6 +394,8 @@ def control_mouse(incoming):
 def serve(host='0.0.0.0', port=8765, data_file=None):
     from autodarts_bridge import AutoDartsBridge
     root = Path(__file__).parent
+    version_file = root / '.version'
+    running_version = version_file.read_text().strip() if version_file.exists() else ''
     if root == Path('/usr/lib/dartsapp') and not Path('/etc/systemd/system/dartsapp.service.d/desktop-control.conf').is_file():
         try: (Path('/var/lib/dartsapp') / 'update.request').touch()
         except OSError: pass
@@ -655,7 +657,9 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 platform = marker.read_text().strip() if marker.exists() else ''
                 version_file = root / '.version'
                 return self.reply(200, {'platform': platform if platform in ('windows', 'linux') else None,
-                                       'version': version_file.read_text().strip() if version_file.exists() else '',
+                                       'version': running_version,
+                                       'runningVersion': running_version,
+                                       'installedVersion': version_file.read_text().strip() if version_file.exists() else '',
                                        'nativeUpdate': (root / 'nuc-update.py').is_file() and (
                                            (root == Path('/usr/lib/dartsapp') and Path('/lib/systemd/system/dartsapp-update.path').is_file()) or
                                            (root == Path.home() / '.local/share/oche-darts' and (Path.home() / '.config/systemd/user/oche-darts-update.service').is_file()))})

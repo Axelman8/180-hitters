@@ -1,6 +1,7 @@
 """Release-runner smoke tests: install, serve, persist, upgrade, uninstall."""
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -68,9 +69,35 @@ if sys.argv[1] == 'windows':
     assert data.is_file() and 'Installer Test' in data.read_text()
     assert not (target / 'DartsApp.exe').exists()
 else:
+    # Reproduce the 1.8.22 per-user layout on the disposable Linux CI runner.
+    # Its live server occupies 8765 until the installer retires it.
+    legacy = None
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        source = Path.home() / '.local/share/oche-darts'
+        assert not source.exists(), 'CI legacy fixture must not replace existing user data'
+        source.mkdir(parents=True)
+        for name in ('server.py', 'autodarts_bridge.py', 'camera_research.py'):
+            shutil.copy2(name, source / name)
+        (source / 'dist').mkdir()
+        (source / 'dist/index.html').write_text('Legacy 1.8.22')
+        (source / '.version').write_text('1.8.22')
+        (source / '.desktop-platform').write_text('linux')
+        (source / 'match-players.json').write_text('["Legacy Installer Player"]')
+        units = Path.home() / '.config/systemd/user';units.mkdir(parents=True, exist_ok=True)
+        for name in ('oche-darts.service','oche-darts-update.service','oche-darts-update.timer','oche-darts-bluetooth.service'):
+            (units / name).write_text('[Unit]\nDescription=Legacy installer fixture\n')
+        legacy = subprocess.Popen([sys.executable,str(source / 'server.py'),'--host','127.0.0.1'], stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        for attempt in range(50):
+            try:
+                assert json.loads(request('/api/desktop-installation'))['version']=='1.8.22';break
+            except OSError:time.sleep(.1)
+        else:raise AssertionError('Legacy NUC fixture did not start')
     subprocess.run(['sudo', 'apt-get', 'update', '-qq'], check=True)
     package = './DartsApp-Ubuntu-Debian-amd64.deb'
     subprocess.run(['sudo', 'apt-get', 'install', '--no-install-recommends', '-y', package], check=True)
+    if legacy:
+        legacy.wait(timeout=10)
+        assert Path('/var/lib/dartsapp/legacy-backups').is_dir()
     assert Path('/usr/local/sbin/darts-system').is_file()
     assert Path('/usr/lib/dartsapp/kiosk-control.py').is_file()
     sudoers = subprocess.run(['sudo', 'cat', '/etc/sudoers.d/dartsapp-system'],
@@ -78,6 +105,7 @@ else:
     assert sudoers.startswith('dartsapp ALL=')
     wait()
     write_and_check()
+    if legacy: assert b'Legacy Installer Player' in request('/api/players')
     subprocess.run(['sudo', 'dpkg', '-i', package], check=True)
     wait()
     assert b'Installer Test' in request('/api/players')

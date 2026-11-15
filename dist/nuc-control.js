@@ -1,3 +1,4 @@
+import {updateNuc} from './nuc-update-client.js';
 const bridge = window.DartsAndroid;
 const localNuc = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname) && !bridge?.isTabletShell;
 const androidClient = !!bridge;
@@ -118,11 +119,11 @@ if(!androidClient){
 document.getElementById('nuc-bluetooth-on').onclick = () => act('bluetooth-on');
 document.getElementById('nuc-bluetooth-off').onclick = () => act('bluetooth-off', 'Bluetooth op de NUC uitzetten? De actieve Bluetooth-verbinding wordt verbroken.');
 document.getElementById('nuc-update').onclick = async () => {
-  status.textContent = 'NUC-update starten…';
+  const button=document.getElementById('nuc-update');button.disabled=true;
   try {
-    const data = await request('/api/update/check', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-    status.textContent = data.message + ' De service herstart vanzelf als er een update is.';
+    await updateNuc({request,status:text=>{status.textContent=text;}});
   } catch (error) { status.textContent = error.message; }
+  finally{button.disabled=false;}
 };
 document.getElementById('nuc-restart').onclick = () => act('restart', 'Weet je zeker dat je de NUC opnieuw wilt starten?');
 document.getElementById('nuc-shutdown').onclick = () => act('shutdown', 'Weet je zeker dat je de NUC helemaal wilt uitzetten? Je moet hem daarna fysiek weer aanzetten.');

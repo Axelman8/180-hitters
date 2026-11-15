@@ -31,15 +31,28 @@ Automatisch instellen van Bluetooth, hotspot en NUC-beheer is niet
 onderdeel van deze algemene desktopinstallers.
 
 UPDATEN EN VERWIJDEREN
-Kies op de computer Instellingen > Update controleren.
-De app toont je versie en controleert of een nieuwere versie beschikbaar is.
-Klik op Update downloaden. Open daarna het gedownloade installatiebestand
-en volg de installatiestappen (Linux vraagt je beheerderswachtwoord).
-Vernieuw na installatie de browser of open DartsApp opnieuw.
+Linux NUC: Menu > App-instellingen > Update > Controleren en bijwerken.
+Je kunt ook NUC & verbinding > NUC beheren > NUC bijwerken gebruiken.
+Beide knoppen volgen de download, installatie en herstart. De NUC toont
+pas succes wanneer de nieuwe server bereikbaar is. Het scherm vernieuwt.
+De NUC heeft zelf internet nodig; Bluetooth deelt geen telefooninternet.
 Werk bij tussen partijen: de achtergrondserver wordt opnieuw gestart.
-Dit is een updatecontrole met downloadknop, geen stille installatie.
-Vanaf versie 1.8.12 is deze knop beschikbaar in de desktopinstallers.
-Gebruik je nog 1.8.11, installeer dan eenmalig de nieuwe installer.
+
+HERSTEL VAN 1.8.22 OF EEN OUDERE INSTALLATIE
+Deze versie kan op de NUC alleen een installer downloaden. Voor de
+overgang naar automatisch bijwerken installeer je eenmalig dit pakket:
+https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Ubuntu-Debian-amd64.deb
+1. Download het bestand op de NUC.
+2. Open met Software installeren en bevestig met je Linux-wachtwoord.
+3. Herstart de NUC eenmaal en controleer de versie midden bovenin.
+De installer schakelt de eerdere gebruikersdienst uit om dubbele
+dartservers te voorkomen. Spelers en partijen worden overgenomen.
+Een kopie van de eerdere gegevens blijft in /var/lib/dartsapp/legacy-backups.
+Een al bestaande systeemwedstrijd wordt behouden; de oude partij wordt
+aan de bewaarde partijen toegevoegd.
+
+Windows: Menu > App-instellingen > Update controleren. Download de
+nieuwe installer en voer deze uit. Heropen daarna de app.
 
 Download de nieuwste installer van:
 https://github.com/Axelman8/180-hitters/releases/latest
@@ -50,6 +63,5 @@ Gegevens blijven ook na verwijderen bewaard:
 Windows: %LOCALAPPDATA%\180 Hitters
 Linux: /var/lib/dartsapp
 
-Gebruik deze installer voor een nieuwe computer. Een bestaande NUC
-met de eerdere oche-darts-installatie gebruikt de bestaande updater;
-installeer daar geen tweede server naast op poort 8765.
+De Linux-installer ondersteunt ook de overgang van oche-darts naar
+de systeeminstallatie. Daarna blijft er een dartserver op poort 8765 over.

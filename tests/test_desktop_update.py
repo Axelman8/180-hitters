@@ -4,15 +4,20 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 from playwright.sync_api import sync_playwright, expect
 
 root = Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory() as tmp:
-    process = subprocess.Popen([sys.executable, str(root / 'server.py'), '--port', '8789',
+    process = subprocess.Popen([sys.executable, str(root / 'server.py'), '--host','127.0.0.1','--port', '8789',
                                 '--data-file', str(Path(tmp) / 'match.json')],
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
-        time.sleep(1)
+        for attempt in range(50):
+            try:
+                urllib.request.urlopen('http://127.0.0.1:8789/api/state',timeout=1).close();break
+            except OSError:time.sleep(.1)
+        else:raise AssertionError('Updater-test server did not start')
         with sync_playwright() as p:
             browser = p.chromium.launch()
             for platform in ('windows', 'linux'):
@@ -23,7 +28,8 @@ with tempfile.TemporaryDirectory() as tmp:
                 page.route('https://api.github.com/**', lambda route: route.fulfill(json=release))
                 page.goto('http://127.0.0.1:8789/')
                 def open_update():
-                    page.get_by_text('Instellingen', exact=True).click()
+                    page.evaluate("document.dispatchEvent(new Event('open-main-menu'))")
+                    page.locator('.navigation-category[data-menu="app"]').click()
                     page.locator('#desktop-update-action').click()
                 open_update()
                 dialog = page.locator('#desktop-update-dialog')
@@ -53,7 +59,9 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator('#desktop-update-action')).to_have_count(0)
             page.close()
             for result in ('current','updated','error','start-error'):
+                print('Native update case:',result,flush=True)
                 page=browser.new_page()
+                page.on('pageerror',lambda error:print('Updater page error:',str(error),flush=True))
                 installation={'platform':None,'version':'1.8.28','nativeUpdate':True}
                 page.route('**/api/desktop-installation',lambda route:route.fulfill(json=installation))
                 calls=[]
@@ -66,7 +74,8 @@ with tempfile.TemporaryDirectory() as tmp:
                     route.fulfill(json={'time':101,'state':result,'version':installation['version'],'message':{'current':'NUC is actueel','updated':'NUC is bijgewerkt','error':'Download mislukt'}.get(result,'')})
                 page.route('**/api/update/status',native_status)
                 page.goto('http://127.0.0.1:8789/')
-                page.get_by_text('Instellingen',exact=True).click()
+                page.evaluate("document.dispatchEvent(new Event('open-main-menu'))")
+                page.locator('.navigation-category[data-menu="app"]').click()
                 page.locator('#desktop-update-action').click()
                 assert not calls
                 page.get_by_text('Controleren en bijwerken',exact=True).click()
