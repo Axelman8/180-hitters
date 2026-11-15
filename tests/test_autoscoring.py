@@ -93,6 +93,13 @@ with tempfile.TemporaryDirectory() as tmp:
                     raise
                 phone.locator('#camera-game-on').wait_for(state='attached')
                 return s
+            def open_camera_menu(view):
+                view.evaluate("document.dispatchEvent(new Event('open-main-menu'))")
+                view.locator('.navigation-category[data-menu="nuc"]').click()
+                view.locator('#camera-game-controls').scroll_into_view_if_needed()
+            def click_camera(view,button):
+                open_camera_menu(view)
+                view.locator(button).click()
             setup()
             page.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
             phone.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
@@ -186,6 +193,29 @@ with tempfile.TemporaryDirectory() as tmp:
             Mock.value=state([(20,3),(11,3),(14,2)])
             wait(lambda:len(get()['match']['state']['history'])==1)
             assert get()['match']['state']['players'][0]['trainingLevel']>121
+            # The new games have their own commit rules, independent of X01.
+            for game in ('scram','bull41','twentyone'):
+                s=setup(game)
+                for count in (1,2):
+                    Mock.value=state([(20,1),(19,1)][:count])
+                    wait(lambda:len((get().get('draft') or {}).get('hits',[]))==count)
+                    assert len(get()['match']['state']['history'])==0
+                Mock.value=state([(20,1),(19,1),(0,1)])
+                wait(lambda:len(get()['match']['state']['history'])==1)
+                assert get()['match']['state']['history'][0]['darts']==3
+                assert get()['match']['state']['active']!=s['active']
+            setup('killer')
+            Mock.value=state([(5,1)])
+            wait(lambda:len(get()['match']['state']['history'])==1)
+            assert get()['match']['state']['players'][0]['killerNumber']==5
+            Mock.value=state([]);wait(lambda:cam()['armed'] and not cam()['pending']);time.sleep(.5)
+            Mock.value=state([(12,1)])
+            wait(lambda:len(get()['match']['state']['history'])==2)
+            assert get()['match']['state']['killerStage']=='playing'
+            setup('fourinarow')
+            Mock.value=state([(0,1),(0,1),(0,1)])
+            wait(lambda:len(get()['match']['state']['history'])==1)
+            assert get()['match']['state']['history'][0]['labels']=='Mis / Mis / Mis'
             # Partial removal never invents missing darts or silently changes player.
             setup()
             Mock.value=state([(20,1)])
@@ -208,37 +238,37 @@ with tempfile.TemporaryDirectory() as tmp:
             assert api.post(url+'/api/autoscoring',data={'enabled':True,'recording':False}).ok
             wait(lambda:cam()['armed'])
             assert Mock.value['running'] is True
-            # Only the header contains camera controls; Settings has no duplicate.
+            # Camera controls are grouped under NUC & verbinding, without duplicates.
             assert phone.locator('#autoscoring-open').count()==0
-            if phone.locator('#toggle-toolbar').get_attribute('aria-expanded')=='false': phone.locator('#toggle-toolbar').click()
-            phone.locator('#camera-game-off').click()
+            click_camera(phone,'#camera-game-off')
             wait(lambda:not cam()['enabled'])
-            phone.locator('#camera-game-on').click()
+            click_camera(phone,'#camera-game-on')
             wait(lambda:cam()['enabled'] and cam()['armed'])
-            phone.locator('#camera-game-off').click()
+            click_camera(phone,'#camera-game-off')
             wait(lambda:not cam()['enabled'])
-            phone.locator('#camera-game-on').click()
+            click_camera(phone,'#camera-game-on')
             wait(lambda:cam()['enabled'] and cam()['armed'])
-            # Header controls stay visible and indicate exactly the chosen state.
+            # Menu controls remain usable at narrow widths and show the chosen state.
             for view in (page,phone):
+                open_camera_menu(view)
                 view.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
                 assert view.locator('#header-menu #camera-game-controls').count()==1
                 assert view.locator('#camera-game-off').get_attribute('aria-pressed')=='false'
                 for width in (320,393,768,1080):
                     view.set_viewport_size({'width':width,'height':900})
                     view.wait_for_timeout(250)
-                    boxes=[view.locator(selector).bounding_box() for selector in ('#header-menu details:first-child summary','#header-menu details:nth-child(2) summary','#header-menu details:nth-child(3) summary','#header-menu details:nth-child(4) summary','#camera-game-on','#camera-game-off')]
+                    view.locator('#camera-game-controls').scroll_into_view_if_needed()
+                    boxes=[view.locator(selector).bounding_box() for selector in ('#camera-game-on','#camera-game-off')]
                     assert all(box and box['x']>=0 and box['x']+box['width']<=width+1 for box in boxes),(width,boxes)
-                    assert abs(boxes[-1]['y']-boxes[-2]['y'])<2,(width,boxes)
-                    assert boxes[-2]['y']>=boxes[3]['y'],(width,boxes)
+                    assert abs((boxes[-1]['y']+boxes[-1]['height']/2)-(boxes[-2]['y']+boxes[-2]['height']/2))<2,(width,boxes)
                 colors=view.evaluate("[...document.querySelectorAll('#camera-game-controls button')].map(b=>getComputedStyle(b).backgroundColor)")
                 assert colors[0]!=colors[1],colors
-            phone.locator('#camera-game-off').click()
+            click_camera(phone,'#camera-game-off')
             wait(lambda:not cam()['enabled'])
             for view in (page,phone):
                 view.wait_for_function("document.querySelector('#camera-game-off').getAttribute('aria-pressed') === 'true'")
                 assert view.locator('#camera-game-on').get_attribute('aria-pressed')=='false'
-            phone.locator('#camera-game-on').click()
+            click_camera(phone,'#camera-game-on')
             wait(lambda:cam()['enabled'] and cam()['armed'])
             # A service restart preserves ON and resumes from an empty board.
             proc.terminate();proc.wait()
@@ -257,7 +287,7 @@ with tempfile.TemporaryDirectory() as tmp:
             }""")
             assert result=={'hits':1,'rejected':True},result
             assert not errors,errors
-            print('PASS queue idempotency, pre-existing darts, early finish, double-in, camera/phone sync, Cricket/Tactics points, Hitters carry, manual pause')
+            print('PASS queue idempotency, early finish, camera/phone sync, all new game turn rules, misses, menu camera controls, persistence and manual pause')
             b.close()
     finally:
         proc.terminate();proc.wait();mock.shutdown()
