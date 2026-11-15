@@ -1,0 +1,10 @@
+.dialog-navigation{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:flex-start;min-height:48px;padding:5px 0 10px;margin:0 0 12px;background:var(--panel,#13262f)}
+.dialog-navigation .dialog-back{width:auto!important;min-width:96px;min-height:44px;margin:0!important;flex:none;padding:10px 16px;font-size:14px;text-align:left}
+.dialog-back-replaced{display:none!important}
+.wizard-topbar{position:sticky;top:0;z-index:15;display:flex;padding:6px 0 12px;background:var(--bg,#0c171d)}
+.wizard-topbar .wizard-back{min-height:44px;min-width:96px}
+.dart-slots button,.four-darts button,.sonny-darts button{min-width:0;min-height:44px;color:inherit;font:inherit;padding:8px;border:1px solid var(--line);background:transparent;border-radius:10px;cursor:pointer}
+.dart-slots button[aria-pressed=true],.four-darts button[aria-pressed=true],.sonny-darts button[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.dart-correction-note{font-size:14px;color:var(--muted,#b8c9d0);margin:6px 0}
+.four-darts .current{border-style:solid;border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.lives-correction{padding:8px;border:1px solid var(--accent);border-radius:10px;margin:0 0 8px}

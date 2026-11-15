@@ -1,3 +1,4 @@
+import {renderDartSlots} from './dart-editor.js';
 export const sonnyGameIds=['scram','killer','bull41','twentyone'];
 export const sonnyGameNames={scram:'Scram',killer:'Killer',bull41:'Bull / 41',twentyone:'21'};
 const symbols=['○','×','△','□'];
@@ -99,9 +100,9 @@ export function renderSonnyGame(root,state,pending,actions){
   if(state.game==='scram'&&state.scramClosed[targetId(number)])button.classList.add('closed');
   if(state.game==='twentyone'&&(state.players[state.active].twentyOneTarget===number||(number===25&&state.players[state.active].twentyOneTarget===21)))button.classList.add('current');
   if(state.game==='killer')state.players.forEach((player,index)=>{if(player.killerNumber===number){button.classList.add('assigned');button.style.setProperty('--target-color',`var(--four-p${index})`);button.append(el('i',player.sonnySymbol));}});
-  if(state.game==='bull41'&&state.bull41Role==='bull'&&number===25)button.classList.add('current');button.disabled=pending.length>=3||(state.game==='killer'&&state.killerStage==='assigning'&&number===25);button.onclick=()=>actions.hit(number);board.append(button);
+  if(state.game==='bull41'&&state.bull41Role==='bull'&&number===25)button.classList.add('current');button.disabled=(!actions.editing&&pending.length>=3)||(state.game==='killer'&&state.killerStage==='assigning'&&number===25);button.onclick=()=>actions.hit(number);board.append(button);
  }layout.append(board);
  const controls=el('aside',undefined,'sonny-controls'),multipliers=el('div',undefined,'sonny-multipliers');for(const [mult,text] of [[1,'Single'],[2,'Double'],[3,'Triple']]){const button=el('button',text,mult===actions.multiplier?'selected':'');button.type='button';button.onclick=()=>actions.setMultiplier(mult);multipliers.append(button);}controls.append(multipliers);
- const darts=el('div',undefined,'sonny-darts');for(let index=0;index<3;index++)darts.append(el('span',pending[index]?.label||`Pijl ${index+1}`));controls.append(darts);
- const actionRow=el('div',undefined,'sonny-actions'),miss=el('button','Mis');miss.type='button';miss.disabled=pending.length>=3||state.game==='killer'&&state.killerStage==='assigning';miss.onclick=actions.miss;const remove=el('button','Laatste wissen');remove.type='button';remove.disabled=!pending.length;remove.onclick=actions.remove;const confirm=el('button','Bevestigen','primary');confirm.type='button';confirm.disabled=state.game==='killer'&&state.killerStage==='assigning'?pending.length!==1:pending.length!==3;confirm.onclick=actions.confirm;actionRow.append(miss,remove,confirm);controls.append(actionRow);layout.append(controls);root.append(layout);
+ const darts=el('div',undefined,'sonny-darts');renderDartSlots(darts,pending,{editing:actions.editing,selected:actions.selectedDart,select:actions.select,placeholder:index=>`Pijl ${index+1}`});controls.append(darts);
+ const actionRow=el('div',undefined,'sonny-actions'),miss=el('button','Mis');miss.type='button';miss.disabled=(!actions.editing&&pending.length>=3)||state.game==='killer'&&state.killerStage==='assigning';miss.onclick=actions.miss;const remove=el('button','Laatste wissen');remove.type='button';remove.disabled=!pending.length;remove.onclick=actions.remove;const confirm=el('button','Bevestigen','primary');confirm.type='button';confirm.disabled=!sonnyAutoCommit(state,pending);confirm.onclick=actions.confirm;actionRow.append(miss,remove,confirm);controls.append(actionRow);layout.append(controls);root.append(layout);
 }

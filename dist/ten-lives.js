@@ -4,6 +4,14 @@ export const livesLabel=(state,player)=>player.livesTarget===25?'Bull (50)':(sta
 // A recorded input is one physical dart. Only exhausting a target ends a visit.
 export function applyLivesDart(state,turn){
  if(state.phase!=='playing')throw Error('Deze training is afgelopen.');
+ if(turn.trainingResults!==undefined){
+  const results=turn.trainingResults;
+  if(!Array.isArray(results)||results.length<1||results.length>3||results.some(hit=>typeof hit!=='boolean'))throw Error('Controleer de herstelde pijlen.');
+  let next=state;for(const hit of results)next=applyLivesDart(next,{trainingHit:hit});
+  const details=next.history.slice(state.history.length),last=details.at(-1);
+  next.history.splice(state.history.length,details.length,{...last,target:details[0].target,darts:results.length,score:results.filter(Boolean).length,labels:results.map(hit=>hit?'Raak':'Mis').join(' / '),input:{trainingResults:[...results]},details});
+  return next;
+ }
  if(turn.trainingMisses!==undefined){
   const count=turn.trainingMisses;
   if(!Number.isInteger(count)||count<1||count>3||count>state.players[state.active].attempts)throw Error('Kies maximaal drie resterende pogingen.');
@@ -48,7 +56,7 @@ export function livesSummary(state){
   const round=(rounds.get(playerIndex)||0)+1;rounds.set(playerIndex,round);
   rows.push({...item,round,success});pending.delete(playerIndex);
  };
- for(const turn of state.history||[]){
+ for(const turn of (state.history||[]).flatMap(turn=>turn.details||[turn])){
   const playerIndex=Number.isInteger(turn.player)?turn.player:Math.max(0,state.players.findIndex(player=>player.name===turn.name));
   let item=pending.get(playerIndex);
   if(item&&item.target!==turn.target){finish(playerIndex,false);item=null;}
@@ -235,9 +243,17 @@ export function renderLives(state,actions){
  const controls=el('section',undefined,'lives-controls panel');
  const btn=(text,id,fn,cls)=>{const b=el('button',text,cls);b.type='button';b.id=id;b.onclick=fn;return b;};
  const tiles=el('div',undefined,'lives-entry');
+ if(actions.correction){
+  const correction=el('div',undefined,'lives-correction');correction.append(el('p','Selecteer een pijl, kies Raak of Mis en bevestig.','dart-correction-note'));
+  actions.correction.forEach((hit,index)=>{const dart=btn(`Pijl ${index+1}: ${hit?'Raak':'Mis'}`,`lives-correction-${index}`,()=>actions.select(index));dart.setAttribute('aria-pressed',String(actions.selectedDart===index));correction.append(dart);});
+  const remove=btn('Laatste pijl wissen','lives-correction-remove',actions.remove);remove.disabled=actions.correction.length<=1;
+  const confirm=btn('Correctie bevestigen','lives-correction-confirm',actions.confirm,'primary');confirm.disabled=!actions.correction.length;
+  correction.append(remove,confirm);controls.append(correction);
+ }
  tiles.append(btn('Raak','lives-hit',()=>actions.dart(true),'primary'),btn('Mis','lives-miss',()=>actions.dart(false),'lives-miss'),btn(`${Math.min(3,p.attempts)} keer mis`,'lives-miss-three',()=>actions.misses(Math.min(3,p.attempts)),'lives-miss lives-miss-three'));
  tiles.querySelector('#lives-hit').setAttribute('aria-label',`${livesLabel(state,p)} geraakt`);
  for(const b of tiles.children)b.disabled=state.phase!=='playing';
+ if(actions.correction)tiles.querySelector('#lives-miss-three').hidden=true;
  controls.append(tiles,el('p','Voer elke pijl direct in. Alleen het aangegeven doel telt. Bull is uitsluitend 50.','lives-hint'));
  const undo=btn('Vorige invoer herstellen','lives-undo',actions.undo,'lives-undo');undo.disabled=!actions.canUndo;
  const redo=btn('Volgende pijl →','lives-redo',actions.redo);redo.disabled=!actions.canRedo;

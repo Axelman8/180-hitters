@@ -49,6 +49,7 @@ jobs:
           node tests/bot-adaptive.mjs
           node tests/solo-scoring.mjs
           node tests/camera-game-rules.mjs
+          node tests/lives-correction.mjs
           node tests/nuc-update-client.mjs
           python3 tests/test_nuc_update.py
           python3 tests/test_legacy_migration.py
@@ -128,6 +129,15 @@ jobs:
       - name: Checksum Windows installer
         run: sha256sum DartsApp-Setup-Windows-x64.exe > DartsApp-Setup-Windows-x64.exe.sha256
 
+      - name: Retain dedicated Android 4 tablet distribution
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          available=$(gh release view --json assets --jq '[.assets[].name] | (index("180-Hitters-Tablet-Android-4.apk") != null and index("180-Hitters-Tablet-Android-4.json") != null)')
+          if [ "$available" = true ]; then
+            gh release download --pattern '180-Hitters-Tablet-Android-4.apk' --pattern '180-Hitters-Tablet-Android-4.json' --dir tablet-release
+          fi
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -164,4 +174,12 @@ jobs:
           demo/180-Hitters-Online-darten-uitleg.mp4
           --title "180 Hitters ${GITHUB_REF_NAME}"
           --generate-notes
+
+      - name: Publish dedicated tablet distribution
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f tablet-release/180-Hitters-Tablet-Android-4.apk ]; then
+            gh release upload "$GITHUB_REF_NAME" tablet-release/180-Hitters-Tablet-Android-4.apk tablet-release/180-Hitters-Tablet-Android-4.json
+          fi
 

@@ -27,7 +27,8 @@ body #header-menu[open]{display:flex;flex-direction:column;gap:0}
 #header-menu .navigation-category small{display:block;font-size:13px;line-height:1.5;font-weight:400;color:#b8c9d0}
 #header-menu .navigation-category>b{font-size:25px;color:var(--accent);line-height:1}
 #header-menu .navigation-category:hover,#header-menu .navigation-category:focus-visible{border-color:var(--accent);background:#304638}
-#header-menu #navigation-back{min-height:44px;font-size:14px;padding:8px 12px;background:transparent;margin:0 0 12px;text-align:left}
+#header-menu #navigation-back{min-height:44px;font-size:14px;padding:8px 12px;background:transparent;margin:0;text-align:left;flex-shrink:0}
+#header-menu #navigation-close{order:-1;flex-shrink:0}
 #navigation-description{font-size:15px;line-height:1.5;color:#b8c9d0;margin:0 0 24px}
 #header-menu .navigation-section{margin:0 0 24px}
 #header-menu h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#83d9ef;margin:0 0 10px}

@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {newMatch,applyTurn} from '../dist/engine.js';
+import {livesSummary} from '../dist/ten-lives.js';
+const initial=newMatch(['Solo'],501,'double',1,{game:'tenlives',livesMode:'double'}),original=structuredClone(initial);
+let sequential=initial;for(const hit of [false,true,false])sequential=applyTurn(sequential,{trainingHit:hit});
+const corrected=applyTurn(initial,{trainingResults:[false,true,false]});
+assert.deepEqual(initial,original);assert.deepEqual(corrected.players,sequential.players);
+assert.equal(corrected.history.length,1);assert.equal(corrected.history[0].details.length,3);
+assert.deepEqual(corrected.history[0].input,{trainingResults:[false,true,false]});
+const report=livesSummary(corrected);assert.equal(report.totalDarts,3);
+assert.deepEqual(report.rows.map(row=>[row.target,row.darts,row.success]),[[20,2,true],[19,1,false]]);
+for(const results of [[],[false,false,false,false],[0]])assert.throws(()=>applyTurn(initial,{trainingResults:results}));
+const final=structuredClone(initial);final.players[0].livesTarget=25;
+assert.equal(applyTurn(final,{trainingResults:[true]}).phase,'won');
+assert.throws(()=>applyTurn(final,{trainingResults:[true,false]}),/afgelopen/);
+console.log('PASS: restored Hitters darts, mixed corrections, target-specific reports, immutability and early finish validation');

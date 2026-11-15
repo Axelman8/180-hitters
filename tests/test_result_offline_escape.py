@@ -23,12 +23,13 @@ with tempfile.TemporaryDirectory() as tmp:
    current=page.request.get('http://127.0.0.1:8795/api/state').json()
    assert page.request.post('http://127.0.0.1:8795/api/state',data={'revision':current['revision'],'match':{'state':state,'undo':[]}}).ok
    page.reload()
+   page.evaluate("async()=>{document.dispatchEvent(new Event('close-navigation'));const data=await(await fetch('/api/state')).json();document.dispatchEvent(new CustomEvent('resume-saved-match',{detail:data}));}")
    expect(page.locator('#result-dialog')).to_be_visible()
    expect(page.locator('#result-later')).to_be_hidden()
    server.terminate();server.wait();server=None
    expect(page.locator('#connection-status')).to_contain_text('Geen verbinding',timeout=7000)
-   expect(page.locator('#result-later')).to_be_visible()
-   page.locator('#result-later').click()
+   expect(page.locator('#result-dialog>.dialog-navigation .dialog-back')).to_be_visible()
+   page.locator('#result-dialog>.dialog-navigation .dialog-back').click()
    expect(page.locator('#result-dialog')).to_be_hidden()
    expect(page.locator('#message')).to_contain_text('opent opnieuw')
    server=start_server(data_file);time.sleep(1)

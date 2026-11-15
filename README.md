@@ -1,330 +1,143 @@
 # 180 Hitters
 
-An offline-first darts scoring app for Android, touchscreen displays, Linux NUCs, and Windows. Developed by [Axelman8](https://github.com/axelman8).
+Offline darts scoring and training for Android phones, Android tablets, Linux NUC displays and Windows. Developed by [Axelman8](https://github.com/axelman8).
 
-180 Hitters runs without a camera, account, subscription, or internet connection during play. A Linux NUC can host the shared match display while Android phones connect over Bluetooth or the local network. The Android app can also run matches independently without a NUC.
+Play independently on your device or control a shared Linux NUC over Bluetooth. Local play needs no account, subscription, internet connection or cameras. Optional AutoDarts camera scoring and private online **4 in a Row** lanes are available. The app interface and narrated tutorial videos are currently in Dutch; repository documentation is in English.
 
 ## Downloads
 
-### Practice against a bot
-
-In **Spelen → Nieuwe partij → Spelers**, select a player seat and choose
-**Speler**, **BOT 40** or **BOT 50**. Bots can occupy any of the four player
-seats in all twelve games, alongside human players. They work offline on
-Android and desktop, and in shared NUC matches controlled over Bluetooth.
-
-The level is a target three-dart average for full 501 straight-in/double-out
-legs, including checkout attempts and busts. Individual matches vary. Other
-games use the same physical accuracy with a strategy specific to their rules.
-The original bot model aims at a point on the board and applies two-dimensional
-Gaussian scatter, so neighbouring segments, singles, doubles, triples and misses
-follow the board geometry. No third-party bot source is bundled.
-
-After a human has thrown at least nine darts in X01, 121, or Gotcha, a bot follows
-half of the gap above its selected base level: a human averaging 50 against
-BOT 40 gives the bot a target of 45; a human averaging 60 gives it 50. With
-multiple humans, the strongest measured human sets the reference. Bots never
-feed back into each other's level. The target can return towards the base as
-the human average falls, and is capped at 100. The live bot banner shows the
-current target and base. Confirmed darts and scores are never rewritten.
-
-Cricket and Tactics estimate playing strength from marks per round (MPR), using
-separate references for Standard, Cut Throat, and No Score. Their scoreboard
-points are strategic positions, not a 501 average. Other training and positional
-games retain the selected base accuracy because their scores are not comparable.
-The closing-game strategy re-evaluates after each dart: score on open opponents,
-repair deficits, create new scoring routes, close opposing scoring numbers,
-and take a legal winning dart immediately. Cut Throat targets the opponents
-whose low scores matter; No Score never deliberately farms points. A solo game
-has no opponents to score against; its additional hits on closed Cricket/Tactics
-targets count as personal training points instead, including solo Cut Throat.
-The first three marks close the target, only excess marks score, and closing the
-last target still ends the leg immediately. No Score deliberately counts marks
-only. Reports and shared images show the final score, total credited points,
-and points per turn. X01, 121, and Gotcha reports also show total credited points;
-Bob's 27 already shows its end score. Lives, progress, and captured cells remain
-the result measures for games built around those objectives.
-Start a new solo game to use the training scoring rule from the first dart.
-
-Darts appear individually with varying, human-paced pauses. A shared execution
-lease prevents the NUC and its controllers from running duplicate bot turns.
-Each visible dart is saved, allowing a disconnected executor to resume the
-unfinished visit. Camera detection pauses during bot turns. Bot matches use
-the regular match library and reports. Online dart lanes remain human multiplayer.
-
-Validation: `node tests/bot-engine.mjs` simulates every game and calibrates each
-level over 1,500 complete 501 legs; `node tests/bot-adaptive.mjs` checks adaptation,
-multi-player closing-game tactics, and intermediate target calibration;
-`python tests/test_bots.py` checks the real
-setup UI, timed darts, shared execution and reconnect recovery.
-
-### Eenvoudig installeren
-
-Vanaf 1.8.12: kies op de computer **Instellingen → Update controleren**. De app vergelijkt de geïnstalleerde versie met de nieuwste GitHub-release en biedt de juiste Windows- of Linux-installer aan. Open het gedownloade bestand en bevestig de installatie; daarna de browser vernieuwen. Spelers en partijen blijven behouden. De eerste upgrade vanaf 1.8.11 gebeurt eenmalig via onderstaande downloadlinks.
-
-- **[Windows-installer (.exe)](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Setup-Windows-x64.exe)** — Windows 10/11, 64-bit. Download, open en volg de installatiestappen. Python is inbegrepen. Start daarna **DartsApp** via het bureaublad of startmenu.
-- **[Ubuntu/Debian-installer (.deb)](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Ubuntu-Debian-amd64.deb)** — Ubuntu 22.04+ of Debian 12+, Intel/AMD 64-bit met systemd. Open met Software installeren. Werkt dat niet, gebruik in de downloadmap `sudo apt install ./DartsApp-Ubuntu-Debian-amd64.deb`. Start daarna **DartsApp** via het toepassingenmenu. De server start automatisch.
-- **[Installatiehulp](packaging/INSTALLER-HELP.txt)** — verbinden met je telefoon, updates en verwijderen.
-
-Deze desktopinstallers ondersteunen lokaal spelen en mobiele bediening via wifi/LAN. Bluetooth-, hotspot- en NUC-systeembeheer zijn onderdeel van de bestaande specifieke NUC-installatie. Gebruik op een reeds ingerichte NUC de bestaande updater, niet een tweede serverinstallatie.
-
-Updates: installeer de nieuwste installer over de bestaande versie. Spelers en partijen blijven bewaard, ook bij verwijderen. Windows bewaart gegevens in `%LOCALAPPDATA%\180 Hitters`; het Debian-pakket gebruikt `/var/lib/dartsapp`. De Windows-installer is nog niet ondertekend met een uitgeverscertificaat.
-
-Shared NUC matches have one active phone controller. The first phone claims
-control automatically; additional phones follow the match. Choose **Spelen →
-Bediening overnemen** to transfer input to another phone. The NUC display remains
-editable. Confirmed history and the current synchronized draft stay on the NUC.
-Ownership is checked atomically on shared writes, including Bluetooth requests;
-old queued requests cannot edit after a transfer. Ownership resets on server
-restart. This is input coordination on the trusted local network, not account
-authentication. Update both the NUC and Android clients to 1.8.6 or later.
-Standalone Android matches are unaffected.
-
-From a local Android match, **Spelen → Partij overzetten naar NUC** stages a
-snapshot and connects over Bluetooth. After connecting and obtaining phone
-control, review both match names and confirm the transfer. The NUC durably saves
-its existing match under `match-backups/` before replacement. **Spelen →
-Opgeslagen NUC-partijen** restores a selected backup, first backing up the active
-match again. History, undo/redo data and synchronized draft input are included.
-The phone switches to NUC control; its local copy is retained. Transfer retries
-are deduplicated across server restarts. Both NUC and Android need version 1.8.7.
-
-From 1.8.8, NUC recovery storage is limited to 30 snapshots / 100 MiB. Cleanup
-runs at startup and after successful transfers/restores; the newest backup is
-always kept, even if it alone exceeds the byte limit. The active match is never
-pruned. Transfer receipts retain the most recent 100 requests. Transfers and
-updates require 50 MiB free beyond their estimated write size; clients show a
-warning below 100 MiB. Successful polling is no longer written to the journal.
-NUC updates stream downloads, retain one previous install, and remove abandoned
-updater temp directories older than seven days. Android removes installed/old
-APK downloads, keeps at most one pending installer, limits APK downloads to
-100 MiB, and preserves the previous local match on write failure. These limits
-do not truncate the active match's history or control storage used by other apps.
+| Device | Latest installer | Requirements |
+| --- | --- | --- |
+| Android phone / modern tablet | [180-Hitters.apk](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters.apk) | Android 8+. Open the APK and allow installation from its source when Android asks. |
+| Dedicated old tablet | [Android 4.2 tablet APK](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Tablet-Android-4.apk) | Separate legacy launcher and browser-compatible client. |
+| Linux NUC / desktop | [Ubuntu/Debian installer](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Ubuntu-Debian-amd64.deb) | Ubuntu 22.04+ / Debian 12+, Intel/AMD 64-bit and systemd. Open with Software Install. |
+| Linux NUC with cameras | [NUC camera installer](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-NUC-Cameras-Ubuntu-amd64.deb) | Includes camera setup and calibration tools. |
+| Windows 10/11 | [Windows installer](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Setup-Windows-x64.exe) | Intel/AMD 64-bit. Python is included. |
 
-Download the latest packages from [GitHub Releases](https://github.com/Axelman8/180-hitters/releases/latest):
+All packages and SHA-256 checksums are in [GitHub Releases](https://github.com/Axelman8/180-hitters/releases/latest). Linux installs dependencies through the distribution's package manager and may request your administrator password. The Windows installer does not have a publisher certificate.
 
-- `180-Hitters.apk` — signed Android app
-- `180-Hitters-Linux-x64.tar.gz` — complete Ubuntu/Debian NUC installer
-- `180-Hitters-Windows-x64.zip` — Windows 10/11 package
-- `.sha256` files — checksums for verifying each download
+Advanced packages: `180-Hitters-Linux-x64.tar.gz` and `180-Hitters-Windows-x64.zip`. Linux source installation uses `sudo bash setup-linux.sh`; manual per-user installation uses `bash install-linux.sh`. Use one dartserver installation per NUC. See [installation and recovery help](packaging/INSTALLER-HELP.txt).
 
-The user interface is currently in Dutch. This repository and its technical documentation use English.
+## Menus
 
-Every game in the setup wizard includes a Dutch text explanation and an in-app **Bekijk uitlegvideo** player. The MP4 is streamed directly from the latest GitHub release; selecting it does not first save the video to the device's Downloads folder.
+The app starts at its main menu while keeping the current match. The version is centered in the top bar. **TERUG** (Back) is at the top of app menus, dialogs and the match wizard, including long reports.
 
-## Linux NUC installation
+| App menu | Contents |
+| --- | --- |
+| **Spelen** (Play) | Start or change a match, show screen input, browse saved games and resume unfinished matches. |
+| **Online darten** (Online darts) | Create or join a dart lane, send invitations and manage club access. |
+| **Spelers & teams** (Players and teams) | Player lists, team order, substitutes and replacements. |
+| **NUC & verbinding** (NUC and connection) | Connect, take control, transfer a match, remote mouse, NUC display, Bluetooth and cameras. |
+| **App-instellingen** (App settings) | Local display options, updates and application information. |
 
-The complete installer targets Ubuntu/Debian with a graphical desktop, systemd, NetworkManager, and BlueZ.
+NUC-only controls appear when connected. The connection indicator shows whether the device controls the NUC. Android system settings and installer screens use Android's own navigation.
 
-1. Download and extract `180-Hitters-Linux-x64.tar.gz`.
-2. Open a terminal in the extracted directory.
-3. Run `sudo bash setup-linux.sh`.
-4. Sign in to the graphical desktop if it is not already active.
+## All games and tutorial videos
 
-The installer configures:
+All twelve games support up to four player seats, including **BOT 40** and **BOT 50**. Games that require opponents need at least two participants; a bot can fill a seat. Supported match games also offer temporary teams with up to five members each.
 
-- the local Python web server;
-- kiosk-mode browser startup;
-- Bluetooth communication with the Android app;
-- restricted NUC power and network controls;
-- automatic GitHub update checks;
-- the protected `180 Hitters wifi` fallback hotspot.
+Every game has a written explanation and **Bekijk uitlegvideo** (Watch tutorial) in the new-match wizard. The player streams the Dutch narrated MP4 directly from GitHub, without first saving it to Downloads. Streaming needs internet access.
 
-The existing Autodarts installation is not removed. Disable its kiosk autostart if both applications would otherwise open at sign-in.
+| Game | Objective | Tutorial MP4 |
+| --- | --- | --- |
+| X01 | Count down to zero with straight, double or master opening/finishing rules. | [X01](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-X01-uitleg.mp4) |
+| Cricket | Close 15-20 and bull; Standard, Cut Throat or No Score. | [Cricket](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Cricket-uitleg.mp4) |
+| Tactics | Close 10-20 and bull, with the same scoring variants. | [Tactics](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Tactics-uitleg.mp4) |
+| 121 | Finish within nine darts; multiplayer participants alternate three-dart visits. | [121](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-121-uitleg.mp4) |
+| Gotcha | Reach the target exactly and reset opponents whose scores you match. | [Gotcha](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Gotcha-uitleg.mp4) |
+| Bob's 27 | Doubles training from D1 through D20 and bull, starting at 27. | [Bob's 27](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Bobs-27-uitleg.mp4) |
+| Hitters Challenge | Progress through double or triple targets while managing lives and attempts. | [Hitters Challenge](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Hitters-Challenge-uitleg.mp4) |
+| 4 in a Row | Claim cells on a randomized 5x5 dartboard grid and connect four. | [4 in a Row](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-4-op-een-rij-uitleg.mp4) |
+| Scram | Alternate stopping numbers and scoring on those still open. | [Scram](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Scram-uitleg.mp4) |
+| Killer | Choose unique numbers, build KILLER and eliminate opponents. | [Killer](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Killer-uitleg.mp4) |
+| Bull / 41 | Alternate bull marks and scoring the part of a visit above 41. | [Bull / 41](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Bull-41-uitleg.mp4) |
+| 21 | Move through targets 1 to bull using singles, doubles and triples. | [21](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-21-uitleg.mp4) |
 
-For a manual per-user installation, run `bash install-linux.sh` without `sudo`. Open <http://127.0.0.1:8765> after installation. Reinstalling or updating preserves the venue profile, player lists, browser profile, current match, and locally supplied winner artwork.
+The [online darts tutorial](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Online-darten-uitleg.mp4) covers dart-lane creation and invitations.
 
-## Windows installation
+### Scoring and bots
 
-1. Install Python 3 from [python.org](https://www.python.org/) and enable **Add Python to PATH**.
-2. Download and extract `180-Hitters-Windows-x64.zip`.
-3. Double-click `install-windows.cmd`.
-4. Allow Python through Windows Firewall on private networks when prompted.
+X01 offers visit-total and per-dart entry. Rules that depend on individual segments, such as double-in, require per-dart input. In solo Cricket/Tactics, excess hits after closing a target earn personal points; No Score counts marks only. Multiplayer Standard and Cut Throat keep their opponent-based scoring rules.
 
-Windows supports standalone play and shared control over the local network. Bluetooth NUC control and phone-driven Wi-Fi provisioning currently require Linux, BlueZ, and NetworkManager.
+In 4 in a Row, a number needs three marks in one visit; unclaimed marks expire. Single bull and double bull each claim their cell with one dart. The game ends on the winning dart. Scram, Killer, Bull / 41 and 21 adapt games 1, 6, 8 and 13 from [Sonny's dart games](https://sonnysdarts.wordpress.com/21-dart-spellen/), with fair role rotation for multiplayer games.
 
-## Android
+Choose a human, BOT 40 or BOT 50 for each seat. Bots throw separate darts with varied, natural pauses. The original aiming model uses board geometry and two-dimensional scatter, including neighbouring segments and misses. No third-party bot implementation is bundled.
 
-Install `180-Hitters.apk` from the latest release. Android may ask for one-time permission to install apps from the browser or file manager used to open the APK.
+The selected level targets a three-dart average over complete 501 straight-in/double-out legs, including checkouts and busts. Individual matches vary. Each other game uses a strategy suited to its objective.
 
-The Android app supports two modes:
+After nine human darts in X01, 121 or Gotcha, the bot follows half of the positive gap above its base: a human averaging 50 against BOT 40 gives a target of 45. The strongest human provides the reference, without bots feeding back into one another. Cricket/Tactics use marks-per-round references and actively address point deficits, scoring opportunities and legal finishes. Other drills retain base accuracy. The live banner shows the current target and base.
 
-- **Connected mode:** control the match running on a Linux NUC over Bluetooth.
-- **Standalone mode:** run a complete local match on the phone without a NUC or network.
+Bot turns are coordinated across the NUC and controllers to prevent duplicates. Camera input waits during bot turns. Online lanes currently use human participants.
 
-Wi-Fi on the NUC is reserved for internet access, GitHub updates, and maintenance. It is not used as an Android/tablet score-control transport.
+## Saved matches, corrections and reports
 
-The app checks GitHub for newer releases. NUC releases are updated independently by the NUC update service.
+**Spelen > Mijn partijen** lists saved games newest first. Resume an unfinished match or open its report. NUC mode uses the shared NUC match and report; standalone mode uses local data.
 
-## Game modes
+The result screen shows the winner and a game-specific report with timestamps, total darts, relevant scores, tables and charts. On Android, share readable image sections through WhatsApp or another compatible app. Long tables are split into separate images.
 
-- X01 with start scores 121, 170, 301, 501, 701, or 901
-- Straight, double, or master in
-- Straight, double, or master out
-- Cricket with Standard, Cut Throat, or No Score scoring
-- 4 in a Row on a randomized 5x5 board for two to four players, or one player against an approximately 50-average bot
-- Scram for two to four players, with equal scorer phases and rotating stoppers
-- Killer for two to four players, including unique number selection and lives
-- Bull / 41 for two to four players, with equal scoring phases and rotating bull throwers
-- 21 for one to four players, from target 1 through bull
-- Tactics with targets 10–20 and bull
-- 121 nine-dart checkout training for one to four players
-- Gotcha with targets 301, 401, 501, 601, or 701
-- Bob's 27 doubles training for one to four players, from D1 through D20 and bull
-- One to four players
-- Legs, sets, or free play
-- Optional round limits and complete-round tie-breaking
+**Laatste beurt herstellen** restores the recorded input. Select a dart, enter the correct hit and confirm. Other darts stay filled in. Matches recorded only as visit totals restore that total; individual darts cannot be reconstructed from a total. Undo/redo and X01 history correction preserve the later timeline where the game rules permit replay.
 
-X01 supports turn-total entry and per-dart entry. Double/master-in and 50/50-bull configurations require per-dart input so opening and finishing rules can be validated correctly. Busts restore the state from before the turn and count as three darts for averages.
+## Standalone, Bluetooth and NUC control
 
-The 4 in a Row mode uses twenty randomized number cells, four separate outer-bull corner cells, and bull in the center. On number cells, a single, double, or triple contributes one, two, or three marks within the current visit; incomplete marks expire after the third dart. A hit on an outer-bull or bull cell captures it immediately. Three marks in one visit permanently captures a number cell; the first player with four captured cells horizontally, vertically, or diagonally wins. Players choose a unique circle, cross, triangle, or square symbol. Android scales the board from the device viewport and sends every entered dart directly to the NUC display. See the [Dutch video explanation](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-4-op-een-rij-uitleg.mp4).
+Standalone Android runs a complete match on the device. Linux and Windows can also run independently. Wi-Fi loss does not stop local play.
 
-Scram, Killer, Bull / 41, and 21 are based on games 1, 6, 8, and 13 from [Sonny's 21 dart games](https://sonnysdarts.wordpress.com/21-dart-spellen/). The original two-player role games are extended fairly to four players: every player receives one scoring phase while the other players rotate through the opposing role. Dutch explanations are available as release videos: [Scram](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Scram-uitleg.mp4), [Killer](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Killer-uitleg.mp4), [Bull / 41](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Bull-41-uitleg.mp4), and [21](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-21-uitleg.mp4).
+In shared mode, the Linux NUC owns the match, confirmed history and synchronized draft. Android phones and the dedicated tablet use Bluetooth for score control. One device controls input at a time; another can take over under **NUC & verbinding**. The NUC display remains usable. Revision checks reject stale writes.
 
-Checkout suggestions use the selected finishing rule. Double-out routes are based on the numerical Winmau PDC Checkout Table, with legal alternatives when the published route does not fit the number of darts or selected bull mode.
+A connection loss blocks shared scoring until the current state can be verified; return controls remain available. Connection tools can transfer a local match to the NUC, with a backup before replacing a match.
 
-## Shared display and mobile control
+The NUC needs its own Ethernet or Wi-Fi connection for updates, online play and streamed tutorials. Bluetooth control does not share phone internet. NUC network settings are separate from Android score control. Advanced Linux setup provides NetworkManager controls and an optional fallback hotspot. Windows supports local play and browser control over the local network; Bluetooth NUC services require Linux.
 
-All connected devices operate on the match hosted by the NUC. Confirmed turns, undo/redo, new legs, and individual dart input are synchronized. Revision checks prevent an older client state from overwriting a newer match state.
+## Players, teams and venue setup
 
-When connectivity is lost, input is blocked until the current state can be verified. Match data is written atomically to `match.json`. The first match should be started on the NUC display so it becomes the authoritative shared state.
+The NUC has a venue player list and mobile devices have separate personal lists. Names synchronize for selection without replacing the other list. Removing a saved player does not change an active match.
 
-Android phones and the dedicated tablet connect to the NUC exclusively through Bluetooth. The NUC screen shows only the Android installation QR code; the former Wi-Fi and browser-control QR codes are removed.
+Temporary teams contain up to five members. During a match, change their order, add a substitute or replace a member. The active member is highlighted and the team shares one score.
 
-## Bluetooth
+Under **NUC & verbinding > Locatie & presentatie**, configure the venue name, city, player-list label, logo, screensaver and background. Large background images are omitted from Bluetooth updates to keep transfers small. Venue configuration and local winner artwork survive application updates. Private venue artwork is excluded from public releases.
 
-The Android app communicates with the Linux NUC through a BlueZ RFCOMM service. Bluetooth remains useful when venue Wi-Fi is unavailable or while the NUC changes networks. A newly connected authorized phone takes over the active Bluetooth control channel, closing the previous channel.
+## Online 4 in a Row
 
-The app can request the NUC to enable or disable Bluetooth, restart, or shut down. These actions use narrowly scoped root-owned helpers rather than general shell access.
+Private dart lanes support two to four human participants. Create or join a lane, invite a club member or share an invitation, and choose the starting player after participants arrive. Individual darts, turns and results synchronize. Hosts can clear a lane for a new game; participants can leave and return to game selection.
 
-## Wi-Fi and fallback hotspot
+Club access uses a club code, an access request and administrator approval for the device. Android notifications require user permission. See [the Cloudflare service documentation](cloudflare/README.md) for hosting and access configuration. Other game modes currently use local/shared-NUC play rather than online multiplayer.
 
-From the connected Android app, open **Wi-Fi / hotspot** and enter the venue SSID and WPA2 password. The Linux NUC then:
+## Updates and recovery
 
-1. creates or updates a NetworkManager profile;
-2. uses that connection for internet access and GitHub updates;
-3. adds the network to the selectable saved-network list.
+Linux NUC: use **App-instellingen > Update > Controleren en bijwerken** or **NUC & verbinding > NUC beheren > NUC bijwerken**. Both show progress, tolerate the restart and verify the running version before success. The screen refreshes when an update starts from another device or the background timer.
 
-Network switching runs as an independent systemd task. If the selected network cannot be activated, the NUC attempts to restore `180 Hitters wifi`, followed by the previous connection. The match remains stored during network changes.
+The updater verifies SHA-256 checksums, retains previous app files and preserves matches, player lists, venue settings and local artwork. Update between matches because the server restarts briefly.
 
-The fallback hotspot and a Wi-Fi client connection normally cannot use the same wireless adapter simultaneously. Ethernet can provide internet or management access while the hotspot is active.
+For **1.8.22 or a broken older updater**, install [the Linux package](https://github.com/Axelman8/180-hitters/releases/latest/download/DartsApp-Ubuntu-Debian-amd64.deb) once over the existing version, confirm with the Linux administrator password and restart the NUC. The installer retires the old per-user server to prevent competition for port 8765. It imports players and saved games while preserving an existing system match. Legacy backups remain in `/var/lib/dartsapp/legacy-backups`.
 
-## Venue profiles
+Android checks GitHub before downloading a newer APK, then opens the installer. Modern Android and the dedicated Android 4.2 tablet use separate packages. NUC updates run independently; updating a phone does not update the NUC. Windows offers a newer installer to download, run and relaunch.
 
-The same build can be reused at home or by different venues. Open **Menu → Venue** on the NUC or in the Android app to configure:
+Data locations: `/var/lib/dartsapp` for Linux system installs, `~/.local/share/oche-darts` for older per-user installs, `%LOCALAPPDATA%/180 Hitters` for Windows, and private app storage on Android. Removing a desktop package preserves game data.
 
-- venue name and city;
-- player-list label and slogan;
-- screensaver availability;
-- logo and background image;
-- fallback hotspot instructions.
+## Optional AutoDarts cameras
 
-The profile is stored in `venue.json` next to `server.py` and is not included in public releases or replaced during updates. Large background images are omitted from Bluetooth synchronization to keep transfers responsive; the logo and text branding still synchronize.
+180 Hitters is independent of AutoDarts accounts and its online platform. It can consume local camera detections from an optional AutoDarts installation on the Linux NUC. Manual scoring works without cameras.
 
-## Player lists
+Use **Camera aan / herstart** to start/restart detection and **Camera uit** to stop it. Camera input follows each game's rules, including misses and early winning darts. A single bull in 4 in a Row asks the controller which free corner to claim.
 
-The NUC maintains the venue player list. The Android app maintains a separate personal/mobile list. Both lists are combined for player selection without overwriting ownership:
+The camera installer provides graphical setup and **Camera's 50 Hz + kalibreren**. The helper expects three USB capture cameras, backs up configuration, repairs stale device locations, applies anti-flicker settings and requests calibration. Keep identical cameras in marked hub ports; software cannot reliably identify physically swapped devices with identical serial numbers.
 
-- venue players are managed on the NUC;
-- personal players are managed from the Android app;
-- names are synchronized and deduplicated case-insensitively;
-- removing a saved name does not modify an active match.
-
-## Temporary teams
-
-For a new match, choose **Teams** instead of individual players. A match can
-contain two to four temporary teams, with one to five members per team. Members
-can be selected from the combined player lists or entered manually. The team
-shares one score, while 180 Hitters automatically rotates and highlights the
-active member. Temporary teams belong only to that match and do not change the
-saved venue or personal player lists.
-
-## Winner screen and local artwork
-
-The winner screen displays “Game shot and the match”, match statistics, animations, and an optional local photo banner in the upper third of the screen. Third-party venue artwork is intentionally excluded from the public repository when redistribution rights are unclear. Files named `winner-stage*.jpg`, `winner-stage*.jpeg`, and `winner-trophy.jpg` in the installed `dist` directory are preserved by NUC updates.
-
-## Architecture and security
-
-- Python 3 standard-library HTTP server; no npm runtime installation
-- browser-based responsive UI
-- Java Android wrapper with an embedded local server
-- root-owned, allow-listed Linux helpers for network and system control
-- control-token checks for privileged Android operations
-- origin checks and strict JSON validation for write requests
-- atomic state and profile writes
-- SHA-256 verification before NUC updates are installed
-
-Use the shared server only on a trusted local network. Anyone who can access the control page can participate in the active match.
-
-## Development and testing
-
-Run the server directly:
-
-```bash
-python3 server.py
-```
-
-On Windows:
-
-```powershell
-python server.py
-```
-
-Then open <http://127.0.0.1:8765>.
-
-Browser and integration tests are located in `tests/`. Game-engine tests are in `dist/tests/engine.test.js` and currently cover 67 rule scenarios. The automated suite also checks responsive layouts, shared drafts, history navigation, corrections, venue profiles, player-list synchronization, the Android distribution, and the winner screen.
-
-Build the signed Android release locally with:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\build-android.ps1
-```
-
-The signing keystore and passwords are intentionally excluded from version control.
-
-## Autodarts compatibility note
-
-180 Hitters is an independent scoring application. Its game settings use the official [Autodarts X01 documentation](https://docs.autodarts.com/game-modes/x01/) and [Cricket/Tactics documentation](https://docs.autodarts.com/game-modes/cricket-tactics/) as functional references, but it is not an Autodarts client and does not connect to Autodarts accounts or services.
-
-The four-in-a-row game supports private online lanes for two to four players through the free Cloudflare service documented in [`cloudflare/README.md`](cloudflare/README.md). Public matchmaking, leagues, AI refereeing, and long-term cloud archives remain outside the current scope. Camera detection is provided locally by the optional NUC camera package.
-
-### Camera repair and 50 Hz calibration (Linux NUC)
-
-Install the camera helper directly from this repository:
+An existing compatible NUC can install the standalone helper with:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Axelman8/180-hitters/main/install-calibreer-cameras.sh | sudo sh
-```
-
-Then empty the dartboard and run:
-
-```bash
 sudo calibreer-cameras
 ```
 
-The Linux camera installer also places **Camera's 50 Hz + kalibreren** on the
-desktop. It provides the same operation through a confirmation dialog and the
-standard graphical administrator-password prompt, without opening a terminal.
+## Development and validation
 
-The helper requires exactly three USB capture cameras. It backs up the current
-AutoDarts configuration and calibration, refreshes stale USB locations, sets
-all cameras to the European 50 Hz anti-flicker mode, restarts the per-user
-AutoDarts service, and requests automatic calibration. A small boot service
-reapplies 50 Hz because many USB cameras forget that setting after losing power.
+The shared UI is HTML/CSS/JavaScript. The local server uses Python's standard library. The modern Android wrapper is Java; the dedicated old tablet uses a legacy browser-compatible bundle. Linux system actions use narrowly scoped helpers.
 
-Identical cameras can expose the same serial number. The helper therefore keeps
-known device paths and USB ports where possible and otherwise uses stable USB
-port order. Keep each fixed camera in its marked hub port; software cannot tell
-two physically swapped, otherwise identical cameras apart before recalibration.
+Start `python3 server.py` (Windows: `python server.py`) and open <http://127.0.0.1:8765>. Rule tests are in `dist/tests/engine.test.js`; browser/integration tests are in `tests/`. Coverage includes twelve games, bots, cameras, corrections, responsive layouts, reports, shared control and update recovery. Release validation also tests migration from a user server occupying port 8765.
 
-## Disable autostart on Linux
+Build Android with `build-android.ps1`, or use the signed GitHub release. Signing keys and passwords are excluded from version control. Use the local server on trusted networks: local input ownership coordinates devices and is not public internet authentication. Club approval controls access to the private online service.
 
-```bash
-systemctl --user disable --now oche-darts.service
-```
+## Assets and references
 
-Remove `~/.config/autostart/oche-darts.desktop` to disable kiosk startup. Keep the browser profile if you want to retain its local state.
+See [IMAGE-SOURCES.txt](IMAGE-SOURCES.txt) for image references. Third-party venue photos without confirmed redistribution rights are excluded. NUC updates preserve installed `winner-stage*.jpg`, `winner-stage*.jpeg` and `winner-trophy.jpg` files.
 
-## License and third-party assets
-
-Review [IMAGE-SOURCES.txt](IMAGE-SOURCES.txt) for external image references. Third-party photographs without confirmed redistribution rights are not included in public release packages.
+Game-setting references include official [AutoDarts X01 documentation](https://docs.autodarts.com/game-modes/x01/) and [Cricket/Tactics documentation](https://docs.autodarts.com/game-modes/cricket-tactics/). These are functional references rather than an affiliation with AutoDarts.

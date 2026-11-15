@@ -71,7 +71,7 @@ final class AppUpdater {
                 }
                 if (apk == null || checksum == null) throw new IllegalStateException("Release is niet compleet");
                 String finalApk = apk, finalChecksum = checksum;
-                activity.runOnUiThread(() -> new AlertDialog.Builder(activity)
+                activity.runOnUiThread(() -> new TopBackDialog(activity)
                         .setTitle("180 Hitters " + version + " beschikbaar")
                         .setMessage("Wil je de nieuwe, ondertekende versie via GitHub downloaden en installeren?")
                         .setPositiveButton("Downloaden", (d,w) -> download(version, finalApk, finalChecksum))

@@ -29,7 +29,7 @@ with tempfile.TemporaryDirectory() as tmp:
                     expect(page.locator('#navigation-categories')).to_be_hidden()
                     assert page.locator('#header-menu').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
                     assert page.locator('#header-menu').bounding_box()['x']>=0
-                    assert page.locator('#navigation-close').bounding_box()['y']>=0
+                    assert page.locator('#navigation-back').bounding_box()['y']>=0
                     page.locator('#navigation-back').click()
                 # NUC pairing and app updating have distinct destinations.
                 page.locator('#navigation-categories [data-menu="app"]').click()

@@ -1,4 +1,6 @@
 import {updateControl,controllerRefreshed,canControl} from './controller.js';
+import './dialog-navigation.js';
+import {renderDartSlots} from './dart-editor.js';
 import {startBots,paintBot} from './bot-runner.js';
 import {cameraControls} from './autoscoring.js';
 import {applyCameraEvent} from './autoscoring-rules.js';
@@ -44,10 +46,17 @@ function renderHistoryMenu(){
 }
 $('toggle-history').onclick=()=>{historyOpen=!historyOpen;try{localStorage.setItem('axelman8.historyOpen',String(historyOpen));}catch{}renderHistoryMenu();};
 renderHistoryMenu();
-let state=null,undo=[],future=[],pendingTurns=[],pendingReason='',editingPending=false,historyNavigation=false,entry='',dartList=[],multiplier=1,mode='total',preferredMode='total',modeOverride=null,editTurn=null,gotchaRule='end',editingCurrentMatch=false;
+let state=null,undo=[],future=[],pendingTurns=[],pendingReason='',editingPending=false,historyNavigation=false,entry='',dartList=[],multiplier=1,mode='total',preferredMode='total',modeOverride=null,editTurn=null,gotchaRule='end',editingCurrentMatch=false,selectedDart=null,livesCorrection=[];
 const cricket=()=>state&&['cricket','tactics'].includes(state.game);
 const totalAllowed=()=>!!state&&!['bobs27','tenlives','fourinarow',...sonnyGameIds].includes(state.game);
-function renderLivesGame(){renderLives(state,{dart:hit=>commit({trainingHit:hit}),misses:count=>commit({trainingMisses:count}),undo:()=>$('undo').click(),redo:()=>goForward(),canUndo:undo.length>0,canRedo:future.length>0,toggle:()=>$('toggle-input').click()});}
+function renderLivesGame(){renderLives(state,{dart:hit=>{if(editTurn){if(selectedDart===null){message('Selecteer eerst de pijl die je wilt aanpassen.');return;}livesCorrection[selectedDart]=hit;renderLivesGame();}else commit({trainingHit:hit});},misses:count=>commit({trainingMisses:count}),undo:()=>$('undo').click(),redo:()=>goForward(),canUndo:undo.length>0,canRedo:future.length>0,toggle:()=>$('toggle-input').click(),correction:editTurn?livesCorrection:null,selectedDart,select:index=>{selectedDart=index;renderLivesGame();},remove:()=>{livesCorrection.pop();selectedDart=null;renderLivesGame();},confirm:()=>commit({trainingResults:[...livesCorrection]})});}
+const correctingDarts=()=>Array.isArray(editTurn?.hits);
+function selectCorrectionDart(index){selectedDart=index;multiplier=dartList[index]?.mult||1;renderInput();message(`Pijl ${index+1} geselecteerd. Kies de juiste treffer en bevestig daarna de beurt.`);}
+function replaceCorrectionDart(dart){
+ if(!correctingDarts())return false;
+ if(selectedDart===null){message('Selecteer eerst de pijl die je wilt aanpassen.');return true;}
+ dartList[selectedDart]=dart;multiplier=1;renderInput();publishDraft();return true;
+}
 
 const namesOfRules={single:'Straight',double:'Double',master:'Master'};
 const scoringNames={standard:'Standard','cut-throat':'Cut Throat','no-score':'No Score'};
@@ -142,7 +151,7 @@ async function synchronize(){
   if(!draftWrites&&requestedDraftSequence===draftSequence){
    const draft=data.draft?.revision===revision?data.draft:null;
    document.dispatchEvent(new CustomEvent('dart-draft-observed',{detail:draft}));
-   const hits=draft?.hits||[];
+   const hits=draft?draft.hits||[]:editTurn?.hits||[];
    const nextEntry=draft?draft.entry||'':editTurn&&!editTurn.hits?String(editTurn.score??0):'';
    if(entry!==nextEntry){entry=nextEntry;renderInput();}
    const next=state?.game==='fourinarow'?structuredClone(hits):hits.map(d=>makeDart(d.number,d.mult));
@@ -169,13 +178,14 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
+ if(e.target.closest('.dialog-back'))return;
  if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #matches-dialog,#matches-report-dialog,#archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-video-dialog, #club-open, #club-dialog, #online-host-open, #online-new-open, #online-join-open, #online-leave-open, #online-invitations-open, #online-club-invite-dialog, #online-invitations-dialog, #online-dialog, #online-starter')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
-function resetInput(){entry='';dartList=[];multiplier=1;message();renderInput();}
+function resetInput(){entry='';dartList=[];multiplier=1;selectedDart=null;livesCorrection=[];message();renderInput();}
 function renderInput(){
- paintBot(state,dartList);
+ paintBot(state,dartList,!!editTurn);
  if(state?.game==='tenlives'){renderLivesGame();return;}
  if(state?.game==='fourinarow'){renderFourGame();return;}
  if(sonnyGameIds.includes(state?.game)){renderSonny();return;}
@@ -206,7 +216,7 @@ function renderInput(){
  const opening=state?.game==='x01'&&!state.players[state.active].opened;
  $('total-rule-note').hidden=!opening&&state?.game!=='gotcha';
  $('total-rule-note').textContent=opening?`${state.inMode==='double'?'Dubbel-in':'Master-in'}: tel alleen punten vanaf de eerste geldige ${state.inMode==='double'?'dubbel':'dubbel of triple'}. Nog niet in? Vul 0 in.`:state?.game==='gotcha'?'Gelijke eindscore zet een tegenstander automatisch op nul. Gebruik de aparte spelersknoppen voor tussentijdse treffers.':'';
- $('dart-slots').replaceChildren(...Array.from({length:3},(_,i)=>{const el=document.createElement('span');el.textContent=dartList[i]?.label||'—';return el;}));
+ renderDartSlots($('dart-slots'),dartList,{editing:correctingDarts(),selected:selectedDart,select:selectCorrectionDart});
  document.querySelectorAll('[data-multiplier]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.multiplier)===multiplier));
  renderCheckout();if(cricket())renderBoard();
  renderScreenOverview(state,mode,entry,dartList);
@@ -239,7 +249,7 @@ function renderCheckout(){
  $('checkout-title').textContent=title;$('checkout-note').textContent=note;
  $('checkout').replaceChildren(...(preview.route||(setup?[setup.label]:['-'])).map(t=>{const b=document.createElement('b');b.textContent=t;return b;}));
  const ended=live&&(preview.bust||preview.finished||dartList.length===3);
- $('board-keys').querySelectorAll('button').forEach(b=>b.disabled=ended||state.phase!=='playing');
+ $('board-keys').querySelectorAll('button').forEach(b=>b.disabled=(!correctingDarts()&&ended)||state.phase!=='playing');
 }
 function renderBobs27(){
  const pending=state.phase==='playing'?dartList:[],v=previewBobs27(state,pending),p=state.players[state.active],target=v.target===25?'Bull':'D'+v.target;
@@ -248,13 +258,14 @@ function renderBobs27(){
  $('checkout-title').textContent=`Doel: ${target}`;
  $('checkout-note').textContent=`Drie pijlen. Iedere treffer is +${v.value}; bij nul treffers gaat ${v.value} van je score af. Bij 0 of lager stopt de training.`;
  $('checkout').replaceChildren(...[target,`${v.hits} raak`].map(t=>{const b=document.createElement('b');b.textContent=t;return b;}));
- $('board-keys').querySelectorAll('button').forEach(b=>b.disabled=pending.length===3||state.phase!=='playing');
+ $('board-keys').querySelectorAll('button').forEach(b=>b.disabled=(!correctingDarts()&&pending.length===3)||state.phase!=='playing');
 }
 function fourDart(cell){
  const id=state.fourBoard[cell],mult=id==='bb'?2:id.startsWith('sb')?1:multiplier,prefix=mult===2?'D':mult===3?'T':'';
  return {cell,mult,number:id==='bb'||id.startsWith('sb')?25:Number(id.slice(1)),label:id==='bb'?'BB':prefix+fourCellLabel(id)};
 }
 function addFourDart(cell=null){
+ if(replaceCorrectionDart(cell===null?{cell:null,mult:1,number:0,label:'Mis'}:fourDart(cell)))return;
  const unresolved=dartList.findIndex(hit=>hit.needsBullCorner);
  if(unresolved>=0){
   if(cell===null||!state.fourBoard[cell]?.startsWith('sb')){message('Kies één van de vrije sB-hoekvakken.');return;}
@@ -274,10 +285,11 @@ function renderFourGame(){
  const current=state.players[state.active];$('match-label').textContent=`4 OP EEN RIJ / RONDE ${state.round}`;
  $('turn-label').hidden=false;$('turn-label').textContent=state.phase==='playing'?`${current.name} is aan de beurt`:state.winner===null?'Gelijkspel':`${state.players[state.winner].name} heeft 4 op een rij!`;
  $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
- renderFourInRow($('fourinarow-root'),state,dartList,{multiplier,hit:addFourDart,miss:()=>addFourDart(null),remove:()=>{dartList.pop();renderFourGame();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderFourGame();}});
+ renderFourInRow($('fourinarow-root'),state,dartList,{multiplier,editing:correctingDarts(),selectedDart,select:selectCorrectionDart,hit:addFourDart,miss:()=>addFourDart(null),remove:()=>{dartList.pop();selectedDart=null;renderFourGame();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderFourGame();}});
 }
 function sonnyDart(number){const mult=number===0?1:number===25?(multiplier===1?1:2):multiplier;return makeDart(number,mult);}
 function addSonnyDart(number=0){
+ if(replaceCorrectionDart(sonnyDart(number)))return;
  if(dartList.length>=3)return;dartList.push(sonnyDart(number));
  if(sonnyAutoCommit(state,dartList))void commit({hits:[...dartList]});else{renderSonny();publishDraft();}
 }
@@ -286,7 +298,7 @@ function renderSonny(){
  $('setup').hidden=true;$('game').hidden=false;$('players').hidden=true;$('fourinarow-root').hidden=true;$('sonny-root').hidden=false;document.body.classList.remove('cricket-game','training-game');mode='dart';
  const current=state.players[state.active];$('match-label').textContent=sonnyGameNames[state.game].toUpperCase();$('turn-label').hidden=false;$('turn-label').textContent=`${current.name} is aan de beurt`;
  $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
- renderSonnyGame($('sonny-root'),state,dartList,{multiplier,hit:addSonnyDart,miss:()=>addSonnyDart(0),remove:()=>{dartList.pop();renderSonny();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderSonny();}});
+ renderSonnyGame($('sonny-root'),state,dartList,{multiplier,editing:correctingDarts(),selectedDart,select:selectCorrectionDart,hit:addSonnyDart,miss:()=>addSonnyDart(0),remove:()=>{dartList.pop();selectedDart=null;renderSonny();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderSonny();}});
 }
 function renderGotcha(){
  const pending=state.phase==='playing'?dartList:[],v=previewGotcha(state,pending),p=v.players[state.active];
@@ -296,7 +308,7 @@ function renderGotcha(){
  $('checkout-note').textContent=v.bust?'Je eigen beurt vervalt. Eerdere Gotcha-treffers blijven staan. De beurt gaat automatisch door.':v.finished?'De partij wordt automatisch afgesloten.':`Doel: ${state.start} / ${namesOfRules[state.out]}-out. Raak de score van een tegenstander om die terug te zetten op 0.`;
  const route=!v.bust&&!v.finished?checkout(state.start-p.remaining,state.out,3-v.used):null;
  $('checkout').replaceChildren(...(route||['-']).map(t=>{const b=document.createElement('b');b.textContent=t;return b;}));
- $('board-keys').querySelectorAll('button').forEach(b=>b.disabled=v.bust||v.finished||pending.length===3||state.phase!=='playing');
+ $('board-keys').querySelectorAll('button').forEach(b=>b.disabled=(!correctingDarts()&&(v.bust||v.finished||pending.length===3))||state.phase!=='playing');
 }
 function setMode(m){
  mode=totalAllowed()?m:'dart';
@@ -366,7 +378,7 @@ function renderBoard(){
   });
  }
  $('cricket-board').replaceChildren(table);
- $('board-keys').querySelectorAll('button:not([data-action])').forEach(b=>b.disabled=preview.finished||pending.length===3||state.phase!=='playing');
+ $('board-keys').querySelectorAll('button:not([data-action])').forEach(b=>b.disabled=(!correctingDarts()&&(preview.finished||pending.length===3))||state.phase!=='playing');
  if(state.game==='tactics'&&$('tactics-remove')){
   $('tactics-remove').disabled=state.phase!=='playing'||pending.length===0;
   $('tactics-confirm').disabled=state.phase!=='playing'||pending.length===0;
@@ -378,7 +390,7 @@ function teamMemberIndex(matchState,player){
  return matchState.history.filter(turn=>turn.name===player.name).length%player.members.length;
 }
 function render(){
- paintBot(state,dartList);
+ paintBot(state,dartList,!!editTurn);
  document.body.dataset.game=state?.game||'';
  if((state?.game==='fourinarow'||sonnyGameIds.includes(state?.game))&&document.body.classList.contains('remote-control'))document.dispatchEvent(new Event('four-in-row-menu-compact'));
  $('edit-match').hidden=!state||state.phase==='won';
@@ -447,6 +459,8 @@ function render(){
  renderPendingTurns();renderInput();if(state.phase!=='playing')showResult();
 }
 function sameTurn(a,b){
+ const training=t=>typeof t?.trainingHit==='boolean'?[t.trainingHit]:t?.trainingResults|| (t?.trainingMisses?Array(t.trainingMisses).fill(false):null);
+ if(training(a)||training(b))return JSON.stringify(training(a))===JSON.stringify(training(b));
  const normal=t=>t?.hits?{hits:t.hits.map(({number,mult,cell})=>({number,mult,cell}))}:{score:t?.score,darts:t?.darts??3,forceBust:!!t?.forceBust};
  return JSON.stringify(normal(a))===JSON.stringify(normal(b));
 }
@@ -531,7 +545,7 @@ function totalSubmit(){
  commit(totalTurn(score));
 }
 function addDigit(d){if(entry.length>=3)return;entry=(entry==='0'?'':entry)+d;message();renderInput();publishDraft();}
-function addDart(n,m){if(dartList.length===3){message('Drie pijlen ingevuld. Bevestig je beurt.');return;}dartList.push(makeDart(n,m));if(n===25&&m===1&&state?.game==='x01'&&state.bull==='50/50')dartList.at(-1).label='Buitenbull 50';multiplier=1;message();renderInput();
+function addDart(n,m){const dart=makeDart(n,m);if(n===25&&m===1&&state?.game==='x01'&&state.bull==='50/50')dart.label='Buitenbull 50';if(replaceCorrectionDart(dart))return;if(dartList.length===3){message('Drie pijlen ingevuld. Bevestig je beurt.');return;}dartList.push(dart);multiplier=1;message();renderInput();
  const preview=state.game==='bobs27'?previewBobs27(state,dartList):state.game==='gotcha'?previewGotcha(state,dartList):cricket()?previewCricket(state,dartList):previewTurn(state,dartList);
  if(mode==='dart'&&(dartList.length===3||preview.bust||preview.finished)){void commit({hits:[...dartList]});}else publishDraft();
 }
@@ -542,7 +556,7 @@ for(const n of ['1','2','3','4','5','6','7','8','9','bust','0']){
 }
 const confirmTotal=button('Bevestigen',totalSubmit);confirmTotal.id='confirm-total';confirmTotal.className='primary';confirmTotal.setAttribute('aria-label','Beurt bevestigen');$('keypad').append(confirmTotal);
 for(const [n,label] of [[1,'Single'],[2,'Double'],[3,'Triple']]){const b=button(label,()=>{multiplier=n;renderInput();});b.dataset.multiplier=n;$('multipliers').append(b);}
-$('remove-dart').onclick=()=>{dartList.pop();message();renderInput();publishDraft();};$('backspace').onclick=()=>{entry=entry.slice(0,-1);message();renderInput();publishDraft();};
+$('remove-dart').onclick=()=>{dartList.pop();selectedDart=null;message();renderInput();publishDraft();};$('backspace').onclick=()=>{entry=entry.slice(0,-1);message();renderInput();publishDraft();};
 for(const m of ['total','dart'])$('mode-'+m).onclick=async()=>{
  if(m===mode||!totalAllowed())return;
  preferredMode=m;modeOverride=m;
@@ -555,6 +569,7 @@ function restoreTurnInput(){
  if(!editTurn)return;
  entry=editTurn.hits?'':String(editTurn.score??0);
  dartList=state?.game==='fourinarow'?structuredClone(editTurn.hits||[]):(editTurn.hits||[]).map(d=>makeDart(d.number,d.mult));
+ livesCorrection=editTurn.trainingResults?[...editTurn.trainingResults]:typeof editTurn.trainingHit==='boolean'?[editTurn.trainingHit]:Array(editTurn.trainingMisses||0).fill(false);
 }
 function recoverTurn(history){
  if(history?.input)return structuredClone(history.input);
@@ -569,7 +584,7 @@ $('undo').onclick=async()=>{
  if(!undo.length)return;
  const last=state.history.at(-1),previous=undo.pop();
  future.push({state,editTurn,modeOverride,preferredMode});historyNavigation=true;editingPending=false;
- const recovered=state.game==='x01'&&previous.history.length===state.history.length-1?recoverTurn(last):null;
+ const recovered=previous.history.length===state.history.length-1?recoverTurn(last):null;
  state=previous;
  if(recovered)modeOverride=recovered.hits?'dart':'total';
  if(!await persist(!!recovered,recovered))return;

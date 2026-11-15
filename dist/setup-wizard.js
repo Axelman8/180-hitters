@@ -139,6 +139,7 @@ function renderTeams(content){
 }
 function render(){
  root.replaceChildren();
+ const topbar=el('div',undefined,'wizard-topbar');topbar.append(button('TERUG',()=>{if(step)move(step-1);else if(!$('cancel').hidden)$('cancel').click();else document.dispatchEvent(new Event('open-play-menu'));},'wizard-back'));root.append(topbar);
  const nav=el('nav',undefined,'wizard-steps');nav.setAttribute('aria-label','Partij instellen');
  ['Spel','Instellingen','Spelers'].forEach((name,i)=>{const b=button(`${i+1} ${name}`,()=>move(i));b.disabled=i>step;b.setAttribute('aria-current',i===step?'step':'false');nav.append(b);});root.append(nav);
  const titles=['Wat gaan we spelen?','Maak het jouw partij',isTeams()?'Welke teams doen er mee?':'Wie doen er mee?'];root.append(el('h1',titles[step]));
@@ -170,7 +171,7 @@ function render(){
   const ids=selected==='tenlives'?['lives-mode']:selected==='fourinarow'?['four-bot']:['scram','killer','bull41','twentyone'].includes(selected)?[]:selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:selected==='bobs27'?[]:['scoring','match-mode','legs'];
   summary.append(el('p',ids.filter(id=>!$(id).closest('label').hidden).map(id=>id==='legs'?`Eerste tot ${$(id).value} ${$('match-mode').value==='sets'?'sets':'legs'}`:$(id).selectedOptions[0]?.textContent).join(' · ')),el('p',isTeams()?teamDraft().map(team=>`${team.name}: ${team.members.filter(Boolean).join(', ')}`).join(' | '):names().map(input=>input.value).join(' → ')));content.append(summary);
  }
- const actions=el('div',undefined,'wizard-actions');actions.append(button(step?'← Terug':'Terug naar partij',()=>step?move(step-1):$('cancel').click(),'wizard-back'));if(!step)actions.firstChild.hidden=$('cancel').hidden;
+ const actions=el('div',undefined,'wizard-actions');
  if(step)actions.append(button(step===2?(document.body.classList.contains('editing-current-match')?'Wijzigingen toepassen →':'Start partij →'):'Kies spelers →',()=>{if(step===1){move(2);return;}const required=isTeams()?allMembers().concat(names()):names();if(required.some(input=>!input.value.trim())){root.querySelector('.wizard-custom input')?.focus();return;}applyFourSymbols();remember();$('setup-form').requestSubmit();},'primary wizard-next'));
  root.append(actions);queueSetup();
 }

@@ -1,3 +1,4 @@
+import {renderDartSlots} from './dart-editor.js';
 export const fourSymbols=['○','×','△','□'];
 const corners=new Map([[0,'sb1'],[4,'sb2'],[20,'sb3'],[24,'sb4']]);
 const lines=[];
@@ -71,15 +72,15 @@ export function renderFourInRow(root,state,pending,actions){
   else cell.append(el('strong',label(id)));
   if(state.fourWinningCells?.includes(index))cell.classList.add('winning');
   const progress=el('span',undefined,'four-progress');progress.style.fontSize='clamp(18px,3.4vmin,34px)';progress.style.fontWeight='900';progress.style.lineHeight='1';progress.style.textShadow='0 1px 5px #000';if(!pendingClaim)state.players.forEach((player,playerIndex)=>{const marks=Math.min(3,(player.fourMarks[index]||0)+(playerIndex===state.active?(pendingMarks.get(index)||0):0));if(marks){const marker=el('i',playerSymbol(state,playerIndex).repeat(marks),`player-${playerIndex}`);marker.setAttribute('aria-label',`${player.name}: ${marks} van 3 treffers`);progress.append(marker);}});cell.append(progress);
-  cell.disabled=state.phase!=='playing'||pendingClaim||!!state.players[state.active]?.bot||(needsBullCorner?(!id.startsWith('sb')||owner!==null):pending.length>=3);cell.onclick=()=>actions.hit(index);board.append(cell);
+  cell.disabled=state.phase!=='playing'||(!actions.editing&&(pendingClaim||!!state.players[state.active]?.bot))||(needsBullCorner?(!id.startsWith('sb')||owner!==null):!actions.editing&&pending.length>=3);cell.onclick=()=>actions.hit(index);board.append(cell);
  });
  layout.append(board);
  const controls=el('aside',undefined,'four-controls');controls.append(el('p',needsBullCorner?'Autodarts zag single bull. Kies nu één van de vrije sB-hoekvakken.':'Getallen: maak 3 marks binnen deze beurt. Losse marks vervallen. sB en BB claim je direct.','four-help'));
  const multipliers=el('div',undefined,'four-multipliers');for(const [mult,text] of [[1,'Single'],[2,'Double'],[3,'Triple']]){const button=el('button',text,mult===actions.multiplier?'selected':'');button.type='button';button.onclick=()=>actions.setMultiplier(mult);multipliers.append(button);}controls.append(multipliers);
- const darts=el('div',undefined,'four-darts');for(let index=0;index<3;index++){const slot=el('span',pending[index]?.label||`Pijl ${index+1}`,index===pending.length&&pending.length<3?'current':'');if(index===pending.length&&pending.length<3){slot.style.borderStyle='solid';slot.style.borderColor='var(--accent)';slot.style.boxShadow='0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)';slot.setAttribute('aria-current','step');}darts.append(slot);}controls.append(darts);
- const miss=el('button','Mis','four-miss');miss.type='button';miss.disabled=pending.length>=3||needsBullCorner;miss.onclick=actions.miss;
+ const darts=el('div',undefined,'four-darts');renderDartSlots(darts,pending,{editing:actions.editing,selected:actions.selectedDart,select:actions.select,placeholder:index=>`Pijl ${index+1}`});controls.append(darts);
+ const miss=el('button','Mis','four-miss');miss.type='button';miss.disabled=(!actions.editing&&pending.length>=3)||needsBullCorner;miss.onclick=actions.miss;
  const remove=el('button','Laatste pijl wissen');remove.type='button';remove.disabled=!pending.length;remove.onclick=actions.remove;
- const confirm=el('button','Beurt bevestigen','primary');confirm.type='button';confirm.disabled=pending.length!==3||needsBullCorner;confirm.onclick=actions.confirm;
+ const confirm=el('button','Beurt bevestigen','primary');confirm.type='button';let valid=pending.length===3;if(actions.editing){try{applyFourTurn(state,{hits:pending});valid=true;}catch{valid=false;}}confirm.disabled=!valid||needsBullCorner;confirm.onclick=actions.confirm;
  const buttons=el('div',undefined,'four-actions');buttons.append(miss,remove,confirm);controls.append(buttons);
  const note=el('p',state.fourBoard.some((id,index)=>(id.startsWith('sb')||id==='bb')&&pending.some(hit=>hit.cell===index))?'Bull geraakt: dit vak is direct geclaimd.':'Niet geclaimde marks vervallen na de derde pijl.','four-note');controls.append(note);
  layout.append(controls);root.append(layout);

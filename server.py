@@ -1228,6 +1228,13 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         for hit in hits:
                             if type(hit['number']) is not int or hit['number'] not in [0, *range(1,21), 25] or type(hit['mult']) is not int or hit['mult'] not in (1,2,3) or (hit['number'] == 25 and hit['mult'] == 3):
                                 raise ValueError()
+                    elif state.get('game') == 'tenlives' and 'trainingHit' in restored:
+                        if type(restored['trainingHit']) is not bool: raise ValueError()
+                    elif state.get('game') == 'tenlives' and 'trainingMisses' in restored:
+                        if type(restored['trainingMisses']) is not int or not 1 <= restored['trainingMisses'] <= 3: raise ValueError()
+                    elif state.get('game') == 'tenlives' and 'trainingResults' in restored:
+                        results = restored['trainingResults']
+                        if not isinstance(results, list) or not 1 <= len(results) <= 3 or any(type(hit) is not bool for hit in results): raise ValueError()
                     elif type(restored.get('score')) is not int or not 0 <= restored['score'] <= 180:
                         raise ValueError()
                 with lock:

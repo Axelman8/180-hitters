@@ -1,7 +1,7 @@
 import {botDart,botVisit,botLevel,botDifficulty} from './bot.js';
 let panel;
-export function paintBot(state,hits=[]){
- const playing=state?.phase==='playing'&&!!botLevel(state.players[state.active]);
+export function paintBot(state,hits=[],correcting=false){
+ const playing=!correcting&&state?.phase==='playing'&&!!botLevel(state.players[state.active]);
  document.body.classList.toggle('bot-turn',playing);
  if(!panel){panel=document.createElement('section');panel.id='bot-status';panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');document.getElementById('game').prepend(panel);const css=document.createElement('link');css.rel='stylesheet';css.href='bot.css';document.head.append(css);}
  panel.hidden=!playing;if(!playing)return;

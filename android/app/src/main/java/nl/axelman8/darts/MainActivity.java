@@ -110,7 +110,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showModeChooser() {
-        new AlertDialog.Builder(this).setTitle("Waar wil je spelen?")
+        new TopBackDialog(this).setTitle("Waar wil je spelen?")
                 .setItems(new String[]{"Lokaal op deze telefoon", "NUC via Bluetooth"}, (dialog, which)->{
                     if(which==0) chooseLocal(); else chooseBluetooth();
                 }).setNegativeButton("Annuleren", null).show();
@@ -130,7 +130,7 @@ public final class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},NOTIFICATION_PERMISSION_REQUEST);
             return;
         }
-        new AlertDialog.Builder(this).setTitle("Meldingen inschakelen")
+        new TopBackDialog(this).setTitle("Meldingen inschakelen")
                 .setMessage("Meldingen zijn voor 180 Hitters uitgeschakeld. Schakel Clubaanvragen in zodat je nieuwe spelers direct ziet.")
                 .setPositiveButton("Meldinginstellingen",(dialog,which)->openClubNotificationSettings()).setNegativeButton("Later",null).show();
     }
@@ -150,7 +150,7 @@ public final class MainActivity extends Activity {
         }
         List<BluetoothDevice> devices = bluetooth.pairedDevices();
         if (devices.isEmpty()) {
-            new AlertDialog.Builder(this).setTitle("Koppel eerst met darten")
+            new TopBackDialog(this).setTitle("Koppel eerst met darten")
                     .setMessage("Open Bluetooth-instellingen, kies de NUC ‘darten’ en bevestig de eenmalige koppeling.")
                     .setPositiveButton("Bluetooth-instellingen", (d,w)->startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)))
                     .setNegativeButton("Annuleren", null).show();
@@ -162,7 +162,7 @@ public final class MainActivity extends Activity {
             labels[i]=(name==null?"Onbekend apparaat":name)+"\n"+devices.get(i).getAddress();
         }
         labels[devices.size()]="Ander apparaat koppelen…";
-        new AlertDialog.Builder(this).setTitle("Kies de Bluetooth-NUC").setItems(labels,(d,which)->{
+        new TopBackDialog(this).setTitle("Kies de Bluetooth-NUC").setItems(labels,(d,which)->{
             if(which==devices.size()) { startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)); return; }
             String address=devices.get(which).getAddress();
             bluetooth.select(address); preferences.edit().putString("bluetooth_address",address).apply();
@@ -173,7 +173,7 @@ public final class MainActivity extends Activity {
     private void chooseLocal() {
         String snapshot=preferences.getString("last_snapshot","");
         if("bluetooth".equals(mode)&&!snapshot.isEmpty()) {
-            new AlertDialog.Builder(this).setTitle("Laatste NUC-stand meenemen?")
+            new TopBackDialog(this).setTitle("Laatste NUC-stand meenemen?")
                     .setMessage("Kies Overnemen om na verlies van Bluetooth lokaal verder te spelen vanaf de laatst bevestigde stand.")
                     .setPositiveButton("Overnemen",(d,w)->{try{localServer.importSnapshot(snapshot);}catch(Exception e){Toast.makeText(this,"Stand kon niet worden overgenomen.",Toast.LENGTH_LONG).show();}loadMode("local");})
                     .setNegativeButton("Lokale partij openen",(d,w)->loadMode("local")).show();
@@ -221,7 +221,7 @@ public final class MainActivity extends Activity {
             try {
                 String pending=localServer.exportTransfer();
                 if(!preferences.edit().putString("pending_nuc_transfer",pending).commit())throw new java.io.IOException("Overdracht niet opgeslagen");
-                new AlertDialog.Builder(MainActivity.this).setTitle("Partij overzetten naar NUC")
+                new TopBackDialog(MainActivity.this).setTitle("Partij overzetten naar NUC")
                     .setMessage("De partij wordt via Bluetooth overgezet. Op de NUC bevestig je het overzetten; de bestaande partij wordt eerst als herstelkopie opgeslagen.")
                     .setPositiveButton("Verbinden via Bluetooth",(d,w)->chooseBluetooth())
                     .setNegativeButton("Annuleren",(d,w)->preferences.edit().remove("pending_nuc_transfer").apply()).show();

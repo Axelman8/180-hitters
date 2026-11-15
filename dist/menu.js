@@ -63,6 +63,10 @@ const routes={
 const menu=document.createElement('dialog');menu.id='header-menu';menu.setAttribute('aria-labelledby','navigation-title');
 menu.innerHTML='<div class="navigation-head"><div><p class="eyebrow">180 HITTERS</p><h2 id="navigation-title">Wat wil je doen?</h2></div><button id="navigation-close" type="button" aria-label="Menu sluiten">Sluiten ×</button></div><p id="navigation-context" class="navigation-context"></p><div id="navigation-scroll"><div id="navigation-overview"><p class="navigation-intro">Alles voor je partij en je dartopstelling, op één plek.</p><nav id="navigation-categories" aria-label="Onderdelen"></nav></div><div id="navigation-detail" hidden><button id="navigation-back" type="button">TERUG</button><p id="navigation-description"></p><div id="navigation-panels"></div></div></div><div class="navigation-foot"><span id="navigation-version"></span><button id="navigation-resume" type="button">Terug naar spel</button></div>';
 document.body.append(menu);
+const navigationBack=$('navigation-back'),navigationClose=$('navigation-close');
+menu.querySelector('.navigation-head').prepend(navigationBack);navigationBack.hidden=true;
+navigationClose.textContent='TERUG';navigationClose.setAttribute('aria-label','TERUG');
+$('navigation-resume').hidden=true;
 const groups={},sections={};
 for(const definition of definitions){
  const tile=document.createElement('button');tile.type='button';tile.className='navigation-category';tile.dataset.menu=definition.key;
@@ -77,12 +81,13 @@ const menuToggle=$('toggle-toolbar');menuToggle.hidden=false;menuToggle.textCont
 document.body.classList.add('toolbar-collapsed');
 function hide(node,value){if(node.hidden!==value)node.hidden=value;}
 function selectSection(key){
+ navigationBack.hidden=false;navigationClose.hidden=true;
  const definition=definitions.find(item=>item.key===key);if(!definition)return;
  for(const [name,panel] of Object.entries(groups))hide(panel,name!==key);
  hide($('navigation-overview'),true);hide($('navigation-detail'),false);$('navigation-title').textContent=definition.title;$('navigation-description').textContent=definition.hint;
  $('navigation-scroll').scrollTop=0;$('navigation-back').focus();refreshSections();
 }
-function overview(){hide($('navigation-overview'),false);hide($('navigation-detail'),true);$('navigation-title').textContent='Wat wil je doen?';$('navigation-scroll').scrollTop=0;if(menu.open)$('navigation-categories').querySelector('button').focus();}
+function overview(){navigationBack.hidden=true;navigationClose.hidden=false;hide($('navigation-overview'),false);hide($('navigation-detail'),true);$('navigation-title').textContent='Wat wil je doen?';$('navigation-scroll').scrollTop=0;if(menu.open)$('navigation-categories').querySelector('button').focus();}
 function refreshContext(){
  let text='Spelen op de NUC';
  if(android){try{const info=JSON.parse(android.getConnectionInfo?.()||'{}');text=info.mode==='bluetooth'?(info.bluetoothConnected?'NUC via Bluetooth verbonden':'NUC via Bluetooth · verbinding controleren'):'Lokaal spelen op dit apparaat';}catch{text=android.isLocalMode?.()?'Lokaal spelen op dit apparaat':'Bediening van de NUC';}}

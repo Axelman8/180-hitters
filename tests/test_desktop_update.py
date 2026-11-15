@@ -36,18 +36,18 @@ with tempfile.TemporaryDirectory() as tmp:
                 expect(dialog).to_be_visible()
                 expect(dialog.locator('a')).to_have_attribute('href', f'https://github.com/Axelman8/180-hitters/releases/download/v1.8.13/{asset}')
                 expect(dialog.locator('a')).to_be_visible()
-                dialog.get_by_text('Sluiten', exact=True).click()
+                dialog.get_by_role('button',name='TERUG',exact=True).click()
                 release['tag_name'] = 'v1.8.12'
                 open_update()
                 expect(dialog).to_contain_text('up-to-date')
                 expect(dialog.locator('a')).to_be_hidden()
-                dialog.get_by_text('Sluiten', exact=True).click()
+                dialog.get_by_role('button',name='TERUG',exact=True).click()
                 release['tag_name'] = 'v1.8.13'
                 release['assets'] = []
                 open_update()
                 expect(dialog).to_contain_text('niet gelukt')
                 expect(dialog.locator('a')).to_be_hidden()
-                dialog.get_by_text('Sluiten', exact=True).click()
+                dialog.get_by_role('button',name='TERUG',exact=True).click()
                 page.unroute('https://api.github.com/**')
                 page.route('https://api.github.com/**', lambda route: route.abort())
                 open_update()
