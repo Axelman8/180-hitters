@@ -74,6 +74,7 @@ final class LocalDartsServer extends NanoHTTPD {
 
     synchronized void importSnapshot(String snapshot) throws JSONException, IOException {
         JSONObject match = new JSONObject(snapshot);
+        try{if(library.isDeleted(GameLibrary.identity(match)))throw new IOException("Deze partij is verwijderd. Start een nieuwe partij.");}catch(IOException error){throw error;}catch(Exception error){throw new IOException("Ongeldige partij",error);}
         try{library.record(state.optJSONObject("match"),draft);library.record(match,null);}catch(Exception e){throw new IOException("Partij bewaren mislukt",e);}
         JSONObject updated = new JSONObject().put("revision", state.optInt("revision", 0) + 1).put("match", match);
         writeAtomic(stateFile, updated.toString());
@@ -133,7 +134,7 @@ final class LocalDartsServer extends NanoHTTPD {
             catch(IllegalArgumentException error){return json(Response.Status.BAD_REQUEST,new JSONObject().put("error",error.getMessage()));}
         }
         switch (path) {
-            case "/api/matches": return json(Response.Status.OK,new JSONObject().put("matches",library.items(state.optJSONObject("match"))));
+            case "/api/matches": return json(Response.Status.OK,new JSONObject().put("matches",library.items(state.optJSONObject("match"))).put("canDelete",true).put("revision",state.getInt("revision")));
             case "/api/state": {
                 JSONObject result = String.valueOf(state.getInt("revision")).equals(knownRevision)
                         ? new JSONObject().put("revision", state.getInt("revision")) : new JSONObject(state.toString());
@@ -175,11 +176,29 @@ final class LocalDartsServer extends NanoHTTPD {
                 JSONObject match = incoming.getJSONObject("match");
                 JSONObject matchState = match.optJSONObject("state");
                 if (matchState == null || matchState.optInt("version") != 2) return json(Response.Status.BAD_REQUEST, new JSONObject().put("error", "Ongeldige partij"));
+                if(library.isDeleted(GameLibrary.identity(match)))return json(Response.Status.BAD_REQUEST,new JSONObject().put("error","Deze partij is verwijderd. Start een nieuwe partij."));
                 if(!String.valueOf(GameLibrary.identity(state.optJSONObject("match"))).equals(GameLibrary.identity(match)))library.record(state.optJSONObject("match"),draft);
                 library.record(match,null);
                 JSONObject updated = new JSONObject().put("revision", state.getInt("revision") + 1).put("match", match);
                 writeAtomic(stateFile, updated.toString()); state = updated; draft = null; draftSequences.clear();
                 return json(Response.Status.OK, state);
+            }
+            case "/api/matches/delete": {
+                java.util.ArrayList<String> ids;
+                try{ids=GameLibrary.validateIds(incoming.optJSONArray("ids"));}
+                catch(IllegalArgumentException error){return json(Response.Status.BAD_REQUEST,new JSONObject().put("error",error.getMessage()));}
+                boolean clearsCurrent=ids.contains(GameLibrary.identity(state.optJSONObject("match")));
+                if(clearsCurrent){
+                    if(incoming.optInt("revision",-1)!=state.getInt("revision"))return json(Response.Status.CONFLICT,new JSONObject().put("error","De huidige partij is gewijzigd. Vernieuw de lijst en bevestig opnieuw."));
+                    if(online.optBoolean("active"))return json(Response.Status.CONFLICT,new JSONObject().put("error","Verlaat eerst de online dartbaan voordat je de huidige partij verwijdert."));
+                    JSONObject updated=new JSONObject().put("revision",state.getInt("revision")+1).put("match",JSONObject.NULL);
+                    writeAtomic(stateFile,updated.toString());state=updated;draft=null;draftSequences.clear();
+                    setup.put("version",setup.optInt("version")+1).put("value",JSONObject.NULL);
+                }
+                JSONArray deleted=library.delete(ids);
+                JSONObject result=new JSONObject().put("deleted",deleted).put("matches",library.items(state.optJSONObject("match"))).put("canDelete",true).put("revision",state.getInt("revision")).put("clearedCurrent",clearsCurrent);
+                if(clearsCurrent)result.put("state",new JSONObject(state.toString()).put("draft",JSONObject.NULL));
+                return json(Response.Status.OK,result);
             }
             case "/api/match/discard": {
                 library.record(state.optJSONObject("match"),draft);

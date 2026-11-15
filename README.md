@@ -75,7 +75,9 @@ Bot turns are coordinated across the NUC and controllers to prevent duplicates. 
 
 ## Saved matches, corrections and reports
 
-**Spelen > Mijn partijen** lists saved games newest first. Resume an unfinished match or open its report. NUC mode uses the shared NUC match and report; standalone mode uses local data.
+**Spelen > Mijn partijen** lists saved games newest first in a table with game, players, last played date and status. Resume an unfinished match or open its report. NUC mode uses the shared NUC match and report; standalone mode uses local data.
+
+Large checkboxes select individual games or all search results. **Verwijderen** asks for confirmation and identifies whether the selected games are stored on the NUC or on this device. Deleting the current game also ends it; other games and player lists remain available. Deleted games stay deleted after a restart, including their recovery copies. Update the NUC as well as the Android app to enable deletion in shared mode.
 
 The result screen shows the winner and a game-specific report with timestamps, total darts, relevant scores, tables and charts. On Android, share readable image sections through WhatsApp or another compatible app. Long tables are split into separate images.
 

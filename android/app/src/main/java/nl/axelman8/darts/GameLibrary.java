@@ -23,10 +23,36 @@ final class GameLibrary {
     }
     JSONObject get(String id) throws Exception {
         if(id==null||!id.matches("[a-f0-9]{32}"))throw new IllegalArgumentException("Ongeldige partij.");
+        if(isDeleted(id))throw new java.nio.file.NoSuchFileException(id);
         return new JSONObject(new String(Files.readAllBytes(new File(directory,id+".json").toPath()),StandardCharsets.UTF_8));
     }
+    boolean isDeleted(String id) {
+        return id!=null&&id.matches("[a-f0-9]{32}")&&new File(new File(directory,".deleted"),id).isFile();
+    }
+    static ArrayList<String> validateIds(JSONArray ids) {
+        if(ids==null||ids.length()<1||ids.length()>10000)throw new IllegalArgumentException("Selecteer geldige partijen om te verwijderen.");
+        ArrayList<String> result=new ArrayList<>();
+        for(int i=0;i<ids.length();i++){
+            Object value=ids.opt(i);
+            if(!(value instanceof String)||!((String)value).matches("[a-f0-9]{32}"))throw new IllegalArgumentException("Selecteer geldige partijen om te verwijderen.");
+            if(!result.contains((String)value))result.add((String)value);
+        }
+        return result;
+    }
+    JSONArray delete(ArrayList<String> ids) throws Exception {
+        JSONArray deleted=new JSONArray();File markers=new File(directory,".deleted");
+        for(String id:ids){
+            File target=new File(directory,id+".json");
+            if(!target.isFile()&&!isDeleted(id))continue;
+            if(!markers.isDirectory()&&!markers.mkdirs())throw new java.io.IOException("Partijen konden niet worden verwijderd.");
+            try(FileOutputStream output=new FileOutputStream(new File(markers,id))){output.getFD().sync();}
+            if(target.exists()&&!target.delete())throw new java.io.IOException("Partij kon niet worden verwijderd.");
+            deleted.put(id);
+        }
+        return deleted;
+    }
     void record(JSONObject match,JSONObject draft) throws Exception {
-        String id=identity(match);if(id==null||match.optBoolean("historyNavigation"))return;
+        String id=identity(match);if(id==null||match.optBoolean("historyNavigation")||isDeleted(id))return;
         JSONObject previous=null;try{previous=get(id);}catch(Exception ignored){}
         if(previous!=null&&previous.getJSONObject("match").toString().equals(match.toString())&&
                 String.valueOf(previous.opt("draft")).equals(String.valueOf(draft==null?JSONObject.NULL:draft)))return;

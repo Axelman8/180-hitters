@@ -38,11 +38,39 @@ class MatchLibrary:
     def get(self, game_id):
         if not isinstance(game_id, str) or not re.fullmatch('[a-f0-9]{32}', game_id):
             raise ValueError('Ongeldige partij.')
+        if self.is_deleted(game_id): raise FileNotFoundError('Partij is verwijderd.')
         return json.loads((self.directory / (game_id + '.json')).read_text(encoding='utf-8'))
+
+    def is_deleted(self, game_id):
+        return bool(game_id and re.fullmatch('[a-f0-9]{32}', game_id) and
+                    (self.directory / '.deleted' / game_id).is_file())
+
+    @staticmethod
+    def validate_ids(game_ids):
+        if not isinstance(game_ids, list) or not 1 <= len(game_ids) <= 10000 or any(
+                not isinstance(value, str) or not re.fullmatch('[a-f0-9]{32}', value) for value in game_ids):
+            raise ValueError('Selecteer geldige partijen om te verwijderen.')
+        return list(dict.fromkeys(game_ids))
+
+    def delete(self, game_ids):
+        game_ids = self.validate_ids(game_ids)
+        markers = self.directory / '.deleted'
+        deleted = []
+        for game_id in game_ids:
+            target = self.directory / (game_id + '.json')
+            if not target.is_file() and not self.is_deleted(game_id): continue
+            # Recovery-copy imports and delayed writes must not restore games
+            # which the user explicitly deleted.
+            markers.mkdir(parents=True, exist_ok=True)
+            with (markers / game_id).open('wb') as handle:
+                handle.flush(); os.fsync(handle.fileno())
+            target.unlink(missing_ok=True)
+            deleted.append(game_id)
+        return deleted
 
     def record(self, match, draft=None, timestamp=None):
         game_id = self.identity(match)
-        if not game_id or match.get('historyNavigation'): return game_id
+        if not game_id or match.get('historyNavigation') or self.is_deleted(game_id): return game_id
         try: previous = self.get(game_id)
         except (OSError, ValueError): previous = None
         if previous and timestamp is not None and previous['time'] > timestamp: return game_id
@@ -515,6 +543,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
         match = incoming.get('match')
         if not isinstance(match, dict) or not isinstance(match.get('undo'), list):
             raise ValueError('Ongeldige partij')
+        if library.is_deleted(library.identity(match)): raise ValueError('Deze partij is verwijderd.')
         state = match.get('state')
         if not isinstance(state, dict) or state.get('version') != 2 or state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone'):
             raise ValueError('Ongeldig spel')
@@ -715,7 +744,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     self.reply(200, {**shared_setup, 'revision': current['revision']})
             elif route == '/api/matches':
                 with lock:
-                    self.reply(200, {'matches': library.items(current.get('match'))})
+                    self.reply(200, {'matches': library.items(current.get('match')), 'canDelete': True, 'revision': current['revision']})
             elif route.startswith('/api/matches/'):
                 with lock:
                     try: self.reply(200, library.get(route.rsplit('/', 1)[-1]))
@@ -728,6 +757,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         try:
                             saved = json.loads(file.read_text(encoding='utf-8'))
                             state = saved['match']['state']
+                            if library.is_deleted(library.identity(saved['match'])): continue
                             items.append({'id': file.stem, 'time': saved['time'], 'game': state.get('game'),
                                           'players': [p['name'] for p in state['players']], 'leg': state.get('leg')})
                         except (OSError, ValueError, KeyError, TypeError): continue
@@ -811,7 +841,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/bot/claim', '/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/matches/resume', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
+            if self.path not in ('/api/bot/claim', '/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/matches/delete', '/api/matches/resume', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -840,6 +870,32 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         online_local.update(active=active,ready=ready if active else False,role=role if active else None,code=code if active else '',base=base if active else '',key=key if active else '',remoteRevision=remote_revision if active else 0)
                         follow_camera()
                     return self.reply(200,dict(online_local))
+                if self.path == '/api/matches/delete':
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        game_ids = library.validate_ids(incoming.get('ids'))
+                        clears_current = library.identity(current.get('match')) in game_ids
+                        if clears_current:
+                            if incoming.get('revision') != current['revision']:
+                                return self.reply(409, {'error': 'De huidige partij is gewijzigd. Vernieuw de lijst en bevestig opnieuw.'})
+                            if online_local['active']:
+                                return self.reply(409, {'error': 'Verlaat eerst de online dartbaan voordat je de huidige partij verwijdert.'})
+                            updated = {**current, 'revision': current['revision'] + 1, 'match': None, 'cameraDraft': {}}
+                            durable_json(path, updated); current.update(updated)
+                            draft.update(value=None, time=time.monotonic()); sequences.clear()
+                            shared_setup.update(version=shared_setup['version'] + 1, value=None)
+                            follow_camera()
+                        deleted = library.delete(game_ids)
+                        for file in backups.glob('*.json'):
+                            if not re.fullmatch('[a-f0-9]{32}', file.stem) or file.is_symlink(): continue
+                            try:
+                                saved = json.loads(file.read_text(encoding='utf-8'))
+                                if library.identity(saved.get('match')) in game_ids: file.unlink()
+                            except (OSError, ValueError, TypeError): pass
+                        result = {'deleted': deleted, 'matches': library.items(current.get('match')),
+                                  'canDelete': True, 'revision': current['revision'], 'clearedCurrent': clears_current}
+                        if clears_current: result['state'] = {**current, 'draft': None, 'control': dict(control)}
+                        return self.reply(200, result)
                 if self.path == '/api/match/discard':
                     with lock:
                         if not self.may_edit(incoming): return
@@ -1214,6 +1270,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 match = incoming['match']
                 if not isinstance(match, dict) or not isinstance(match.get('undo'), list):
                     raise ValueError()
+                if library.is_deleted(library.identity(match)):
+                    return self.reply(400, {'error': 'Deze partij is verwijderd. Start een nieuwe partij.'})
                 state = match['state']
                 if state.get('version') != 2 or not 1 <= len(state['players']) <= 4:
                     raise ValueError()

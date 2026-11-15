@@ -147,7 +147,8 @@ async function synchronize(){
   const data=await res.json();
   updateControl(data.control);
   if(busy||revision!==requestedRevision)return;
-  if(data.match===null&&revision===-1&&localScreen&&state){revision=data.revision;if(!await persist())return;}
+  // An explicitly cleared server state wins over a browser's old cached game.
+  if(data.match===null&&data.revision===0&&revision===-1&&localScreen&&state){revision=data.revision;if(!await persist())return;}
   else if(data.revision!==revision)receive(data);
   if(!draftWrites&&requestedDraftSequence===draftSequence){
    const draft=data.draft?.revision===revision?data.draft:null;
@@ -870,6 +871,7 @@ document.addEventListener('show-shared-setup',()=>{for(const d of document.query
 document.addEventListener('discard-current-match',event=>{if(event.detail)receive(event.detail);for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();document.dispatchEvent(new Event('open-play-menu'));});
 document.addEventListener('close-shared-setup',()=>render());
 document.addEventListener('resume-saved-match',event=>{resultDismissedOffline=false;receive(event.detail);});
+document.addEventListener('saved-match-deleted',event=>{if(event.detail)receive(event.detail);});
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{message('Gebruik F11 voor volledig scherm.');}};
  document.addEventListener('keydown',e=>{if(!state||state.phase!=='playing'||!$('setup').hidden||document.querySelector('dialog[open]')||mode!=='total')return;if(/^\d$/.test(e.key)){e.preventDefault();addDigit(e.key);}else if(e.key==='Backspace'){e.preventDefault();$('backspace').click();}else if(e.key==='Enter'){e.preventDefault();totalSubmit();}});
 render();
