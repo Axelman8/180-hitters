@@ -30,8 +30,8 @@ with tempfile.TemporaryDirectory() as tmp:
             assert result['summary']['totalDarts'] == 4
             assert [row['darts'] for row in result['summary']['rows']] == [1, 2, 1]
             assert [goal['label'] for goal in result['summary']['oneDart']] == ['D20', 'Bull']
+            page.locator('#navigation-close').click()
             page.request.post('http://127.0.0.1:8794/api/state', data={'revision': 0, 'match': result['match']})
-            page.reload()
             expect(page.locator('#lives-summary')).to_be_visible()
             expect(page.locator('#lives-summary h3')).to_have_text('Hitters Challenge - Doubles')
             expect(page.locator('.lives-summary-meta dd')).to_have_count(3)

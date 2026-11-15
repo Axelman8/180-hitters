@@ -83,7 +83,7 @@ export function renderLivesSummary(state,dialog){
  const report=livesSummary(state),section=el('section',undefined,'lives-summary');section.id='lives-summary';section.setAttribute('aria-label','Samenvatting Hitters Challenge');
  section.append(el('h3',report.title));
  const meta=el('dl',undefined,'lives-summary-meta');
- for(const [label,value] of [['Begintijd',report.started],['Eindtijd',report.ended],['Darts totaal',String(report.totalDarts)]]){meta.append(el('dt',label),el('dd',value));}
+ for(const [label,value] of [['Begintijd',report.started],['Eindtijd',report.ended],['Darts totaal',String(report.totalDarts)]]){const item=el('div'),data=el('dd',value);if(/^\d{2}:\d{2}/.test(value))data.className='report-meta-time';item.append(el('dt',label),data);meta.append(item);}
  section.append(meta);
  const one=el('div',undefined,'lives-summary-one');one.append(el('h4','Met 1 dart geraakt'));
  if(report.oneDart.length){const chart=el('div',undefined,'lives-one-dart-chart'),maximum=Math.max(...report.oneDart.map(goal=>goal.oneDart));for(const goal of report.oneDart){const row=el('div'),label=el('span',goal.label),track=el('i'),bar=el('b'),count=el('strong',`× ${goal.oneDart}`);bar.style.width=`${goal.oneDart/maximum*100}%`;track.append(bar);row.append(label,track,count);chart.append(row);}one.append(chart);}else one.append(el('p','Geen doel met de eerste dart geraakt.'));

@@ -118,8 +118,10 @@ body.remote-control .lives-last{font-size:12px;margin:0;min-height:0}
 .lives-summary h3{font-size:clamp(22px,5vw,34px);color:var(--accent);margin:0;text-align:center}
 .lives-summary h4{font-size:16px;margin:0 0 7px;color:#83d9ef}
 .lives-summary-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}
-.lives-summary-meta>dt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.lives-summary-meta>dd{font-size:18px;font-weight:800;margin:0;grid-row:2}
+.lives-summary-meta>div{min-width:0;break-inside:avoid}
+.lives-summary-meta dt{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lives-summary-meta dd{font-size:18px;font-weight:800;margin:3px 0 0;font-variant-numeric:tabular-nums}
+.lives-summary-meta .report-meta-time{white-space:nowrap}
 .lives-summary-one,.lives-summary-ranking{background:#10212a;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .lives-summary-chart{background:#10212a;border:1px solid var(--line);border-radius:12px;padding:12px 14px;overflow:hidden}
 .lives-summary-chart svg{display:block;width:100%;height:auto;max-height:420px}.chart-grid{stroke:#2a3b44;stroke-width:2}.chart-axis{fill:#93a9b2;font:18px sans-serif}.chart-darts,.chart-goal{font:700 17px sans-serif;paint-order:stroke;stroke:#10212a;stroke-width:4px}
@@ -136,5 +138,5 @@ body.remote-control .lives-last{font-size:12px;margin:0;min-height:0}
 .lives-summary-share{margin-top:2px;font-size:17px}
 @media(max-width:600px){
  #result-dialog:has(#lives-summary){width:96%;padding:18px 12px}
- .lives-summary-meta{grid-template-columns:1fr 1fr}.lives-summary-meta>dt,.lives-summary-meta>dd{grid-row:auto}.lives-summary-meta>dd{font-size:16px}.lives-summary-meta>dt:nth-of-type(3){grid-column:1}.lives-summary-ranking ol{grid-template-columns:1fr}.lives-round-timeline{padding:10px}.lives-timeline-grid{grid-template-columns:1fr}.lives-summary-table{font-size:12px}.lives-summary-table th,.lives-summary-table td{padding:9px 8px}
+ .lives-summary-meta{grid-template-columns:1fr 1fr}.lives-summary-meta dd{font-size:16px}.lives-summary-ranking ol{grid-template-columns:1fr}.lives-round-timeline{padding:10px}.lives-timeline-grid{grid-template-columns:1fr}.lives-summary-table{font-size:12px}.lives-summary-table th,.lives-summary-table td{padding:9px 8px}
 }
