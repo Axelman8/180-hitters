@@ -48,6 +48,7 @@ jobs:
           node tests/bot-engine.mjs
           node tests/bot-adaptive.mjs
           node tests/solo-scoring.mjs
+          python3 tests/test_nuc_keyboard.py
 
       - name: Set up Java 17
         uses: actions/setup-java@v6

@@ -28,6 +28,25 @@ with tempfile.TemporaryDirectory() as temporary:
     assert kiosk.LAUNCHER.is_file()
     assert 'kiosk-control.py' in kiosk.LAUNCHER.read_text(encoding='utf-8')
 
+with tempfile.TemporaryDirectory() as temporary:
+    proc=Path(temporary)
+    commands={
+        101:'chromium --kiosk --user-data-dir=/home/autodarts/snap/chromium/common/180-hitters-profile',
+        102:'chromium --kiosk --user-data-dir=/home/autodarts/snap/chromium/common/oche-profile',
+        103:'chromium --user-data-dir=/home/autodarts/other-browser',
+        104:'chromium --type=renderer --user-data-dir=/home/autodarts/snap/chromium/common/180-hitters-profile',
+    }
+    for pid,command in commands.items():
+        folder=proc/str(pid);folder.mkdir();(folder/'cmdline').write_bytes(command.encode())
+    with patch.object(kiosk,'Path',side_effect=lambda value:proc if value=='/proc' else Path(value)):
+        assert set(kiosk.browser_processes())=={101,102},'Switching must close both app profiles and preserve unrelated browsers'
+
+with tempfile.TemporaryDirectory() as temporary, patch.object(Path,'home',return_value=Path(temporary)):
+    common=Path(temporary)/'snap/chromium/common'
+    assert kiosk.profile('/snap/bin/chromium')==common/'oche-profile'
+    (common/'180-hitters-profile').mkdir(parents=True)
+    assert kiosk.profile('/snap/bin/chromium')==common/'180-hitters-profile','Keep using the profile configured by the NUC autostart'
+
 updater = (root / 'nuc-update.py').read_text(encoding='utf-8')
 assert "str(helper), 'install'" in updater
 switch_source = (root / 'server.py').read_text(encoding='utf-8').split('def switch_kiosk', 1)[1].split('def open_kiosk', 1)[0]

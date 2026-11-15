@@ -1,7 +1,8 @@
 #lives-game{display:none}
-body[data-game="tenlives"] #game> :not(#lives-game){display:none!important}
+body[data-game="tenlives"] #game> :not(#lives-game):not(#bot-status){display:none!important}
 body[data-game="tenlives"] #game:not([hidden]){display:block!important;height:var(--stage-height,100%)!important;min-height:0!important}
-body[data-game="tenlives"] #lives-game{display:flex!important;flex-direction:column;gap:12px;min-height:100%;width:100%}
+body[data-game="tenlives"] #lives-game{display:flex!important;flex-direction:column;gap:12px;min-height:0;flex:1;width:100%}
+body.screen-fit[data-game="tenlives"] #game:not([hidden]){display:flex!important;flex-direction:column;gap:8px}
 .lives-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .lives-heading span,.lives-hint,.lives-last{color:var(--muted)}
 .lives-players{display:grid;grid-template-columns:repeat(var(--count),minmax(0,1fr));gap:10px}
@@ -31,7 +32,7 @@ body.remote-control .lives-focus{min-height:180px;padding:12px}
 body.remote-control .lives-current{font-size:64px}
 @media(min-width:700px) and (max-height:1100px){body.remote-control[data-game="tenlives"] #lives-game{display:grid!important;grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr auto}.lives-heading{grid-column:1/-1}body.remote-control .lives-players{grid-column:1;grid-row:2}body.remote-control .lives-focus{grid-column:2;grid-row:2/4}body.remote-control .lives-controls{grid-column:1;grid-row:3}body.remote-control .lives-last{grid-column:1/-1}}
 
-body.screen-fit.input-collapsed:not(.remote-control):not(.cricket-game)[data-game="tenlives"] #game:not([hidden]){display:block!important}
+body.screen-fit.input-collapsed:not(.remote-control):not(.cricket-game)[data-game="tenlives"] #game:not([hidden]){display:flex!important;flex-direction:column}
 
 .life-marks i{display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:clamp(10px,1.6vw,18px);color:#182416;min-width:0}
 .life-marks i.lost{color:#71848e;text-decoration:line-through}

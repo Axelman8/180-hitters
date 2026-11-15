@@ -27,7 +27,9 @@ def browser():
 
 def profile(executable):
     if 'chromium' in executable and (executable.startswith('/snap/') or shutil.which('snap')):
-        return Path.home() / 'snap/chromium/common/oche-profile'
+        common = Path.home() / 'snap/chromium/common'
+        existing = common / '180-hitters-profile'
+        return existing if existing.is_dir() else common / 'oche-profile'
     return ROOT / 'browser-profile'
 
 
@@ -43,7 +45,8 @@ def disable_desktop_keyboard():
 
 def browser_processes():
     profile_markers = (str(ROOT / 'browser-profile'), 'oche-darts/browser-profile',
-                       'snap/chromium/common/oche-profile')
+                       'snap/chromium/common/oche-profile',
+                       'snap/chromium/common/180-hitters-profile')
     for process in Path('/proc').glob('[0-9]*'):
         try:
             command = (process / 'cmdline').read_bytes().decode().replace('\0', ' ')
