@@ -1,4 +1,5 @@
 import {fourSymbols} from './four-in-row.js';
+import {onlineFriendsState,refreshOnlineFriends,nucRosterLabel} from './player-rosters.js';
 const $=id=>document.getElementById(id);
 const games=[
  ['x01','X01','Van je startscore naar nul.','Wedstrijd','Begin op de gekozen startscore en speel precies naar nul. Kies zelf de beginregel, uitgooiregel, bullwaarde en partijvorm.'],
@@ -30,7 +31,7 @@ const gameVideos={
 };
 const fields=['lives-mode','four-bot','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','participant-mode','count'];
 let step=0,slot=0,teamSlot=0,memberSlot=0,venueRoster=[],mobileRoster=[],selected='x01',fourSymbolChoices=[...fourSymbols];
-const venueLabel=()=>window.venueProfile?.playerListName||'Clubspelers';
+const venueLabel=nucRosterLabel;
 let applying=false,sendTimer,sendBusy=false,pendingSetup=undefined,seenVersion=-1,mirroring=false,localSetupOwner=false;
 const root=document.createElement('section');root.id='setup-wizard';$('setup').append(root);
 function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;}
@@ -98,16 +99,17 @@ function refreshNameLabels(){
  if(summary)summary.lastElementChild.textContent=isTeams()?teamDraft().map(team=>`${team.name}: ${team.members.filter(Boolean).join(', ')}`).join(' | '):names().map(input=>input.value).join(' → ');
 }
 function updateRosterPickers(){
+ const friends=onlineFriendsState().members.map(member=>member.name);
  for(const select of root.querySelectorAll('.wizard-roster-select')){
-  const source=select.nameSource,placeholder=el('option',venueRoster.length||mobileRoster.length?'Kies uit spelerslijst':'Geen opgeslagen spelers — typ een naam');placeholder.value='';
+  const source=select.nameSource,placeholder=el('option',venueRoster.length||mobileRoster.length||friends.length?'Kies uit spelerslijst':'Geen opgeslagen spelers - typ een naam');placeholder.value='';
   const groups=[];
-  for(const [title,list] of [[venueLabel(),venueRoster],['Mijn spelers',mobileRoster]]){
+  for(const [title,list] of [[venueLabel(),venueRoster],['Mijn spelers',mobileRoster],['Online vrienden',friends]]){
    if(!list.length)continue;
    const group=el('optgroup');group.label=title;
    for(const name of list){const option=el('option',name);option.value=name;option.disabled=allMembers().concat(isTeams()?[]:names()).some(input=>input!==source&&input.value===name);group.append(option);}
    groups.push(group);
   }
-  select.replaceChildren(placeholder,...groups);select.value=[...venueRoster,...mobileRoster].includes(source.value)?source.value:'';select.disabled=!groups.length;
+  select.replaceChildren(placeholder,...groups);select.value=[...venueRoster,...mobileRoster,...friends].includes(source.value)?source.value:'';select.disabled=!groups.length;
  }
 }
 function namePicker(source,title,pickerTitle){
@@ -212,7 +214,8 @@ function applyRosters(data){
  try{if(window.DartsAndroid?.getMobilePlayers)personal=JSON.parse(window.DartsAndroid.getMobilePlayers());}catch{}
  mobileRoster=sort(personal);updateRosterPickers();
 }
-async function refreshRoster(){try{const response=await fetch('/api/players',{cache:'no-store'});if(response.ok)applyRosters(await response.json());}catch{}}
+async function refreshRoster(){void refreshOnlineFriends();try{const response=await fetch('/api/players',{cache:'no-store'});if(response.ok)applyRosters(await response.json());}catch{}}
+document.addEventListener('online-friends-updated',updateRosterPickers);
 document.addEventListener('players-lists-updated',event=>applyRosters(event.detail));
 document.addEventListener('venue-profile-ready',updateRosterPickers);
 new MutationObserver(()=>{if(applying)return;if(!$('setup').hidden){step=0;render();refreshRoster();}else{localSetupOwner=false;queueSetup();}}).observe($('setup'),{attributes:true,attributeFilter:['hidden']});

@@ -23,7 +23,7 @@ void showVersion();
 // elements, their handlers and their device-specific availability.
 const definitions=[
  {key:'play',title:'Spelen',hint:'Een partij starten, aanpassen of terugkijken.',icon:'M6 4l14 8-14 8z',sections:[['new','Nieuwe partij'],['current','Tijdens je partij'],['saved','Bewaarde partijen']]},
- {key:'online',title:'Online darten',hint:'Een dartbaan maken, deelnemen en uitnodigingen bekijken.',icon:'M8 12h8M12 8v8M3 12a9 9 0 1018 0 9 9 0 00-18 0',sections:[['lanes','Dartbanen'],['invites','Uitnodigingen'],['club','Mijn club']]},
+ {key:'online',title:'Online darten',hint:'Een dartbaan maken, deelnemen en uitnodigingen bekijken.',icon:'M8 12h8M12 8v8M3 12a9 9 0 1018 0 9 9 0 00-18 0',sections:[['lanes','Dartbanen'],['invites','Uitnodigingen'],['club','Online vrienden']]},
  {key:'players',title:'Spelers & teams',hint:'Je spelerslijst bijhouden en teams tijdens de partij beheren.',icon:'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M16 3a4 4 0 010 8M22 21v-2a4 4 0 00-3-3.87M5 7a4 4 0 108 0 4 4 0 00-8 0',sections:[['roster','Spelerslijsten'],['teams','Teams in deze partij']]},
  {key:'nuc',title:'NUC & verbinding',hint:'Verbinden, bediening overnemen en je dartopstelling beheren.',icon:'M3 3h18v14H3zM8 21h8M12 17v4',sections:[['connect','Verbinding & bediening'],['match','Partij overzetten'],['display','NUC-scherm'],['system','NUC-beheer'],['camera','Camera’s']]},
  {key:'app',title:'App-instellingen',hint:'Weergave, app-updates en informatie over 180 Hitters.',icon:'M12 8a4 4 0 100 8 4 4 0 000-8M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2',sections:[['display','Weergave'],['updates','App bijwerken'],['about','Over 180 Hitters']]}
@@ -34,14 +34,14 @@ const routes={
  'screen-input-shortcut':['play','current','Toon de scoreknoppen op het speelscherm.'],
  'match-backups':['play','saved','Open een bewaarde partij of bekijk het rapport.'],
  'matches-open':['play','saved','Alle bewaarde spellen, nieuwste bovenaan. Hervat een partij of bekijk het rapport.'],
- 'players-list':['players','roster','Beheer de spelers op dit apparaat en de clubspelers op de NUC.'],
+ 'players-list':['players','roster','Bekijk NUC-spelers, Mijn spelers en Online vrienden.'],
  'team-manager':['players','teams','Verander de volgorde, voeg een invaller toe of vervang een speler.'],
  'online-host-open':['online','lanes','Maak een nieuwe dartbaan of open je actieve dartbaan.'],
  'online-new-open':['online','lanes','Begin met een nieuwe online dartbaan.'],
  'online-join-open':['online','lanes','Kies een beschikbare dartbaan of gebruik een uitnodiging.'],
  'online-invitations-open':['online','invites','Bekijk wie jou heeft uitgenodigd en doe mee.'],
  'online-leave-open':['online','lanes','Verlaat je dartbaan en ga terug naar een nieuwe partij.'],
- 'club-open':['online','club','Je clubregistratie, toegang en clubmeldingen.'],
+ 'club-open':['online','club','Je online vrienden, toegang en meldingen.'],
  'android-app-action':android?['nuc','connect','Kies lokaal spelen of verbinden met een NUC via Bluetooth.']:['app','updates','Installeer de Android-app op een telefoon of tablet.'],
  'take-control':['nuc','connect','Laat dit apparaat de scores op de NUC bedienen.'],
  'connection-health':['nuc','connect','Controleer de verbinding of herstel deze bij een probleem.'],

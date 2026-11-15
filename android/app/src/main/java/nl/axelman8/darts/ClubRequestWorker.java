@@ -45,8 +45,8 @@ public final class ClubRequestWorker extends Worker {
 
     static void createChannel(Context context) {
         if (Build.VERSION.SDK_INT < 26) return;
-        NotificationChannel channel = new NotificationChannel(CHANNEL, "Clubmeldingen", NotificationManager.IMPORTANCE_HIGH);
-        channel.setDescription("Nieuwe clubaanvragen en uitnodigingen om online te darten");
+        NotificationChannel channel = new NotificationChannel(CHANNEL, "Online vrienden", NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription("Nieuwe toegangsaanvragen en uitnodigingen om online te darten");
         context.getSystemService(NotificationManager.class).createNotificationChannel(channel);
     }
 
@@ -74,7 +74,7 @@ public final class ClubRequestWorker extends Worker {
         PendingIntent open = PendingIntent.getActivity(context, 180, launch, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         String text = pending == 1 ? "Er wacht 1 nieuwe speler op jouw goedkeuring." : "Er wachten " + pending + " spelers op jouw goedkeuring.";
         NotificationCompat.Builder notification = new NotificationCompat.Builder(context, CHANNEL)
-                .setSmallIcon(R.drawable.ic_launcher).setContentTitle("Nieuwe clubaanvraag")
+                .setSmallIcon(R.drawable.ic_launcher).setContentTitle("Nieuwe toegangsaanvraag")
                 .setContentText(text).setStyle(new NotificationCompat.BigTextStyle().bigText(text))
                 .setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true).setContentIntent(open)
                 .setNumber(pending).setOnlyAlertOnce(false);
@@ -89,7 +89,7 @@ public final class ClubRequestWorker extends Worker {
         int requestCode = 1000 + Math.abs(id.hashCode() % 100000);
         PendingIntent open = PendingIntent.getActivity(context, requestCode, launch,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        String sender = fromName == null || fromName.trim().isEmpty() ? "Een clubspeler" : fromName.trim();
+        String sender = fromName == null || fromName.trim().isEmpty() ? "Een online vriend" : fromName.trim();
         String text = sender + " nodigt je uit voor dartbaan " + code + ". Tik om de uitnodiging te openen.";
         NotificationCompat.Builder notification = new NotificationCompat.Builder(context, CHANNEL)
                 .setSmallIcon(R.drawable.ic_launcher).setContentTitle("Nieuwe dartuitnodiging")

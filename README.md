@@ -22,15 +22,17 @@ Advanced packages: `180-Hitters-Linux-x64.tar.gz` and `180-Hitters-Windows-x64.z
 
 The app starts at its main menu while keeping the current match. The version is centered in the top bar. **TERUG** (Back) is at the top of app menus, dialogs and the match wizard, including long reports.
 
-Every human player has a name field and a player-list selector directly inside their player card, including when another player is a BOT. Choose a NUC club player or a player saved on the current phone/tablet, or type a name for the match. List synchronization preserves typing focus and the on-screen keyboard. This applies to all twelve games and the selected members of teams.
+Every human player has a name field and a player-list selector directly inside their player card, including when another player is a BOT. Choose a NUC player, a player saved on the current phone/tablet, or an approved online friend, or type a name for the match. List synchronization preserves typing focus and the on-screen keyboard. This applies to all twelve games and the selected members of teams.
 
 | App menu | Contents |
 | --- | --- |
 | **Spelen** (Play) | Start or change a match, show screen input, browse saved games and resume unfinished matches. |
-| **Online darten** (Online darts) | Create or join a dart lane, send invitations and manage club access. |
-| **Spelers & teams** (Players and teams) | Player lists, team order, substitutes and replacements. |
+| **Online darten** (Online darts) | Create or join a dart lane, send invitations, browse online friends and manage access. |
+| **Spelers & teams** (Players and teams) | NUC players, personal players, online friends, team order, substitutes and replacements. |
 | **NUC & verbinding** (NUC and connection) | Connect, take control, transfer a match, remote mouse, NUC display, Bluetooth and cameras. |
 | **App-instellingen** (App settings) | Local display options, updates and application information. |
+
+**Spelers & teams** shows three separate sources with the same list layout: **NUC-spelers** (NUC players), **Mijn spelers** (personal names) and **Online vrienden** (approved online friends). The Online friends item under Online darts opens that same list. Friend names are available in match and team selectors without copying them into the NUC or personal roster. Previously fetched names remain selectable for local play during an internet outage; online access still requires approval. Registration, approvals and notification preferences are under **Toegang en meldingen** (Access and notifications).
 
 NUC-only controls appear when connected. The connection indicator shows whether the device controls the NUC. Android system settings and installer screens use Android's own navigation.
 

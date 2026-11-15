@@ -131,7 +131,7 @@ public final class MainActivity extends Activity {
             return;
         }
         new TopBackDialog(this).setTitle("Meldingen inschakelen")
-                .setMessage("Meldingen zijn voor 180 Hitters uitgeschakeld. Schakel Clubaanvragen in zodat je nieuwe spelers direct ziet.")
+                .setMessage("Meldingen zijn voor 180 Hitters uitgeschakeld. Schakel Online vrienden in zodat je aanvragen en uitnodigingen direct ziet.")
                 .setPositiveButton("Meldinginstellingen",(dialog,which)->openClubNotificationSettings()).setNegativeButton("Later",null).show();
     }
 

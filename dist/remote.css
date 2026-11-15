@@ -150,7 +150,7 @@ body.remote-control #setup .form-actions button{flex:1;min-height:48px;font-size
 
 #players-dialog{width:min(520px,calc(100vw - 24px));max-height:90dvh;overflow:auto}
 #players-form{display:flex;align-items:end;gap:10px}#players-form label{flex:1;min-width:0}#player-name{display:block;width:100%;min-height:48px;font-size:16px}
-#roster-list,#mobile-roster-list{list-style:none;padding:0;margin:4px 0 12px;max-height:24dvh;overflow:auto}#roster-list li,#mobile-roster-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}#roster-list li span,#mobile-roster-list li span{overflow-wrap:anywhere}#roster-list button,#mobile-roster-list button{min-height:44px;font-size:14px;padding:8px 12px}.roster-group{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.roster-group h3{margin:0;color:var(--accent);font-size:16px}.roster-group h3 small{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:3px}.roster-empty{color:var(--muted);font-style:italic}
+.roster-group>ul{list-style:none;padding:0;margin:4px 0 12px;max-height:24dvh;overflow:auto}.roster-group>ul li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}.roster-group>ul li span{overflow-wrap:anywhere}.roster-group>ul button{min-height:44px;font-size:14px;padding:8px 12px}.roster-group{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.roster-group h3{margin:0;color:var(--accent);font-size:16px}.roster-group h3 small{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:3px}.roster-empty{color:var(--muted);font-style:italic}
 #names label select{margin-bottom:8px}body.remote-control header #players-list{min-height:44px;padding:8px 12px;font-size:16px}body.remote-control header .top-actions{display:flex;gap:8px;flex-wrap:wrap}
 
 .app-avatar{width:42px;height:42px;object-fit:cover;border-radius:50%;flex-shrink:0}
@@ -368,3 +368,5 @@ body.remote-control[data-mobile-layout="compact"] #total-input,body.remote-contr
 
 #gotcha-reset{min-height:44px;font-size:15px;padding:10px 14px}
 #gotcha-reset-summary{font-size:14px;color:#ffe7a0;margin:8px 0}
+
+.player-destination-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.player-destination-actions button{min-height:52px}#friends-roster-status{color:var(--muted);font-size:13px}#friends-roster-group[hidden]{display:none}@media(max-width:520px){.player-destination-actions{grid-template-columns:1fr}}
