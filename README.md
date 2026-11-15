@@ -63,6 +63,8 @@ The [online darts tutorial](https://github.com/Axelman8/180-hitters/releases/lat
 
 X01 offers visit-total and per-dart entry. Rules that depend on individual segments, such as double-in, require per-dart input. In solo Cricket/Tactics, excess hits after closing a target earn personal points; No Score counts marks only. Multiplayer Standard and Cut Throat keep their opponent-based scoring rules.
 
+Bob's 27 uses only **MIS** (miss) and **RAAK** (hit) for the current double or bull. Each press records one dart; the third dart saves the visit automatically. Restored visits use the same controls to correct a selected dart. Gotcha puts an **op 0** reset button directly on each opponent's score card, including bots, so it remains reachable with screen input collapsed. Resetting an opponent preserves the current player's pending darts.
+
 In 4 in a Row, a number needs three marks in one visit; unclaimed marks expire. Single bull and double bull each claim their cell with one dart. The game ends on the winning dart. Scram, Killer, Bull / 41 and 21 adapt games 1, 6, 8 and 13 from [Sonny's dart games](https://sonnysdarts.wordpress.com/21-dart-spellen/), with fair role rotation for multiplayer games.
 
 Choose a human, BOT 40 or BOT 50 for each seat. Bots throw separate darts with varied, natural pauses. The original aiming model uses board geometry and two-dimensional scatter, including neighbouring segments and misses. No third-party bot implementation is bundled.
@@ -72,6 +74,8 @@ The selected level targets a three-dart average over complete 501 straight-in/do
 After nine human darts in X01, 121 or Gotcha, the bot follows half of the positive gap above its base: a human averaging 50 against BOT 40 gives a target of 45. The strongest human provides the reference, without bots feeding back into one another. Cricket/Tactics use marks-per-round references and actively address point deficits, scoring opportunities and legal finishes. Other drills retain base accuracy. The live banner shows the current target and base.
 
 Bot turns are coordinated across the NUC and controllers to prevent duplicates. Camera input waits during bot turns. Online lanes currently use human participants.
+
+Hitters Challenge saves each bot dart immediately while retaining the three visible dart slots across state updates. A new three-dart group or a change of player starts again at slot 1; reconnecting reconstructs the visible group from the shared recorded history.
 
 ## Saved matches, corrections and reports
 

@@ -203,23 +203,16 @@ function renderInput(){
   $('training-status').textContent=`${state.players[state.active].name} | Ronde ${state.round} van 21 | Doel ${target} | Score ${live.score} | ${live.hits} raak`;
  }
  $('entry').textContent=entry||'0';
- const gotcha=state?.game==='gotcha';
- $('gotcha-total-options').hidden=!gotcha;
+ // Gotcha reset actions live on the opponent cards, also with input collapsed.
+ $('gotcha-total-options').hidden=true;
  $('gotcha-reset').hidden=true;
- $('gotcha-targets').hidden=!gotcha;
- $('gotcha-targets').replaceChildren(...(state?.game==='gotcha'?state.players:[]).flatMap((p,i)=>{
-  if(i===state.active)return [];
-  const reset=button(`${p.name} op 0`,()=>resetGotchaOpponent(i));
-  reset.className='gotcha-player-reset';reset.dataset.playerIndex=String(i);
-  reset.disabled=state.phase!=='playing'||p.remaining<=0;
-  reset.title=`Huidige score: ${p.remaining}`;
-  return [reset];
- }));
+ $('gotcha-targets').replaceChildren();
  $('gotcha-reset-summary').hidden=true;
  const opening=state?.game==='x01'&&!state.players[state.active].opened;
  $('total-rule-note').hidden=!opening&&state?.game!=='gotcha';
  $('total-rule-note').textContent=opening?`${state.inMode==='double'?'Dubbel-in':'Master-in'}: tel alleen punten vanaf de eerste geldige ${state.inMode==='double'?'dubbel':'dubbel of triple'}. Nog niet in? Vul 0 in.`:state?.game==='gotcha'?'Gelijke eindscore zet een tegenstander automatisch op nul. Gebruik de aparte spelersknoppen voor tussentijdse treffers.':'';
- renderDartSlots($('dart-slots'),dartList,{editing:correctingDarts(),selected:selectedDart,select:selectCorrectionDart});
+ const displayedDarts=state?.game==='bobs27'?dartList.map(dart=>({...dart,label:dart.number===state.bobsTarget&&dart.mult===2?'RAAK':'MIS'})):dartList;
+ renderDartSlots($('dart-slots'),displayedDarts,{editing:correctingDarts(),selected:selectedDart,select:selectCorrectionDart});
  document.querySelectorAll('[data-multiplier]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.multiplier)===multiplier));
  renderCheckout();if(cricket())renderBoard();
  renderScreenOverview(state,mode,entry,dartList);
@@ -256,7 +249,7 @@ function renderCheckout(){
 }
 function renderBobs27(){
  const pending=state.phase==='playing'?dartList:[],v=previewBobs27(state,pending),p=state.players[state.active],target=v.target===25?'Bull':'D'+v.target;
- document.querySelectorAll('#players .remaining').forEach((score,i)=>{const active=i===state.active;score.textContent=active?v.score:state.players[i].remaining;score.classList.toggle('pending-points',active&&v.score!==p.remaining);});
+ document.querySelectorAll('#players .remaining').forEach((score,i)=>{if(!state.players[i])return;const active=i===state.active;score.textContent=active?v.score:state.players[i].remaining;score.classList.toggle('pending-points',active&&v.score!==p.remaining);});
  $('points-preview').hidden=!pending.length;$('points-preview').textContent=pending.length?`${v.hits} van ${pending.length} pijlen raak op ${target}`:'';
  $('checkout-title').textContent=`Doel: ${target}`;
  $('checkout-note').textContent=`Drie pijlen. Iedere treffer is +${v.value}; bij nul treffers gaat ${v.value} van je score af. Bij 0 of lager stopt de training.`;
@@ -305,6 +298,7 @@ function renderSonny(){
 }
 function renderGotcha(){
  const pending=state.phase==='playing'?dartList:[],v=previewGotcha(state,pending),p=v.players[state.active];
+ document.querySelectorAll('#players .gotcha-player-reset').forEach(reset=>{const score=v.players[Number(reset.dataset.playerIndex)]?.remaining||0;reset.disabled=state.phase!=='playing'||!!state.players[state.active].bot||score<=0;reset.title=`Huidige score: ${score}`;});
  document.querySelectorAll('#players .remaining').forEach((el,i)=>{if(!v.players[i])return;el.textContent=v.players[i].remaining;el.classList.toggle('pending-points',v.players[i].remaining!==state.players[i].remaining);});
  $('points-preview').hidden=!v.resets.length;$('points-preview').textContent='GOTCHA! '+v.resets.map(i=>state.players[i].name+' naar 0').join(' / ');
  $('checkout-title').textContent=v.bust?'Bust - terug naar '+p.remaining:v.finished?state.start+' bereikt!':(state.start-p.remaining)+' nodig om te winnen';
@@ -343,6 +337,11 @@ function chooseCategory(training){
 }
 $('category-match').onclick=()=>chooseCategory(false);$('category-training').onclick=()=>chooseCategory(true);$('category-cancel').onclick=()=>render();
 function buildKeys(){
+ if(state.game==='bobs27'){
+  const miss=button('MIS',()=>addDart(0,1));miss.id='miss-dart';
+  const hit=button('RAAK',()=>addDart(state.bobsTarget,2));hit.id='bobs-hit';hit.className='primary';
+  $('board-keys').replaceChildren(miss,hit);return;
+ }
  const numbers=cricket()?state.numbers.filter(n=>n!==25):Array.from({length:20},(_,i)=>i+1);
  $('board-keys').replaceChildren(...numbers.map(n=>button(n,()=>addDart(n,multiplier))));
  const miss=button('Mis',()=>addDart(0,1));miss.id='miss-dart';
@@ -451,6 +450,9 @@ function render(){
    const legs=document.createElement('div');legs.className='player-leg-results';
    legs.append(renderLegTable(legSummary.rows[i].perLeg,legSummary.marks));card.append(legs);
   }
+  if(state.game==='gotcha'&&i!==state.active){
+   const reset=button(`${p.name} op 0`,()=>resetGotchaOpponent(i));reset.className='gotcha-player-reset';reset.dataset.playerIndex=String(i);card.querySelector('.remaining').after(reset);
+  }
   return card;
  }));
  $('cricket-panel').hidden=!cricket();$('finish-panel').hidden=cricket();
@@ -525,7 +527,7 @@ function totalTurn(score,extra={}){
  return {score,...extra};
 }
 async function resetGotchaOpponent(index){
- if(busy||!ready||state?.game!=='gotcha'||state.phase!=='playing'||index===state.active||!state.players[index]?.remaining)return;
+ if(busy||!ready||state?.game!=='gotcha'||state.phase!=='playing'||state.players[state.active].bot||index===state.active||!state.players[index]?.remaining)return;
  const name=state.players[index].name;
  undo.push(state);
  state=structuredClone(state);
@@ -533,6 +535,7 @@ async function resetGotchaOpponent(index){
  future=[];historyNavigation=false;
  if(!await persist(true,editTurn))return;
  render();
+ if(dartList.length||entry)await publishDraft();
  message(`${name} staat op nul. Je kunt nu je score invoeren. Herstellen kan met Vorige beurt herstellen.`);
 }
 function canFinishTotal(score,n){return state.game==='gotcha'?!!checkout(score,state.out,n):validX01Total(state,score,n,true);}

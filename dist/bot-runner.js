@@ -1,5 +1,21 @@
 import {botDart,botVisit,botLevel,botDifficulty} from './bot.js';
 let panel;
+// Hitters Challenge commits every physical dart immediately. Reconstruct the
+// current group from that shared history so a new revision does not erase the
+// preceding slots, including after a reload or controller takeover.
+export function botDisplayDarts(state,pending=[]){
+ if(state?.game!=='tenlives')return pending;
+ const recent=[],history=state.history||[];let recorded=0;
+ for(let index=history.length-1;index>=0;index--){
+  const turn=history[index];if(turn.player!==state.active||!turn.input?.botDart||(recorded&&turn.ended))break;
+  recorded++;if(recent.length<3)recent.unshift(turn);
+ }
+ if(!recent.length)return pending;
+ const ended=recent.at(-1).ended,count=recorded%3;
+ const confirmed=pending.length&&ended?[]:recent.slice(-(count||3));
+ // A fourth dart starts a new group; keep all three visible until it arrives.
+ return [...(pending.length&&!count?[]:confirmed.map(turn=>turn.input.botDart)),...pending].slice(0,3);
+}
 export function paintBot(state,hits=[],correcting=false){
  const playing=!correcting&&state?.phase==='playing'&&!!botLevel(state.players[state.active]);
  document.body.classList.toggle('bot-turn',playing);
@@ -9,7 +25,8 @@ export function paintBot(state,hits=[],correcting=false){
  name.textContent=`${state.players[state.active].name} gooit`;level.textContent=`Niveau ${difficulty.level.toLocaleString('nl-NL',{maximumFractionDigits:1})} · basis ${difficulty.base}`;
  label.title=difficulty.adaptive?`Bijgestuurd op ${difficulty.reference.toFixed(2)} ${difficulty.metric} van de sterkste menselijke speler (${difficulty.samples} darts).`:'Basisniveau; bijsturing start na negen darts van een menselijke speler in X01, 121, Gotcha, Cricket en Tactics.';
  label.append(name,level);panel.append(label);
- for(let index=0;index<3;index++){const dart=document.createElement('span');dart.textContent=hits[index]?.label||`Pijl ${index+1}`;dart.className=hits[index]?'thrown':index===hits.length?'aiming':'';panel.append(dart);}
+ const shown=botDisplayDarts(state,hits);
+ for(let index=0;index<3;index++){const dart=document.createElement('span');dart.textContent=shown[index]?.label||`Pijl ${index+1}`;dart.setAttribute('aria-label',`Pijl ${index+1}${shown[index]?': '+shown[index].label:''}`);dart.className=shown[index]?'thrown':index===shown.length?'aiming':'';panel.append(dart);}
 }
 // The server lease makes the NUC and its controllers a single bot executor.
 // Every visible dart is saved before proceeding; reconnects resume that draft.

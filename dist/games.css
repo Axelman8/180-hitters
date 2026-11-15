@@ -23,3 +23,9 @@ html.android-shell #mode-status.local::before{background:#ffc38c;box-shadow:0 0 
 @media(orientation:portrait) and (min-width:900px){#cricket-live{font-size:24px;min-height:30px}}
 
 .cricket-game .players .remaining.pending-points{color:#ffc857}#points-preview{color:#ffc857;font-weight:700;font-size:18px;margin:8px 0}
+
+/* Bob's 27 records a miss or a hit on the current double, never a number. */
+body[data-game="bobs27"] .scoring .section-heading,body[data-game="bobs27"] #multipliers,body[data-game="bobs27"] #bust{display:none!important}
+body[data-game="bobs27"] #dart-input #board-keys{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:minmax(72px,1fr);gap:12px}
+body[data-game="bobs27"] #dart-input #board-keys button{min-height:72px;font-size:clamp(24px,4vw,44px);padding:12px;grid-column:auto!important;grid-row:auto!important}
+body[data-game="gotcha"] #players .gotcha-player-reset{width:100%;min-height:44px;margin-top:8px;padding:8px;font-size:clamp(13px,1.4vw,20px);white-space:normal;overflow-wrap:anywhere;border-color:#ff9b70;color:#ffbb79}
