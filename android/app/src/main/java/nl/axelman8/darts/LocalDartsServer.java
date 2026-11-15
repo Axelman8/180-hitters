@@ -39,6 +39,9 @@ final class LocalDartsServer extends NanoHTTPD {
     private JSONObject draft;
     private final Map<String, Long> draftSequences = new HashMap<>();
     private long draftTime;
+    private String botOwner = "";
+    private int botRevision = -1;
+    private long botUntil;
 
     LocalDartsServer(Context context, BluetoothClient bluetooth) throws IOException, JSONException {
         super("127.0.0.1", 8765);
@@ -156,7 +159,17 @@ final class LocalDartsServer extends NanoHTTPD {
         Map<String, String> files = new HashMap<>();
         session.parseBody(files);
         JSONObject incoming = new JSONObject(files.getOrDefault("postData", "{}"));
+        if(incoming.has("_bot")&&(!incoming.optString("_bot").equals(botOwner)||botRevision!=state.getInt("revision")||botUntil<=android.os.SystemClock.elapsedRealtime()))return json(Response.Status.CONFLICT,state);
         switch (path) {
+            case "/api/bot/claim": {
+                JSONObject match=state.optJSONObject("match"),game=match==null?null:match.optJSONObject("state");
+                JSONArray seats=game==null?null:game.optJSONArray("players");int active=game==null?-1:game.optInt("active",-1);
+                String owner=incoming.optString("owner");long now=android.os.SystemClock.elapsedRealtime();
+                boolean valid=owner.length()>0&&owner.length()<=80&&incoming.optInt("revision",-1)==state.getInt("revision")&&seats!=null&&active>=0&&active<seats.length()&&seats.getJSONObject(active).optBoolean("bot")&&"playing".equals(game.optString("phase"))&&!online.optBoolean("active")&&setup.optJSONObject("value")==null&&match.optJSONObject("editTurn")==null&&(match.optJSONArray("future")==null||match.getJSONArray("future").length()==0)&&(match.optJSONArray("pendingTurns")==null||match.getJSONArray("pendingTurns").length()==0);
+                boolean granted=valid&&(botRevision!=state.getInt("revision")||botOwner.equals(owner)||botUntil<=now);
+                if(granted){botOwner=owner;botRevision=state.getInt("revision");botUntil=now+7000;}
+                return json(Response.Status.OK,new JSONObject().put("granted",granted).put("draft",draft==null?JSONObject.NULL:draft));
+            }
             case "/api/state": {
                 if (incoming.getInt("revision") != state.getInt("revision")) return json(Response.Status.CONFLICT, state);
                 JSONObject match = incoming.getJSONObject("match");

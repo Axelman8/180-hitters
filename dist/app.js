@@ -1,4 +1,5 @@
-import {updateControl,controllerRefreshed} from './controller.js';
+import {updateControl,controllerRefreshed,canControl} from './controller.js';
+import {startBots,paintBot} from './bot-runner.js';
 import {cameraControls} from './autoscoring.js';
 import {applyCameraEvent} from './autoscoring-rules.js';
 import './match-transfer.js';
@@ -57,14 +58,15 @@ function migrate(s){
 }
 try{const saved=JSON.parse(localStorage.getItem(key));if([1,2].includes(saved?.state?.version)&&saved.state.players?.length){state=migrate(saved.state);undo=(saved.undo||[]).map(s=>migrate(s.historyLength===undefined?s:{...s,history:state.history.slice(0,s.historyLength)}));}}catch{}
 let revision=-1, ready=false, syncing=false, busy=false, confirmed=null,resultDismissedOffline=false;
+let botTicket=null;
 const draftOwner=Date.now().toString(36)+Math.random().toString(36).slice(2);
 let sharedDraft=null,draftSequence=0,draftWrites=0;
 async function publishDraft(){
  if(!state||state.phase!=='playing'||!ready||busy)return;
- const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult,cell,label})=>({number,mult,cell,label})),entry:mode==='total'&&!cricket()?entry:''};
+ const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult,cell,label})=>({number,mult,cell,label})),entry:mode==='total'&&!cricket()?entry:'',...(botTicket?{_bot:botTicket}:{})};
  document.dispatchEvent(new CustomEvent('dart-draft-changed',{detail:payload}));
  draftWrites++;
- try{const res=await fetch('/api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(4000)});if(!res.ok&&payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer de stand.');}catch{if(payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer je verbinding.');}
+ try{const res=await fetch('/api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(4000)});if(!res.ok&&payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer de stand.');return res.ok;}catch{if(payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer je verbinding.');return false;}
  finally{draftWrites--;}
 
 }
@@ -118,7 +120,7 @@ async function persist(keepModeOverride=false,restoredTurn=null){
  if(!keepModeOverride)modeOverride=null;
  busy=true;
  try{
-  const res=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,match:snapshot()}),signal:AbortSignal.timeout(5000)});
+  const res=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,match:snapshot(),...(botTicket?{_bot:botTicket}:{})}),signal:AbortSignal.timeout(5000)});
   const data=await res.json();
   if(res.status===423){restore(confirmed);resetInput();render();message('Een ander apparaat bedient de partij. Kies Bediening overnemen onder NUC & verbinding.');return false;}
   if(res.status===409){receive(data);connection(true,connectedLabel);message('Een ander apparaat heeft de partij gewijzigd. Controleer de stand en voer je beurt opnieuw in.');return false;}
@@ -173,6 +175,7 @@ function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
 function resetInput(){entry='';dartList=[];multiplier=1;message();renderInput();}
 function renderInput(){
+ paintBot(state,dartList);
  if(state?.game==='tenlives'){renderLivesGame();return;}
  if(state?.game==='fourinarow'){renderFourGame();return;}
  if(sonnyGameIds.includes(state?.game)){renderSonny();return;}
@@ -375,6 +378,7 @@ function teamMemberIndex(matchState,player){
  return matchState.history.filter(turn=>turn.name===player.name).length%player.members.length;
 }
 function render(){
+ paintBot(state,dartList);
  document.body.dataset.game=state?.game||'';
  if((state?.game==='fourinarow'||sonnyGameIds.includes(state?.game))&&document.body.classList.contains('remote-control'))document.dispatchEvent(new Event('four-in-row-menu-compact'));
  $('edit-match').hidden=!state||state.phase==='won';
@@ -391,7 +395,7 @@ function render(){
   $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
   renderLivesGame();if(state.phase!=='playing')showResult();return;
  }
- $('setup').hidden=true;$('game').hidden=false;document.body.classList.toggle('cricket-game',cricket());document.body.classList.toggle('training-game',!!state.training121||state.game==='bobs27');setMode(modeOverride||preferredMode);buildKeys();
+ $('setup').hidden=true;$('game').hidden=false;document.body.classList.toggle('cricket-game',cricket());document.body.classList.toggle('training-game',!!state.training121||state.game==='bobs27');setMode(state.players[state.active]?.bot?'dart':modeOverride||preferredMode);buildKeys();
  const current=state.players[state.active],format=state.matchMode==='off'?'VRIJ SPELEN':`EERSTE TOT ${state.target} ${state.matchMode==='sets'?'SETS':'LEGS'}`;
  const currentMemberIndex=teamMemberIndex(state,current);
  const currentMember=currentMemberIndex>=0?current.members[currentMemberIndex]:null;
@@ -458,7 +462,8 @@ function laterTurns(){
 }
 async function commit(turn){try{
  if(future.length&&editTurn&&sameTurn(turn,editTurn)){await goForward();return;}
- const updated=applyTurn(state,turn);
+ let updated=applyTurn(state,turn);
+ if(botTicket&&updated.training121&&updated.phase==='leg')updated=nextLeg(updated);
  const latest=future[0]?.state;
  const browsing=state.game==='x01'&&future.length>0;
  const queued=state.game==='x01'?[...(future.length?laterTurns():[]),...pendingTurns.slice(editingPending?1:0)]:[];
@@ -653,7 +658,8 @@ function addTeamMember(container,value=''){
 function names(){
  const count=Number($('count').value);
  const oldTeams=[...$('names').querySelectorAll('.team-editor')].map(team=>({name:team.querySelector('input[data-team-name]')?.value||'',members:[...team.querySelectorAll('input[data-member-name]')].map(input=>input.value)}));
- const oldIndividuals=[...$('names').children].filter(element=>element.tagName==='LABEL').map(label=>label.querySelector('input')?.value||'');
+ const oldInputs=[...$('names').children].filter(element=>element.tagName==='LABEL').map(label=>label.querySelector('input'));
+ const oldIndividuals=oldInputs.map(input=>input?.value||''),oldBots=oldInputs.map(input=>input?.dataset.botLevel||'0');
  $('names').classList.toggle('team-mode',teamMode());$('names').replaceChildren();
  if(teamMode()){
   for(let i=0;i<count;i++){
@@ -669,6 +675,7 @@ function names(){
  }else{
   for(let i=0;i<count;i++){const label=document.createElement('label');label.dataset.playerName='';label.append(document.createTextNode(`Speler ${i+1}`));const input=document.createElement('input');input.value=oldIndividuals[i]||`Speler ${i+1}`;input.maxLength=24;input.required=true;input.autocomplete='off';input.oninput=starterOptions;label.append(input);$('names').append(label);}
  }
+ if(!teamMode())participantNameInputs().forEach((input,index)=>input.dataset.botLevel=oldBots[index]||'0');
  starterOptions();
 }
 function settings(){
@@ -679,7 +686,7 @@ function settings(){
  document.querySelectorAll('[data-x01]').forEach(el=>el.hidden=!x);
  $('game-type').closest('label').hidden=training;
  $('scoring-label').hidden=x||training||custom;
- $('four-bot-label').hidden=!four;
+ $('four-bot-label').hidden=true;$('four-bot').value='players';
  $('lives-mode-label').hidden=!(training&&$('training-type').value==='tenlives');
  $('gotcha-target-label').hidden=!gotcha;$('gotcha-out-label').hidden=!gotcha;
  $('training-label').hidden=!training;$('training-help').hidden=!training;
@@ -691,8 +698,7 @@ function settings(){
  $('target-label').hidden=training||custom||$('match-mode').value==='off';
  $('target-text').textContent=$('match-mode').value==='sets'?'Sets nodig om te winnen':'Legs nodig om te winnen';
  if((gotcha||teamMode())&&Number($('count').value)<2){$('count').value='2';names();}
- if(fourBot&&$('count').value!=='1'){$('count').value='1';names();}
- if(four&&!fourBot&&Number($('count').value)<2){$('count').value='2';names();}
+ if(four&&Number($('count').value)<2){$('count').value='2';names();}
  if(sonny&&$('game-type').value!=='twentyone'&&Number($('count').value)<2){$('count').value='2';names();}
 
 }
@@ -723,9 +729,9 @@ function editCurrentMatch(){
  $('match-mode').value=state.matchMode||'legs';selectValue('legs',state.target);
  selectValue('set-legs',state.legsPerSet||3);selectValue('max-rounds',state.maxRounds||0);
  $('lives-mode').value=state.livesMode||'double';
- $('four-bot').value=state.fourBot?'bot':'players';
+ $('four-bot').value='players';
  $('participant-mode').value=state.teamMode?'teams':'individual';
- $('count').value=String(state.fourBot?1:state.players.length);names();
+ $('count').value=String(state.players.length);names();
  if(state.teamMode){
   [...$('names').querySelectorAll('.team-editor')].forEach((team,index)=>{
    team.querySelector('input[data-team-name]').value=state.players[index].name;
@@ -734,6 +740,7 @@ function editCurrentMatch(){
    if(!container.children.length)addTeamMember(container,'');
   });
  }else participantNameInputs().forEach((input,index)=>input.value=state.players[index].name);
+ participantNameInputs().forEach((input,index)=>input.dataset.botLevel=state.players[index].bot?String(state.players[index].botLevel||50):'0');
  if(state.game==='fourinarow')participantNameInputs().forEach((input,index)=>input.dataset.fourSymbol=state.players[index].fourSymbol||fourPlayerSymbols[index]);
  starterOptions();$('starter').value=String(state.starter);
  $('category-match').setAttribute('aria-pressed',String(!training));
@@ -788,7 +795,13 @@ $('setup-form').onsubmit=async e=>{
  if(players.length!==Number($('count').value)||teams.some(team=>!team.name||team.members.length<1||team.members.length>5)){$('team-validation').hidden=false;$('team-validation').textContent='Geef ieder team een naam en voeg per team 1 tot maximaal 5 spelers toe.';return;}$('team-validation').hidden=true;
  const gotcha=$('game-type').value==='training'&&$('training-type').value==='gotcha',bobs=$('game-type').value==='training'&&$('training-type').value==='bobs27',four=$('game-type').value==='fourinarow';
  let previousFourBoard=state?.game==='fourinarow'?state.fourBoard:null;try{previousFourBoard=previousFourBoard||JSON.parse(localStorage.getItem('180hitters.lastFourBoard'));}catch{}
- const proposed=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,fourBot:four&&$('four-bot').value==='bot',fourSymbols:four?participantNameInputs().map((input,index)=>input.dataset.fourSymbol||fourPlayerSymbols[index]):null,previousFourBoard,game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)});
+ const proposed=newMatch(players,Number($(gotcha?'gotcha-target':'start').value),$(gotcha?'gotcha-out':'out').value,Number($('legs').value),{
+  botLevels:participantNameInputs().map(input=>Number(input.dataset.botLevel)||0),
+  training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,
+  fourSymbols:four?participantNameInputs().map((input,index)=>input.dataset.fourSymbol||fourPlayerSymbols[index]):null,previousFourBoard,
+  game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,
+  inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)
+ });
  if(four)try{localStorage.setItem('180hitters.lastFourBoard',JSON.stringify(proposed.fourBoard));}catch{}
  proposed.teamMode=teamMode();if(proposed.teamMode)proposed.players=proposed.players.map((player,index)=>({...player,members:teams[index].members}));
  if(editingCurrentMatch){
@@ -796,7 +809,7 @@ $('setup-form').onsubmit=async e=>{
   if(!compatible&&!confirm('Deze structurele wijziging kan niet op de bestaande scorestand worden toegepast. De partij blijft in hetzelfde scherm, maar scores, legs en geschiedenis beginnen opnieuw. Doorgaan?'))return;
   if(compatible){
    const renamed={};state.players.forEach((player,index)=>{renamed[player.name]=players[index];});
-   state={...state,game:proposed.game,inMode:proposed.inMode,out:proposed.out,scoring:proposed.scoring,matchMode:proposed.matchMode,target:proposed.target,legsPerSet:proposed.legsPerSet,bull:proposed.bull,maxRounds:proposed.maxRounds,livesMode:proposed.livesMode,teamMode:proposed.teamMode,fourSymbols:proposed.fourSymbols,players:state.players.map((player,index)=>({...player,name:players[index],members:proposed.players[index].members,fourSymbol:proposed.players[index].fourSymbol||player.fourSymbol,opened:proposed.inMode==='single'?true:player.opened})),history:state.history.map(turn=>({...turn,name:renamed[turn.name]||turn.name}))};
+   state={...state,fourBot:false,game:proposed.game,inMode:proposed.inMode,out:proposed.out,scoring:proposed.scoring,matchMode:proposed.matchMode,target:proposed.target,legsPerSet:proposed.legsPerSet,bull:proposed.bull,maxRounds:proposed.maxRounds,livesMode:proposed.livesMode,teamMode:proposed.teamMode,fourSymbols:proposed.fourSymbols,players:state.players.map((player,index)=>({...player,name:players[index],bot:proposed.players[index].bot,botLevel:proposed.players[index].botLevel,members:proposed.players[index].members,fourSymbol:proposed.players[index].fourSymbol||player.fourSymbol,opened:proposed.inMode==='single'?true:player.opened})),history:state.history.map(turn=>({...turn,name:renamed[turn.name]||turn.name}))};
   }else{
    state=proposed;undo=[];future=[];pendingTurns=[];pendingReason='';editingPending=false;historyNavigation=false;
   }
@@ -804,6 +817,7 @@ $('setup-form').onsubmit=async e=>{
   state=proposed;undo=[];future=[];pendingTurns=[];pendingReason='';editingPending=false;historyNavigation=false;
  }
  editingCurrentMatch=false;setupCopy(false);mode=totalAllowed()?preferredMode:'dart';if(!await persist())return;resetInput();render();
+ document.querySelector('main').scrollTop=0;window.scrollTo(0,0);
 };
 document.addEventListener('show-shared-setup',()=>{for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();});
 document.addEventListener('discard-current-match',event=>{if(event.detail)receive(event.detail);for(const d of document.querySelectorAll('dialog[open]'))d.close();showSetup();document.dispatchEvent(new Event('open-play-menu'));});
@@ -814,8 +828,19 @@ $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await docume
 render();
 
 connection(false,androidLocal?'Lokale opslag openen...':'Verbinding met NUC maken...');synchronize();setInterval(synchronize,750);
+startBots({owner:draftOwner,current:()=>({state,revision,ready,allowed:canControl()&&!busy,correcting:!!(editTurn||future.length||pendingTurns.length)}),
+ publish:async hits=>{dartList=structuredClone(hits);entry='';setMode('dart');renderInput();botTicket=draftOwner;try{return await publishDraft();}finally{botTicket=null;}},
+ commit:async turn=>{botTicket=draftOwner;try{await commit(turn);}finally{botTicket=null;}},
+ error:error=>message(`BOT wacht op herstel: ${error.message}`)
+});
+for(const type of ['click','keydown','submit'])document.addEventListener(type,event=>{
+ if(!state?.players[state.active]?.bot||state.phase!=='playing'||!event.target.closest('#game'))return;
+ if(event.target.closest('#undo,#redo,#history-back,#history-latest,#toggle-input,#toggle-history'))return;
+ if(event.type==='click'&&!event.target.closest('button'))return;
+ event.preventDefault();event.stopImmediatePropagation();
+},true);
 cameraControls(async event=>{
- if(!ready||busy||syncing||draftWrites)return;
+ if(!ready||busy||syncing||draftWrites||state?.players[state.active]?.bot)return;
  busy=true;
  try{
   const response=await fetch('/api/state',{signal:AbortSignal.timeout(4000)});

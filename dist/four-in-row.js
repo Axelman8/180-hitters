@@ -23,38 +23,6 @@ export function createFourBoard(previous=null,random=Math.random){
  const board=Array(25);for(const [index,id] of corners)board[index]=id;board[12]='bb';numberPositions.forEach((position,index)=>board[position]=numbers[index]);return board;
 }
 export function fourWinningLine(owners,player){return lines.find(line=>line.every(index=>owners[index]===player))||null;}
-function targetPriority(state,index,player,random){
- let score=0;
- for(const line of lines.filter(line=>line.includes(index))){
-  const own=line.filter(cell=>state.fourOwners[cell]===player).length;
-  const blocked=line.some(cell=>state.fourOwners[cell]!==null&&state.fourOwners[cell]!==player);
-  if(!blocked)score+=own*own+1;
-  for(let opponent=0;opponent<state.players.length;opponent++)if(opponent!==player){
-   const theirs=line.filter(cell=>state.fourOwners[cell]===opponent).length;
-   const defended=line.some(cell=>state.fourOwners[cell]!==null&&state.fourOwners[cell]!==opponent);
-   if(!defended)score+=theirs===3?80:theirs*2;
-  }
- }
- return score+(index===12?4:0)+random();
-}
-export function createFourBotTurn(state,random=Math.random){
- const shadow=structuredClone(state),player=shadow.active,hits=[];
- for(let dart=0;dart<3;dart++){
-  const open=shadow.fourBoard.map((_,index)=>index).filter(index=>shadow.fourOwners[index]===null);
-  if(!open.length){hits.push({cell:null,mult:1,number:0,label:'Mis'});continue;}
-  const winning=open.find(index=>{const owners=[...shadow.fourOwners];owners[index]=player;return !!fourWinningLine(owners,player);});
-  const ranked=open.map(index=>({index,score:targetPriority(shadow,index,player,random)})).sort((a,b)=>b.score-a.score);
-  const cell=winning??ranked[0].index,id=shadow.fourBoard[cell],roll=random();let mult;
-  if(id==='bb')mult=roll<.33?2:0;
-  else if(id.startsWith('sb'))mult=roll<.6?1:0;
-  else mult=roll<.12?0:roll<.54?1:roll<.82?2:3;
-  if(!mult){hits.push({cell:null,mult:1,number:0,label:'Mis'});continue;}
-  hits.push({cell,mult,number:id==='bb'||id.startsWith('sb')?25:value(id),label:id==='bb'?'BB':(mult===2?'D':mult===3?'T':'')+label(id)});
-  const marks=id==='bb'||id.startsWith('sb')?3:mult,bot=shadow.players[player];bot.fourMarks[cell]=Math.min(3,(bot.fourMarks[cell]||0)+marks);
-  if(bot.fourMarks[cell]>=3){shadow.fourOwners[cell]=player;shadow.players.forEach((candidate,index)=>candidate.fourMarks[cell]=index===player?3:0);if(fourWinningLine(shadow.fourOwners,player)||shadow.fourOwners.every(owner=>owner!==null))break;}
- }
- return {hits};
-}
 function applyVisit(state,turn){
  if(!Array.isArray(turn.hits)||turn.hits.length<1||turn.hits.length>3)throw Error('Voer een tot drie pijlen in.');
  const s=structuredClone(state),current=s.active,p=s.players[current];let score=0;
@@ -84,9 +52,7 @@ function applyVisit(state,turn){
 }
 export function applyFourTurn(state,turn){
  if(state.phase!=='playing')throw Error('Deze partij is afgelopen.');
- let result=applyVisit(state,turn);
- if(result.phase==='playing'&&result.players[result.active]?.bot)result=applyVisit(result,createFourBotTurn(result));
- return result;
+ return applyVisit(state,turn);
 }
 export function fourCellLabel(id){return label(id);}
 
@@ -96,6 +62,7 @@ export function renderFourInRow(root,state,pending,actions){
  root.replaceChildren();
  const needsBullCorner=pending.some(hit=>hit.needsBullCorner);
  const legend=el('div',undefined,'four-legend');state.players.forEach((player,index)=>{const item=el('article',undefined,index===state.active?'active':'');item.style.setProperty('--player-color',`var(--four-p${index})`);item.append(el('b',playerSymbol(state,index),'four-symbol'),el('strong',player.name),player.bot?el('small','BOT · ±50 gemiddeld'):el('small',index===state.active?'Aan de beurt':''));legend.append(item);});root.append(legend);
+ legend.querySelectorAll('article').forEach((item,index)=>{const player=state.players[index];if(player.bot)item.querySelector('small').textContent=`BOT ${player.botLevel||50}`;});
  const layout=el('div',undefined,'four-layout'),board=el('section',undefined,'four-board');board.setAttribute('aria-label','4 op een rij speelveld');
  const pendingMarks=new Map();for(const hit of pending)if(Number.isInteger(hit.cell)){const id=state.fourBoard[hit.cell];pendingMarks.set(hit.cell,(pendingMarks.get(hit.cell)||0)+(id==='bb'||id.startsWith('sb')?3:hit.mult));}
  state.fourBoard.forEach((id,index)=>{

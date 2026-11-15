@@ -89,7 +89,7 @@ function renderFourSymbols(content){
 }
 function assign(name){
  const inputs=activeNameInputs(),index=isTeams()?memberSlot:slot,input=inputs[index];if(!input)return;
- input.value=name;input.dispatchEvent(new Event('input',{bubbles:true}));
+ input.dataset.botLevel='0';input.value=name;input.dispatchEvent(new Event('input',{bubbles:true}));
  if(isTeams())memberSlot=Math.min(memberSlot+1,inputs.length-1);else slot=Math.min(slot+1,inputs.length-1);
  render();
 }
@@ -109,7 +109,12 @@ function renderIndividuals(content){
  content.append(el('p','Kies een plek en tik daarna op een naam uit de spelerslijst.','wizard-hint'));
  const slots=el('div',undefined,'wizard-slots');
  names().forEach((input,i)=>{const b=button('',()=>{slot=i;render();});b.setAttribute('aria-pressed',String(i===slot));b.append(el('small',`Speler ${i+1}`),el('strong',input.value));if(selected==='fourinarow')b.append(el('span',fourSymbolChoices[i],'wizard-slot-symbol'));slots.append(b);});content.append(slots);
+ const type=el('fieldset',undefined,'wizard-option wizard-bot-choice');type.append(el('legend',`Speler ${slot+1}: mens of BOT`));
+ const types=el('div',undefined,'wizard-options');
+ for(const [level,label] of [[0,'Speler'],[40,'BOT 40'],[50,'BOT 50']]){const choice=button(label,()=>{const field=names()[slot];const old=Number(field.dataset.botLevel)||0;field.dataset.botLevel=String(level);if(level){if(!old)field.dataset.humanName=field.value;field.value=`BOT ${level} #${slot+1}`;}else if(old)field.value=field.dataset.humanName||`Speler ${slot+1}`;field.dispatchEvent(new Event('input',{bubbles:true}));render();});choice.setAttribute('aria-pressed',String((Number(names()[slot]?.dataset.botLevel)||0)===level));types.append(choice);}
+ type.append(types,el('p','40 en 50 zijn richtgemiddelden per drie darts bij 501, dubbel-uit. In andere spellen geldt dezelfde nauwkeurigheid. Een BOT neemt één spelersplek in, ook met vier spelers.','wizard-hint'));content.append(type);
  if(selected==='fourinarow')renderFourSymbols(content);
+ if(Number(names()[slot]?.dataset.botLevel))return;
  rosterGroups(content);
  const label=el('label',`Naam speler ${slot+1}`,'wizard-custom'),input=el('input');input.value=names()[slot]?.value||'';input.maxLength=24;input.autocomplete='off';
  input.oninput=()=>{const field=names()[slot];field.value=input.value;field.dispatchEvent(new Event('input',{bubbles:true}));slots.children[slot].querySelector('strong').textContent=input.value;queueSetup();};
@@ -151,7 +156,7 @@ function render(){
    video.onclick=event=>{event.preventDefault();openGameVideo(video.href,game?.[1]||selected);};content.append(video);
   }
   content.append(el('p',games.find(game=>game[0]===selected)?.[1]+' · tik op een tegel om te kiezen','wizard-hint'));
-  const main=[['lives-mode','Doubles of Triples'],['four-bot','Tegen wie speel je?'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
+  const main=[['lives-mode','Doubles of Triples'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
   for(const [id,title] of main){const group=options(id,title);if(group)content.append(group);}
   if(selected==='tenlives')content.append(el('p','Iedereen begint met 10 levens en 3 pogingen op 20. Raak: resterende pijlen + 3 naar het volgende doel. Pogingen op: één doel terug; alleen op 20 kost dit een leven. Dan wisselt de speler. Bull (50) wint.','wizard-info'));
   if(selected==='121')content.append(el('p','Negen darts om uit te gooien. Je niveau begint bij 121.','wizard-info'));
@@ -180,7 +185,7 @@ render();refreshRoster();
 
 function queueSetup(){
  if(applying||!document.body.classList.contains('remote-control'))return;
- pendingSetup=$('setup').hidden?null:{selected,step,names:names().map(input=>input.value),teams:isTeams()?teamDraft():null,fourSymbols:[...fourSymbolChoices],values:Object.fromEntries([...fields,'starter'].map(id=>[id,$(id).value]))};
+ pendingSetup=$('setup').hidden?null:{selected,step,names:names().map(input=>input.value),botLevels:names().map(input=>Number(input.dataset.botLevel)||0),teams:isTeams()?teamDraft():null,fourSymbols:[...fourSymbolChoices],values:Object.fromEntries([...fields,'starter'].map(id=>[id,$(id).value]))};
  clearTimeout(sendTimer);sendTimer=setTimeout(sendSetup,120);
 }
 async function sendSetup(){
@@ -204,7 +209,7 @@ async function syncSetup(){
     const container=team.querySelector('.team-members-editor');while(container.children.length<saved.members.length)team.querySelector('.team-member-add').click();while(container.children.length>Math.max(1,saved.members.length))container.lastElementChild.querySelector('.team-member-remove').click();
     memberInputs(index).forEach((input,i)=>{input.value=saved.members[i]||'';input.dispatchEvent(new Event('input',{bubbles:true}));});
    });
-  }else names().forEach((input,i)=>{input.value=draft.names[i]??`Speler ${i+1}`;input.dispatchEvent(new Event('input',{bubbles:true}));});
+  }else names().forEach((input,i)=>{input.value=draft.names[i]??`Speler ${i+1}`;input.dataset.botLevel=String(draft.botLevels?.[i]||0);input.dispatchEvent(new Event('input',{bubbles:true}));});
   change('starter',draft.values.starter||'0');step=draft.step;render();await Promise.resolve();
  }catch{}finally{applying=false;setupPolling=false;}
 }

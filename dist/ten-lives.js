@@ -32,7 +32,7 @@ export function applyLivesDart(state,turn){
   else{do{s.active=(s.active+1)%s.players.length;}while(s.players[s.active].lives===0);}
  }
  p.remaining=p.lives;
- s.history.push({name:p.name,player:index,leg:1,target,score:turn.trainingHit?1:0,darts:1,remaining:p.lives,lives:p.lives,attempts:p.attempts,nextTarget:p.livesTarget,ended,labels:turn.trainingHit?'Raak':'Mis',recordedAt:Date.now(),input:{trainingHit:turn.trainingHit}});
+ s.history.push({name:p.name,player:index,leg:1,target,score:turn.trainingHit?1:0,darts:1,remaining:p.lives,lives:p.lives,attempts:p.attempts,nextTarget:p.livesTarget,ended,labels:turn.botDart?`${turn.botDart.label}: ${turn.trainingHit?'Raak':'Mis'}`:turn.trainingHit?'Raak':'Mis',recordedAt:Date.now(),input:{trainingHit:turn.trainingHit,...(turn.botDart?{botDart:turn.botDart}:{})}});
  return s;
 }
 

@@ -4,6 +4,7 @@ import {applyTurn,makeDart,previewTurn,previewCricket,previewGotcha,previewBobs2
 export function applyCameraEvent(match,draft,event){
  const next=structuredClone(match),state=next?.state;
  if(!state)throw Error('Start eerst een partij.');
+ if(state.players[state.active]?.bot)throw Error('De BOT gooit; cameradetectie wacht op de volgende speler.');
  let hits=state.game==='fourinarow'?structuredClone(draft?.hits||[]):(draft?.hits||[]).map(d=>makeDart(d.number,d.mult));
  if(event.kind==='removed'){
   if(hits.length)throw Error('Niet alle darts geregistreerd. Vul ontbrekende darts of Mis handmatig in en hervat daarna.');

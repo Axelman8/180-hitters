@@ -6,6 +6,30 @@ An offline-first darts scoring app for Android, touchscreen displays, Linux NUCs
 
 ## Downloads
 
+### Practice against a bot
+
+In **Spelen → Nieuwe partij → Spelers**, select a player seat and choose
+**Speler**, **BOT 40** or **BOT 50**. Bots can occupy any of the four player
+seats in all twelve games, alongside human players. They work offline on
+Android and desktop, and in shared NUC matches controlled over Bluetooth.
+
+The level is a target three-dart average for full 501 straight-in/double-out
+legs, including checkout attempts and busts. Individual matches vary. Other
+games use the same physical accuracy with a strategy specific to their rules.
+The original bot model aims at a point on the board and applies two-dimensional
+Gaussian scatter, so neighbouring segments, singles, doubles, triples and misses
+follow the board geometry. No third-party bot source is bundled.
+
+Darts appear individually with varying, human-paced pauses. A shared execution
+lease prevents the NUC and its controllers from running duplicate bot turns.
+Each visible dart is saved, allowing a disconnected executor to resume the
+unfinished visit. Camera detection pauses during bot turns. Bot matches use
+the regular match library and reports. Online dart lanes remain human multiplayer.
+
+Validation: `node tests/bot-engine.mjs` simulates every game and calibrates each
+level over 1,500 complete 501 legs; `python tests/test_bots.py` checks the real
+setup UI, timed darts, shared execution and reconnect recovery.
+
 ### Eenvoudig installeren
 
 Vanaf 1.8.12: kies op de computer **Instellingen → Update controleren**. De app vergelijkt de geïnstalleerde versie met de nieuwste GitHub-release en biedt de juiste Windows- of Linux-installer aan. Open het gedownloade bestand en bevestig de installatie; daarna de browser vernieuwen. Spelers en partijen blijven behouden. De eerste upgrade vanaf 1.8.11 gebeurt eenmalig via onderstaande downloadlinks.

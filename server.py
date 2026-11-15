@@ -413,6 +413,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     current = {'revision': 0, 'match': None}
     draft = {'value': None, 'time': 0}
     sequences = {}
+    bot_lease = {'revision': -1, 'owner': '', 'until': 0}
     shared_setup = {'version': 0, 'value': None}
     control = {'owner': None, 'epoch': 0}
     online = {'status':'stopped','url':'','error':'','relay':None,'tunnel':None}
@@ -576,6 +577,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             reason = 'Online dartbaan: wacht op de beurt van de tegenstander.'
         elif match.get('state', {}).get('phase') != 'playing':
             reason = 'Camera aan; wacht op de volgende leg of partij.'
+        elif match.get('state', {}).get('players', [{}])[match.get('state', {}).get('active', 0)].get('bot'):
+            reason = 'Camera aan; de BOT gooit. Detectie hervat bij de volgende speler.'
         elif match.get('future') or match.get('editTurn') or match.get('pendingTurns'):
             reason = 'Camera aan; rond de correctie af en ga naar de laatste stand.'
         elif value.get('entry') or value.get('hits'):
@@ -630,6 +633,14 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             if isinstance(ticket, dict) and control['owner'] is not None and ticket.get('id') == control['owner'] and ticket.get('epoch') == control['epoch']:
                 return True
             self.reply(423, {'error': 'Deze telefoon kijkt mee. Kies Bediening overnemen.', 'control': dict(control)})
+            return False
+
+        def bot_ticket_valid(self, incoming):
+            owner = incoming.get('_bot')
+            if owner is None: return True
+            if bot_lease['revision'] == current['revision'] and bot_lease['owner'] == owner and bot_lease['until'] > time.monotonic():
+                return True
+            self.reply(409, current)
             return False
 
         def do_GET(self):
@@ -796,7 +807,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/matches/resume', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
+            if self.path not in ('/api/bot/claim', '/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/matches/resume', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -1147,6 +1158,21 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                                         if not any(existing.casefold() == n.casefold() for existing in combined))
                         return self.reply(200, {'players': combined, 'venuePlayers': roster,
                                                 'mobilePlayers': mobile_roster})
+                if self.path == '/api/bot/claim':
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        state = (current.get('match') or {}).get('state') or {}
+                        players = state.get('players') or []
+                        actor = state.get('active', 0)
+                        valid = (incoming.get('revision') == current['revision'] and 0 <= actor < len(players)
+                                 and players[actor].get('bot') and state.get('phase') == 'playing'
+                                 and not online_local['active'] and shared_setup['value'] is None
+                                 and not any((current.get('match') or {}).get(key) for key in ('future','editTurn','pendingTurns')))
+                        owner = incoming.get('owner', '')
+                        if not isinstance(owner, str) or not 1 <= len(owner) <= 80: raise ValueError()
+                        granted = bool(valid and (bot_lease['revision'] != current['revision'] or bot_lease['owner'] == owner or bot_lease['until'] <= time.monotonic()))
+                        if granted: bot_lease.update(revision=current['revision'], owner=owner, until=time.monotonic()+7)
+                        return self.reply(200, {'granted': granted, 'draft': draft['value']})
                 if self.path == '/api/draft':
                     hits = incoming['hits']
                     entry = incoming.get('entry', '')
@@ -1162,6 +1188,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             raise ValueError()
                     with lock:
                         if not self.may_edit(incoming): return
+                        if not self.bot_ticket_valid(incoming): return
                         if incoming['revision'] != current['revision']:
                             return self.reply(409, current)
                         state = (current['match'] or {}).get('state', {})
@@ -1201,6 +1228,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         raise ValueError()
                 with lock:
                     if not self.may_edit(incoming): return
+                    if not self.bot_ticket_valid(incoming): return
                     if incoming['revision'] != current['revision']:
                         return self.reply(409, current)
                     if current['match'] is None and self.client_address[0] not in ('127.0.0.1', '::1'):

@@ -1,0 +1,21 @@
+#bot-status{display:flex;align-items:center;gap:8px;padding:8px 12px;margin:0 0 8px;border:1px solid var(--accent,#63e5bd);border-radius:12px;background:var(--panel,#142830);min-width:0}
+#bot-status[hidden]{display:none}
+#bot-status strong{flex:1;font-size:clamp(12px,2vw,19px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bot-status span{font-weight:800;min-width:44px;text-align:center;font-size:clamp(12px,2vw,20px);padding:5px;border-radius:6px;background:#ffffff09}
+#bot-status .thrown{color:var(--accent,#63e5bd)}
+#bot-status .aiming{border:1px solid var(--accent,#63e5bd)}
+.bot-turn :is(#dart-input,#total-input,#gotcha-total-options,.four-controls,.sonny-controls,.sonny-board,.lives-controls){pointer-events:none;opacity:.65}
+/* Keep the live board and three darts visible; unused score buttons would only
+   take space while the bot is throwing. History/navigation remain available. */
+.bot-turn :is(#board-keys,#multipliers,#keypad,#remove-dart,#submit,#bust,.scoring .section-heading,.scoring>#toggle-input,.four-multipliers,.four-actions,.four-help,.four-note,.sonny-multipliers,.sonny-actions){display:none!important}
+.bot-turn :is(#dart-input,.four-controls,.sonny-controls){opacity:1}
+.bot-turn :is(.scoring,#dart-input){flex:0 0 auto!important;min-height:0!important}
+.bot-turn #game>.play-grid{flex:none!important;height:auto!important}
+body.screen-fit #bot-status{grid-row:2;margin:0;min-height:0}
+body.screen-fit.bot-turn #training-status{display:none!important}
+@media(min-width:700px) and (max-height:1100px){
+ body.remote-control[data-mobile-layout] #bot-status{grid-column:1;grid-row:2;flex-wrap:wrap;gap:4px;padding:5px}
+ body.remote-control[data-mobile-layout] #bot-status strong{flex-basis:100%;font-size:12px}
+ body.remote-control[data-mobile-layout] #bot-status span{flex:1;min-width:0;font-size:13px;padding:4px}
+ body.remote-control[data-mobile-layout].bot-turn #training-status{display:none!important}
+}
