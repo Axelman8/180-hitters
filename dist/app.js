@@ -6,7 +6,7 @@ import {cameraControls} from './autoscoring.js';
 import {applyCameraEvent} from './autoscoring-rules.js';
 import './match-transfer.js';
 import './desktop-update.js';
-import './online.js';
+import {onlineSessionForNewMatch,leaveOnlineForNewMatch} from './online.js';
 import {renderLives,renderLivesSummary} from './ten-lives.js';
 import {matchSummary,renderLegTable} from './match-summary.js';
 import {renderGameReport} from './game-reports.js';
@@ -735,9 +735,18 @@ async function prepareNewMatch(confirmReplacement){
   if(!ready)throw Error('De NUC is niet bereikbaar. Herstel de verbinding en probeer opnieuw.');
   if(!canControl()&&!await takeControl())throw Error('Bediening overnemen is niet gelukt. Probeer opnieuw.');
   if(request!==newMatchRequest)return;
+  const online=await onlineSessionForNewMatch();
+  if(request!==newMatchRequest)return;
+  let description=$('new-match-description');if(!description){description=dialog.querySelector('p');description.id='new-match-description';}
+  description.textContent=online?.active?`Je bent nog verbonden met online dartbaan ${online.code}. We verlaten eerst deze dartbaan. Je huidige partij wordt pas vervangen zodra je de nieuwe partij start.`:'Je huidige partij wordt vervangen zodra je de nieuwe partij start.';
+  confirm.textContent=online?.active?'Dartbaan verlaten en nieuwe partij':'Ja, nieuwe partij';
   status.textContent='';
-  if(confirmReplacement&&state&&state.phase!=='won'){if(!dialog.open)dialog.showModal();}
-  else{dialog.close();showSetup();document.dispatchEvent(new Event('new-match-setup-open'));}
+  if(confirmReplacement&&(online?.active||state&&state.phase!=='won')){if(!dialog.open)dialog.showModal();}
+  else{
+   if(online?.active){status.textContent='Online dartbaan verlaten…';await leaveOnlineForNewMatch();}
+   if(request!==newMatchRequest)return;
+   dialog.close();showSetup();document.dispatchEvent(new Event('new-match-setup-open'));
+  }
  }catch(error){if(request===newMatchRequest){status.textContent=error.message;if(!dialog.open)dialog.showModal();}}
  finally{if(request===newMatchRequest){newMatchPreparing=false;confirm.disabled=false;}}
 }

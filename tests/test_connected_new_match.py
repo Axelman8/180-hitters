@@ -13,14 +13,24 @@ with tempfile.TemporaryDirectory() as tmp:
    except OSError:time.sleep(.1)
   with sync_playwright() as p:
    browser=p.chromium.launch()
-   for device in ['phone','tablet','nuc']:
+   for device,online in [(d,o) for d in ['phone','tablet','nuc'] for o in [False,True]]:
     page=browser.new_page(viewport={'width':1024 if device!='phone' else 393,'height':852});errors=[]
     page.on('pageerror',lambda error:errors.append(str(error)))
+    page.route('https://180-hitters-online.180-hitters-online.workers.dev/**',lambda route:route.fulfill(status=200 if route.request.method=='OPTIONS' else 503,json={'error':'Relay unavailable'},headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS'}))
+    assert page.request.post(base+'/api/online/local',data={'active':False}).ok
     if device!='nuc':page.add_init_script('window.DartsAndroid={isTabletShell:'+str(device=='tablet').lower()+',isLocalMode:()=>false,getConnectionInfo:()=>JSON.stringify({mode:"bluetooth",bluetoothConnected:true})}')
     page.goto(base)
     state=page.evaluate("async()=>{const {newMatch}=await import('/engine.js');return newMatch(['A','B'],501,'double',1,{game:'fourinarow'});}")
     get=lambda:page.request.get(base+'/api/state').json()
     assert page.request.post(base+'/api/state',data={'revision':get()['revision'],'match':{'state':state,'undo':[]}}).ok
+    if online:
+     assert page.request.post(base+'/api/online/local',data={'active':True,'ready':False,'role':0,'code':'ABC234','base':'https://180-hitters-online.180-hitters-online.workers.dev','key':'test-key-01234567890123456789','remoteRevision':1}).ok
+     page.reload();expect(page.locator('body')).to_have_class(re.compile('online-session'))
+    observer=None
+    if online and device=='phone':
+     observer=browser.new_page(viewport={'width':1920,'height':1080})
+     observer.route('https://180-hitters-online.180-hitters-online.workers.dev/**',lambda route:route.fulfill(status=503,json={'error':'Relay unavailable'},headers={'Access-Control-Allow-Origin':'*'}))
+     observer.goto(base);expect(observer.locator('body')).to_have_class(re.compile('online-session'))
     page.wait_for_timeout(800)
     if device!='nuc':
      assert page.request.post(base+'/api/controller',data={'id':'other-device-0123456789','takeover':True}).ok
@@ -30,10 +40,15 @@ with tempfile.TemporaryDirectory() as tmp:
      page.locator('.navigation-category[data-menu="play"]').click();page.locator('#settings').click()
      expect(page.locator('#new-match-dialog')).to_be_visible()
      expect(page.locator('#new-match-confirm')).to_be_enabled()
+     if online:expect(page.locator('#new-match-description')).to_contain_text('online dartbaan ABC234')
     new_party();page.locator('#new-match-cancel').click()
     assert get()['match']['state']==state,'Cancel must keep the existing match'
+    assert page.request.get(base+'/api/online/local').json()['active']==online,'Cancel must keep the online lane'
     new_party();page.locator('#new-match-confirm').click();expect(page.locator('#setup')).to_be_visible()
     expect(page.locator('#new-match-dialog')).not_to_be_visible()
+    assert not page.request.get(base+'/api/online/local').json()['active'],'The lane must be released even if the relay is offline'
+    expect(page.locator('body')).not_to_have_class(re.compile('online-session'))
+    if observer:expect(observer.locator('body')).not_to_have_class(re.compile('online-session'),timeout=7000)
     assert get()['match']['state']==state,'The wizard must not discard the old match'
     page.locator('.wizard-game').filter(has=page.get_by_text('Tactics',exact=True)).click()
     page.locator('.wizard-next').click()
@@ -42,6 +57,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert get()['match']['state']['game']=='tactics'
     if device!='nuc':assert get()['control']['owner']==page.evaluate("sessionStorage.getItem('darts.controller')")
     assert not errors,errors
-    print('PASS connected new match:',device,flush=True);page.close()
+    print('PASS connected new match:',device,'online lane' if online else 'regular match',flush=True);page.close()
+    if observer:observer.close()
    browser.close()
  finally:server.terminate();server.wait()
