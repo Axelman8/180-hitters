@@ -36,7 +36,15 @@ The closing-game strategy re-evaluates after each dart: score on open opponents,
 repair deficits, create new scoring routes, close opposing scoring numbers,
 and take a legal winning dart immediately. Cut Throat targets the opponents
 whose low scores matter; No Score never deliberately farms points. A solo game
-has no opponents to score against.
+has no opponents to score against; its additional hits on closed Cricket/Tactics
+targets count as personal training points instead, including solo Cut Throat.
+The first three marks close the target, only excess marks score, and closing the
+last target still ends the leg immediately. No Score deliberately counts marks
+only. Reports and shared images show the final score, total credited points,
+and points per turn. X01, 121, and Gotcha reports also show total credited points;
+Bob's 27 already shows its end score. Lives, progress, and captured cells remain
+the result measures for games built around those objectives.
+Start a new solo game to use the training scoring rule from the first dart.
 
 Darts appear individually with varying, human-paced pauses. A shared execution
 lease prevents the NUC and its controllers from running duplicate bot turns.

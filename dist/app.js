@@ -351,7 +351,7 @@ function renderBoard(){
  $('points-preview').textContent=gains.length?'Voorlopig: '+gains.map(p=>`${p.name} +${p.points}`).join(' / '):'';
  $('points-preview').hidden=!gains.length;
  const pendingMarks=target=>pending.filter(d=>d.number===target).reduce((sum,d)=>sum+d.mult,0);
- $('cricket-live').textContent=pending.length?'Nog bevestigen: '+pending.map(d=>makeDart(d.number,d.mult).label).join(' / '):'Blauw = geraakt | Groen = gesloten';
+ $('cricket-live').textContent=pending.length?'Nog bevestigen: '+pending.map(d=>makeDart(d.number,d.mult).label).join(' / '):state.players.length===1?(state.scoring==='no-score'?'Solo: alleen marks, puntentelling staat uit':'Solo: extra treffers na sluiten tellen als punten'):'Blauw = geraakt | Groen = gesloten';
  $('cricket-live').classList.toggle('pending',pending.length>0);
  const table=document.createElement('table');table.className='marks-table';const head=table.createTHead().insertRow();
  for(const name of ['Doel',...state.players.map(p=>p.name)]){const th=document.createElement('th');th.textContent=name;head.append(th);}
@@ -399,7 +399,7 @@ function render(){
  const current=state.players[state.active],format=state.matchMode==='off'?'VRIJ SPELEN':`EERSTE TOT ${state.target} ${state.matchMode==='sets'?'SETS':'LEGS'}`;
  const currentMemberIndex=teamMemberIndex(state,current);
  const currentMember=currentMemberIndex>=0?current.members[currentMemberIndex]:null;
- $('match-label').textContent=cricket()?`${state.game.toUpperCase()} / ${scoringNames[state.scoring]} / ${format}`:`${state.start} / ${namesOfRules[state.inMode]}-IN / ${namesOfRules[state.out]}-OUT / ${format}`;
+ $('match-label').textContent=cricket()?`${state.game.toUpperCase()} / ${state.players.length===1&&state.scoring!=='no-score'?'SOLO PUNTENTRAINING':scoringNames[state.scoring]} / ${format}`:`${state.start} / ${namesOfRules[state.inMode]}-IN / ${namesOfRules[state.out]}-OUT / ${format}`;
  $('match-label').textContent+=` / RONDE ${state.round}${state.tiebreak?' (VERLENGING)':''}`;
  if(state.game==='gotcha')$('match-label').textContent=`TRAINING / GOTCHA / PRECIES ${state.start} / ${namesOfRules[state.out]}-OUT`;
  if(state.game==='bobs27')$('match-label').textContent="TRAINING / BOB'S 27 / D1 T/M D20 + BULL";
@@ -631,7 +631,7 @@ function showResult(){
  }
  $('result-title').textContent=state.winner===null?'Partij afgerond':`${state.players[state.winner].name} wint ${state.phase==='won'?'de partij':state.setComplete?'de set':'de leg'}!`;
  if(state.phase==='won'&&state.winner!==null)$('result-title').textContent=state.players[state.winner].name;
- $('result-text').textContent=(state.reason==='round-limit'?'Rondelimiet bereikt. ':'')+state.players.map(p=>`${p.name}: ${state.matchMode==='sets'?`${p.sets} sets, `:''}${p.legs} legs`).join(' · ');
+ $('result-text').textContent=(state.reason==='round-limit'?'Rondelimiet bereikt. ':'')+state.players.map(p=>`${p.name}: ${state.matchMode==='sets'?`${p.sets} sets, `:''}${p.legs} legs${cricket()&&state.scoring!=='no-score'?`, ${p.cricketPoints} punten`:''}`).join(' · ');
  if(state.phase==='won')renderGameReport(state,$('result-dialog'));
  $('continue').textContent=state.phase==='won'?'Nieuwe partij →':'Volgende leg →';$('continue').classList.toggle('result-local-continue',state.phase==='won');$('finish-match').hidden=state.matchMode!=='off'||state.phase==='won';
  if(!$('result-dialog').open)$('result-dialog').showModal();

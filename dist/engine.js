@@ -107,7 +107,8 @@ function applyCricketDart(s,d){
   const prior=p.marks[d.number]||0,closing=Math.min(3-prior,d.mult),excess=d.mult-closing;
   const opponents=s.players.filter((other,j)=>j!==s.active&&(other.marks[d.number]||0)<3);
   p.marks[d.number]=prior+closing;marks+=closing;
-  if(opponents.length&&s.scoring!=='no-score'){marks+=excess;const points=excess*d.number;credited+=points;if(s.scoring==='cut-throat')opponents.forEach(o=>o.cricketPoints+=points);else p.cricketPoints+=points;}
+  const solo=s.players.length===1;
+  if((solo||opponents.length)&&s.scoring!=='no-score'){marks+=excess;const points=excess*d.number;credited+=points;if(s.scoring==='cut-throat'&&!solo)opponents.forEach(o=>o.cricketPoints+=points);else p.cricketPoints+=points;}
   finished=s.numbers.every(t=>(p.marks[t]||0)===3)&&(s.scoring==='no-score'||s.players.every(o=>s.scoring==='cut-throat'?p.cricketPoints<=o.cricketPoints:p.cricketPoints>=o.cricketPoints));
  }
  return {marks,credited,finished};
