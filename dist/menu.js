@@ -23,7 +23,6 @@ void showVersion();
 // elements, their handlers and their device-specific availability.
 const definitions=[
  {key:'play',title:'Spelen',hint:'Een partij starten, aanpassen of terugkijken.',icon:'M6 4l14 8-14 8z',sections:[['new','Nieuwe partij'],['current','Tijdens je partij'],['saved','Bewaarde partijen']]},
- {key:'cameras',title:'Camera’s',hint:'Camera aan, herstarten of uitzetten op de verbonden NUC.',icon:'M3 7h4l2-3h6l2 3h4v13H3zM16 13a4 4 0 11-8 0 4 4 0 018 0',sections:[['controls','Camerabediening van de NUC']]},
  {key:'online',title:'Online darten',hint:'Een dartbaan maken, deelnemen en uitnodigingen bekijken.',icon:'M8 12h8M12 8v8M3 12a9 9 0 1018 0 9 9 0 00-18 0',sections:[['lanes','Dartbanen'],['invites','Uitnodigingen'],['club','Mijn club']]},
  {key:'players',title:'Spelers & teams',hint:'Je spelerslijst bijhouden en teams tijdens de partij beheren.',icon:'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M16 3a4 4 0 010 8M22 21v-2a4 4 0 00-3-3.87M5 7a4 4 0 108 0 4 4 0 00-8 0',sections:[['roster','Spelerslijsten'],['teams','Teams in deze partij']]},
  {key:'nuc',title:'NUC & verbinding',hint:'Verbinden, bediening overnemen en je dartopstelling beheren.',icon:'M3 3h18v14H3zM8 21h8M12 17v4',sections:[['connect','Verbinding & bediening'],['match','Partij overzetten'],['display','NUC-scherm'],['system','NUC-beheer'],['camera','Camera’s']]},
@@ -54,7 +53,7 @@ const routes={
  'open-kiosk':['nuc','display','Open het speelscherm op de aangesloten NUC.'],
  'screen-orientation':['nuc','display','Zet het NUC-scherm horizontaal of verticaal.'],
  'venue-open':['nuc','system','Naam en presentatie van de locatie op de NUC.'],
- 'camera-game-controls':android?['cameras','controls','Bedien de camera’s van de verbonden NUC.']:['nuc','camera','Zet cameradetectie aan, herstart deze of schakel haar uit.'],
+ 'camera-game-controls':['nuc','camera','Zet cameradetectie aan, herstart deze of schakel haar uit.'],
  'camera-test':['nuc','camera','Controleer de camera’s van je dartbord.'],
  'fullscreen':['app','display','Toon 180 Hitters over het volledige scherm.'],
  'layout-open':['app','display','Pas de weergave op dit apparaat aan.'],
@@ -64,6 +63,14 @@ const routes={
 const menu=document.createElement('dialog');menu.id='header-menu';menu.setAttribute('aria-labelledby','navigation-title');
 menu.innerHTML='<div class="navigation-head"><div><p class="eyebrow">180 HITTERS</p><h2 id="navigation-title">Wat wil je doen?</h2></div><button id="navigation-close" type="button" aria-label="Menu sluiten">Sluiten ×</button></div><p id="navigation-context" class="navigation-context"></p><div id="navigation-scroll"><div id="navigation-overview"><p class="navigation-intro">Alles voor je partij en je dartopstelling, op één plek.</p><nav id="navigation-categories" aria-label="Onderdelen"></nav></div><div id="navigation-detail" hidden><button id="navigation-back" type="button">TERUG</button><p id="navigation-description"></p><div id="navigation-panels"></div></div></div><div class="navigation-foot"><span id="navigation-version"></span><button id="navigation-resume" type="button">Terug naar spel</button></div>';
 document.body.append(menu);
+const recovery=document.createElement('section');recovery.id='navigation-recovery';recovery.hidden=true;
+recovery.innerHTML='<p role="status" aria-live="polite"></p><button type="button">Verbinding en bediening herstellen</button>';
+$('navigation-context').after(recovery);
+recovery.querySelector('button').onclick=()=>document.dispatchEvent(new Event('repair-nuc-connection'));
+document.addEventListener('nuc-recovery-view',event=>{
+ const view=event.detail;recovery.hidden=!view.visible;recovery.querySelector('p').textContent=view.text;
+ recovery.querySelector('button').disabled=view.busy;recovery.classList.toggle('recovered',view.recovered);
+});
 const navigationBack=$('navigation-back'),navigationClose=$('navigation-close');
 menu.querySelector('.navigation-head').prepend(navigationBack);navigationBack.hidden=true;
 navigationClose.textContent='TERUG';navigationClose.setAttribute('aria-label','TERUG');
@@ -71,7 +78,6 @@ $('navigation-resume').hidden=true;
 const groups={},sections={};
 for(const definition of definitions){
  const tile=document.createElement('button');tile.type='button';tile.className='navigation-category';tile.dataset.menu=definition.key;
- if(definition.key==='cameras')tile.hidden=true;
  tile.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${definition.icon}"/></svg><span><strong>${definition.title}</strong><small>${definition.hint}</small></span><b aria-hidden="true">›</b>`;
  tile.onclick=()=>selectSection(definition.key);$('navigation-categories').append(tile);
  const panel=document.createElement('section');panel.dataset.menu=definition.key;panel.hidden=true;panel.className='navigation-panel';groups[definition.key]=panel;sections[definition.key]={};
@@ -113,9 +119,8 @@ function visible(node){return !!node&&!node.hidden&&getComputedStyle(node).displ
 let tabletConnection=null,cameraConnected=false,cameraProbeBusy=false,cameraProbeAt=0;
 function applyCameraNavigation(connected){
  cameraConnected=!!android&&connected;
- hide(menu.querySelector('.navigation-category[data-menu="cameras"]'),!cameraConnected);
+ document.body.classList.toggle('header-camera-active',cameraConnected);
  const controls=$('camera-game-controls');if(controls)hide(controls,!!android&&!cameraConnected);
- if(!cameraConnected&&!$('navigation-detail').hidden&&!groups.cameras.hidden)overview();
  refreshSections();
 }
 async function refreshCameraNavigation(force=false){
@@ -126,7 +131,7 @@ async function refreshCameraNavigation(force=false){
   applyCameraNavigation(info.mode==='bluetooth'&&info.bluetoothConnected);refreshContext();return;
  }
  // The Android 4 Firefox bridge exposes connection status through its local
- // API. Read it only while the menu is open; this never scans for Bluetooth.
+ // API. Read local status while the app is visible; this never scans for Bluetooth.
  if(android.isTabletShell!==true){applyCameraNavigation(false);return;}
  if(cameraProbeBusy||(!force&&Date.now()-cameraProbeAt<2000))return;
  cameraProbeBusy=true;cameraProbeAt=Date.now();
@@ -137,7 +142,7 @@ async function refreshCameraNavigation(force=false){
  }catch{tabletConnection=null;applyCameraNavigation(false);}
  finally{cameraProbeBusy=false;refreshContext();}
 }
-setInterval(()=>{if(menu.open&&!document.hidden)void refreshCameraNavigation();},2000);
+setInterval(()=>{if(!document.hidden)void refreshCameraNavigation();},2000);
 function refreshSections(){
  for(const definition of definitions){
   for(const list of Object.values(sections[definition.key])){
@@ -155,6 +160,7 @@ function collect(){
  const candidates=[...actions.children],install=$('android-app-action');if(install&&!menu.contains(install))candidates.push(install);
  for(const node of new Set(candidates)){
   if(!node.matches('button,a,#camera-game-controls'))continue;
+  if(node.id==='camera-game-controls'&&android){node.classList.add('header-camera-controls');menuToggle.before(node);continue;}
   const [group,section,description]=routes[node.id]||['app','display','Extra weergaveopties voor 180 Hitters.'];
   const card=document.createElement('div');card.className='navigation-action';const hint=document.createElement('p');hint.textContent=description;card.append(node,hint);sections[group][section].append(card);
  }

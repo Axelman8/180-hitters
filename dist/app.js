@@ -1,4 +1,4 @@
-import {updateControl,controllerRefreshed,canControl} from './controller.js';
+import {updateControl,controllerRefreshed,canControl,takeControl} from './controller.js';
 import './dialog-navigation.js';
 import {renderDartSlots} from './dart-editor.js';
 import {startBots,paintBot} from './bot-runner.js';
@@ -104,6 +104,7 @@ function cache(){
 function connection(ok,text){
  const recovered=ok&&!ready;
  ready=ok;$('saved').textContent=text;$('connection-status').textContent=text;$('connection-status').classList.toggle('offline',!ok);
+ document.dispatchEvent(new CustomEvent('nuc-connection-status',{detail:{ready:ok}}));
  $('result-later').hidden=ok;
  if(recovered&&resultDismissedOffline){resultDismissedOffline=false;render();message('Verbinding hersteld. Kies hoe je verder wilt.');}
 }
@@ -111,7 +112,7 @@ function receive(data){
  if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
  revision=data.revision;confirmed=data.match;sharedDraft=null;
  restore(data.match);cache();
- for(const d of document.querySelectorAll('dialog[open]'))if(!['matches-dialog','matches-report-dialog','header-menu','autoscoring-dialog','players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
+ for(const d of document.querySelectorAll('dialog[open]'))if(!['new-match-dialog','connection-health-dialog','matches-dialog','matches-report-dialog','header-menu','autoscoring-dialog','players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
  resetInput();restoreTurnInput();render();
  document.dispatchEvent(new Event('match-synchronized'));
 }
@@ -179,6 +180,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
  if(e.target.closest('.dialog-back'))return;
+ if(e.target.closest('#camera-game-controls,#new-match-dialog,#nuc-recovery'))return;
  if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #matches-dialog,#matches-report-dialog,#archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-video-dialog, #club-open, #club-dialog, #online-host-open, #online-new-open, #online-join-open, #online-leave-open, #online-invitations-open, #online-club-invite-dialog, #online-invitations-dialog, #online-dialog, #online-starter')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
@@ -607,7 +609,7 @@ $('history-latest').onclick=()=>goForward(true);
 for(const b of document.querySelectorAll('[data-darts]'))b.onclick=()=>{$('finish-dialog').close();commit(totalTurn(Number(entry),{darts:Number(b.dataset.darts)}));};
 $('finish-cancel').onclick=()=>$('finish-dialog').close();
 function showResult(){
- if($('header-menu')?.open||$('matches-dialog')?.open||$('matches-report-dialog')?.open)return;
+ if($('header-menu')?.open||$('new-match-dialog')?.open||$('matches-dialog')?.open||$('matches-report-dialog')?.open)return;
  showWinner(state);
  $('continue').classList.remove('result-local-continue');
  $('result-dialog').querySelector('#lives-summary')?.remove();
@@ -718,9 +720,30 @@ function settings(){
 
 }
 
-$('training-type').onchange=settings;$('four-bot').onchange=settings;$('game-type').onchange=settings;$('match-mode').onchange=settings;$('participant-mode').onchange=()=>{if(teamMode()&&Number($('count').value)<2)$('count').value='2';names();settings();};$('count').onchange=names;names();settings();$('settings').onclick=()=>{if(state&&state.phase!=='won'){if(!$('new-match-dialog').open)$('new-match-dialog').showModal();}else showSetup();};
-$('new-match-cancel').onclick=()=>$('new-match-dialog').close();
-$('new-match-confirm').onclick=()=>{$('new-match-dialog').close();showSetup();};$('cancel').onclick=()=>{editingCurrentMatch=false;setupCopy(false);render();};
+$('training-type').onchange=settings;$('four-bot').onchange=settings;$('game-type').onchange=settings;$('match-mode').onchange=settings;$('participant-mode').onchange=()=>{if(teamMode()&&Number($('count').value)<2)$('count').value='2';names();settings();};$('count').onchange=names;names();settings();
+let newMatchRequest=0,newMatchPreparing=false;
+async function prepareNewMatch(confirmReplacement){
+ if(newMatchPreparing)return;
+ newMatchPreparing=true;const request=++newMatchRequest,dialog=$('new-match-dialog'),confirm=$('new-match-confirm');
+ let status=$('new-match-status');if(!status){status=document.createElement('p');status.id='new-match-status';status.setAttribute('role','status');confirm.before(status);}
+ confirm.disabled=true;status.textContent='Bediening en actuele NUC-stand controleren…';
+ if(!ready||!canControl()){if(!dialog.open)dialog.showModal();}
+ try{
+  if(!canControl()&&!await takeControl())throw Error('Bediening overnemen is niet gelukt. Controleer de verbinding en probeer opnieuw.');
+  const deadline=Date.now()+8000;
+  while(!ready&&Date.now()<deadline&&request===newMatchRequest){await synchronize();if(!ready)await new Promise(resolve=>setTimeout(resolve,100));}
+  if(!ready)throw Error('De NUC is niet bereikbaar. Herstel de verbinding en probeer opnieuw.');
+  if(!canControl()&&!await takeControl())throw Error('Bediening overnemen is niet gelukt. Probeer opnieuw.');
+  if(request!==newMatchRequest)return;
+  status.textContent='';
+  if(confirmReplacement&&state&&state.phase!=='won'){if(!dialog.open)dialog.showModal();}
+  else{dialog.close();showSetup();document.dispatchEvent(new Event('new-match-setup-open'));}
+ }catch(error){if(request===newMatchRequest){status.textContent=error.message;if(!dialog.open)dialog.showModal();}}
+ finally{if(request===newMatchRequest){newMatchPreparing=false;confirm.disabled=false;}}
+}
+$('settings').onclick=()=>void prepareNewMatch(true);
+$('new-match-cancel').onclick=()=>{newMatchRequest++;newMatchPreparing=false;$('new-match-confirm').disabled=false;$('new-match-dialog').close();};
+$('new-match-confirm').onclick=()=>void prepareNewMatch(false);$('cancel').onclick=()=>{editingCurrentMatch=false;setupCopy(false);render();};
 
 function selectValue(id,value){
  const select=$(id),text=String(value);
@@ -855,7 +878,7 @@ for(const type of ['click','keydown','submit'])document.addEventListener(type,ev
  event.preventDefault();event.stopImmediatePropagation();
 },true);
 cameraControls(async event=>{
- if(!ready||busy||syncing||draftWrites||state?.players[state.active]?.bot)return;
+ if(!ready||busy||syncing||draftWrites||!$('setup').hidden||$('new-match-dialog').open||state?.players[state.active]?.bot)return;
  busy=true;
  try{
   const response=await fetch('/api/state',{signal:AbortSignal.timeout(4000)});

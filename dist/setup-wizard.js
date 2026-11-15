@@ -214,5 +214,5 @@ async function syncSetup(){
   change('starter',draft.values.starter||'0');step=draft.step;render();await Promise.resolve();
  }catch{}finally{applying=false;setupPolling=false;}
 }
-$('new-match-confirm').addEventListener('click',()=>{if(!document.body.classList.contains('remote-control')){localSetupOwner=true;mirroring=false;step=0;queueMicrotask(()=>{step=0;render();refreshRoster();});}});
+document.addEventListener('new-match-setup-open',()=>{if(!document.body.classList.contains('remote-control')){localSetupOwner=true;mirroring=false;step=0;queueMicrotask(()=>{step=0;render();refreshRoster();});}});
 syncSetup();setInterval(syncSetup,500);

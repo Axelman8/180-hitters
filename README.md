@@ -32,7 +32,7 @@ The app starts at its main menu while keeping the current match. The version is 
 
 NUC-only controls appear when connected. The connection indicator shows whether the device controls the NUC. Android system settings and installer screens use Android's own navigation.
 
-On connected phones and tablets, **Camera’s** appears directly after Play in the menu overview, with **Camera aan / herstart** and **Camera uit**. This shortcut is hidden during local play and when the Bluetooth connection is lost. The NUC display keeps its camera controls under **NUC & verbinding**.
+On connected phones and tablets, **Camera aan / herstart** and **Camera uit** appear as two direct controls beside **Menu** in the top bar. They are hidden during local play and when the Bluetooth connection is lost. The NUC display keeps its camera controls under **NUC & verbinding**. If the connection is lost or another device has control, a recovery button reconnects to the selected NUC, takes control and confirms the current match before scoring resumes. Recovery never discards a match. Starting a new match from a connected device also acquires control before opening the setup wizard.
 
 ## All games and tutorial videos
 

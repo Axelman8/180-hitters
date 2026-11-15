@@ -12,7 +12,7 @@ with tempfile.TemporaryDirectory() as tmp:
    except OSError:time.sleep(.1)
   with sync_playwright() as p:
    browser=p.chromium.launch()
-   for tablet,width,height in [(False,393,852),(False,744,1133),(True,1024,768)]:
+   for tablet,width,height in [(False,320,740),(False,393,852),(False,744,1133),(True,1024,768)]:
     for mode,connected in [('local',False),('bluetooth',False),('bluetooth',True)]:
      page=browser.new_page(viewport={'width':width,'height':height});errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
      connection={'mode':mode,'bluetoothConnected':connected,'versionName':'test'}
@@ -29,29 +29,33 @@ with tempfile.TemporaryDirectory() as tmp:
      page.route('**/api/autoscoring',camera_request);page.route('**/api/autoscoring/reset',reset)
      page.on('dialog',lambda dialog:dialog.accept())
      page.goto('http://127.0.0.1:8853/?android=1');tile=page.locator('.navigation-category[data-menu="cameras"]')
+     expect(page.locator('#header-menu')).to_be_visible();page.locator('#navigation-close').click()
      if not connected:
       expect(tile).to_be_hidden();expect(page.locator('#camera-game-controls')).not_to_be_visible();page.wait_for_timeout(450)
       assert not writes
       if mode=='local':assert not reads,'Standalone play must not poll the NUC cameras'
      else:
-      def open_cameras():
-       page.evaluate("document.dispatchEvent(new Event('open-main-menu'))");expect(tile).to_be_visible();tile.click()
-       expect(page.locator('.navigation-panel[data-menu="cameras"]')).to_be_visible()
-      expect(tile).to_be_visible();expect(page.locator('.navigation-category:visible').nth(1)).to_contain_text('Camera')
-      if width==393:page.screenshot(path=str(root/'.tools/camera-menu-overview.png'))
-      open_cameras();expect(page.locator('#camera-game-controls')).to_be_visible();assert page.locator('#camera-game-controls').count()==1
-      if width==393:page.screenshot(path=str(root/'.tools/camera-menu-controls.png'))
+      expect(tile).to_have_count(0)
+      expect(page.locator('body>header>#camera-game-controls')).to_be_visible();assert page.locator('#camera-game-controls').count()==1
+      controls=[page.locator(id).bounding_box() for id in ['#mode-status','#camera-game-on','#camera-game-off','#toggle-toolbar']]
+      for box in controls:assert box['x']>=0 and box['x']+box['width']<=width+1,controls
+      for a,b in zip(controls,controls[1:]):assert a['x']+a['width']<=b['x']+1,controls
+      assert max(box['y'] for box in controls)-min(box['y'] for box in controls)<20,controls
+      assert controls[3]['x']-(controls[2]['x']+controls[2]['width'])<20,'Camera buttons belong beside Menu'
+      version=page.locator('#app-version').bounding_box()
+      for box in controls:assert version['y']>=box['y']+box['height']-1 or version['x']+version['width']<=box['x'] or version['x']>=box['x']+box['width'],(box,version,page.locator('body>header').evaluate('e=>[e.getBoundingClientRect().toJSON(),getComputedStyle(e).padding,getComputedStyle(e).alignItems,getComputedStyle(e).minHeight]'))
+      page.screenshot(path=str(root/f'.tools/header-cameras-{width}.png'))
       page.locator('#camera-game-on').click();expect(page.locator('#camera-game-on')).to_have_attribute('aria-pressed','true')
-      open_cameras();page.locator('#camera-game-on').click()
+      page.locator('#camera-game-on').click()
       deadline=time.monotonic()+4
       while ('reset',True) not in writes and time.monotonic()<deadline:page.wait_for_timeout(50)
-      open_cameras();page.locator('#camera-game-off').click();expect(page.locator('#camera-game-off')).to_have_attribute('aria-pressed','true')
+      page.locator('#camera-game-off').click();expect(page.locator('#camera-game-off')).to_have_attribute('aria-pressed','true')
       assert writes==[('configure',True),('reset',True),('configure',False)],writes
-      open_cameras();connection['bluetoothConnected']=False;page.evaluate('window.cameraTestConnection.bluetoothConnected=false')
+      connection['bluetoothConnected']=False;page.evaluate('window.cameraTestConnection.bluetoothConnected=false')
       expect(tile).to_be_hidden(timeout=7000);expect(page.locator('#camera-game-controls')).not_to_be_visible()
-      expect(page.locator('#navigation-overview')).to_be_visible()
+      expect(page.locator('#header-menu')).not_to_be_visible()
       connection['bluetoothConnected']=True;page.evaluate('window.cameraTestConnection.bluetoothConnected=true')
-      page.evaluate("document.dispatchEvent(new Event('open-main-menu'))");expect(tile).to_be_visible(timeout=7000)
+      expect(page.locator('#camera-game-controls')).to_be_visible(timeout=7000)
      assert not errors,errors
      print('PASS camera menu:',('legacy tablet' if tablet else 'phone'),width,mode,connected,flush=True);page.close()
    # The existing camera section on the NUC remains available.
