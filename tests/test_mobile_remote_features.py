@@ -46,27 +46,29 @@ with tempfile.TemporaryDirectory() as tmp:
             mode_box = page.locator('#mode-status').bounding_box()
             menu_box = page.locator('#toggle-toolbar').bounding_box()
             assert mode_box['x'] < menu_box['x'] and abs(mode_box['y'] - menu_box['y']) < 2
+            page.locator('#toggle-toolbar').click()
+            page.locator('#navigation-categories [data-menu="nuc"]').click()
             expect(page.locator('#camera-game-on')).to_be_visible()
             expect(page.locator('#camera-game-off')).to_be_visible()
             expect(page.locator('#network-open')).to_be_hidden()
-            expect(page.locator('#bluetooth-open')).to_have_text('Bluetooth en NUC')
+            expect(page.locator('#bluetooth-open')).to_have_text('NUC beheren')
 
             expected = {
-                '#mouse-control-open': 'connections',                 # 1
-                '#android-app-action': 'connections',                 # 2
-                '#bluetooth-open': 'connections',                     # 3
+                '#mouse-control-open': 'nuc',                         # 1
+                '#android-app-action': 'nuc',                         # 2
+                '#bluetooth-open': 'nuc',                             # 3
                 '#edit-match': 'play',                                # 5
-                '#team-manager': 'play',                              # 6
-                '#players-list': 'play',                              # 6
+                '#team-manager': 'players',                           # 6
+                '#players-list': 'players',                           # 6
                 '#match-backups': 'play',                             # 7
-                '#android-update-action': 'application',              # 8
-                '#kiosk-mode-toggle': 'application',                  # 3
-                '#venue-open': 'application',
-                '#connection-health': 'connections',                  # 9
+                '#android-update-action': 'app',                      # 8
+                '#kiosk-mode-toggle': 'nuc',                          # 3
+                '#venue-open': 'nuc',
+                '#connection-health': 'nuc',                          # 9
             }
             for selector, menu in expected.items():
                 expect(page.locator(selector)).to_be_attached()
-                assert page.locator(selector).evaluate("e=>e.closest('details').dataset.menu") == menu
+                assert page.locator(selector).evaluate("e=>e.closest('.navigation-panel').dataset.menu") == menu
             for selector in ('#submit', '#undo', '#redo', '#bust'):   # 4
                 expect(page.locator(selector)).to_be_attached()
 

@@ -100,7 +100,7 @@ function receive(data){
  if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
  revision=data.revision;confirmed=data.match;sharedDraft=null;
  restore(data.match);cache();
- for(const d of document.querySelectorAll('dialog[open]'))if(!['autoscoring-dialog','players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
+ for(const d of document.querySelectorAll('dialog[open]'))if(!['header-menu','autoscoring-dialog','players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
  resetInput();restoreTurnInput();render();
  document.dispatchEvent(new Event('match-synchronized'));
 }
@@ -120,7 +120,7 @@ async function persist(keepModeOverride=false,restoredTurn=null){
  try{
   const res=await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,match:snapshot()}),signal:AbortSignal.timeout(5000)});
   const data=await res.json();
-  if(res.status===423){restore(confirmed);resetInput();render();message('Een ander apparaat bedient de partij. Kies Bediening overnemen onder Verbindingen.');return false;}
+  if(res.status===423){restore(confirmed);resetInput();render();message('Een ander apparaat bedient de partij. Kies Bediening overnemen onder NUC & verbinding.');return false;}
   if(res.status===409){receive(data);connection(true,connectedLabel);message('Een ander apparaat heeft de partij gewijzigd. Controleer de stand en voer je beurt opnieuw in.');return false;}
   if(!res.ok)throw Error(data.error||'Opslaan mislukt');
   if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
@@ -167,7 +167,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
  }finally{busy=false;}
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
- if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu summary, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-video-dialog, #club-open, #club-dialog, #online-host-open, #online-new-open, #online-join-open, #online-leave-open, #online-invitations-open, #online-club-invite-dialog, #online-invitations-dialog, #online-dialog, #online-starter')){e.preventDefault();e.stopImmediatePropagation();}
+ if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-video-dialog, #club-open, #club-dialog, #online-host-open, #online-new-open, #online-join-open, #online-leave-open, #online-invitations-open, #online-club-invite-dialog, #online-invitations-dialog, #online-dialog, #online-starter')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}

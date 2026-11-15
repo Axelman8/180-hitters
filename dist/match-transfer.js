@@ -54,8 +54,8 @@ async function listBackups(){
 }
 $('transfer-confirm').onclick=async()=>{
  if(working||!selection)return;
- if(!canControl()&&window.DartsAndroid?.isTabletShell){$('transfer-message').textContent='Sluit dit venster en kies onder Verbindingen voor Bediening overnemen.';return;}
- if(!canControl()){$('transfer-message').textContent='Sluit dit venster en kies eerst Verbindingen → Bediening overnemen.';return;}
+ if(!canControl()&&window.DartsAndroid?.isTabletShell){$('transfer-message').textContent='Sluit dit venster en kies onder NUC & verbinding voor Bediening overnemen.';return;}
+ if(!canControl()){$('transfer-message').textContent='Sluit dit venster en kies eerst NUC & verbinding → Bediening overnemen.';return;}
  working=true;$('transfer-confirm').disabled=true;$('transfer-close').disabled=true;
  try{
   const r=await fetch(selection.path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(selection.body),signal:AbortSignal.timeout(12000)});

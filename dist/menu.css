@@ -1,39 +1,66 @@
-body>header{position:relative;z-index:20;height:auto;min-height:64px;padding-top:6px;padding-bottom:6px;gap:12px;flex-wrap:wrap}
-#app-version{position:absolute;z-index:1;top:max(env(safe-area-inset-top),6px);left:50%;height:44px;display:flex;align-items:center;justify-content:center;transform:translateX(-50%);color:#b8c9d0;font-size:14px;font-weight:750;letter-spacing:.03em;white-space:nowrap;pointer-events:none}
-body #toggle-toolbar{display:block!important;min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:#182a33;color:#fff;font-size:13px;font-weight:750;white-space:nowrap;order:0}
+body>header{position:relative;z-index:20;height:auto;min-height:64px;padding:6px 12px;gap:12px;flex-wrap:nowrap}
+#app-version{position:absolute;z-index:1;top:max(env(safe-area-inset-top),6px);left:50%;height:44px;display:flex;align-items:center;justify-content:center;transform:translateX(-50%);color:#b8c9d0;font-size:14px;font-weight:750;white-space:nowrap;pointer-events:none}
+body #toggle-toolbar{display:block!important;min-height:44px;padding:9px 16px;border:1px solid var(--line);border-radius:12px;background:#182a33;color:#fff;font-size:14px;font-weight:750;white-space:nowrap;margin-left:auto}
 body>header #top-actions{display:none!important}
-#header-menu{display:flex;gap:8px;margin-left:auto;flex-shrink:0}
-body.toolbar-collapsed #header-menu{display:none}
-body.toolbar-collapsed>header{min-height:56px}
-#header-menu details{position:relative}
-#header-menu summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#20313b;font-size:14px;font-weight:650;touch-action:manipulation}
-#header-menu summary::-webkit-details-marker{display:none}
-#header-menu summary::after{content:'⌄';color:var(--accent)}
-#header-menu details[open]>summary{border-color:var(--accent);background:#304638}
-#header-menu summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-#header-menu .menu-panel{position:absolute;right:0;top:calc(100% + 8px);width:260px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 100px);overflow:auto;padding:8px;display:grid;gap:6px;border:1px solid #526775;border-radius:14px;background:#142129;box-shadow:0 12px 32px #0009}
-#header-menu .menu-panel button{width:100%;position:static!important;min-height:44px;font-size:14px;text-align:left;padding:12px;white-space:normal}
-body.remote-control>header{flex-direction:row;flex-wrap:wrap!important;min-height:56px}
-@media(max-width:600px){body>header{padding-left:10px;padding-right:10px;flex-wrap:wrap}body>header .brand{font-size:17px;letter-spacing:1px}#header-menu details{position:static}#header-menu .menu-panel{right:10px;top:calc(100% + 4px)}#header-menu summary{padding:10px 12px}}
-@media(max-width:420px){#app-version{font-size:12px}}
-@media(max-width:1000px){body>header #header-menu{flex-basis:100%;width:100%;margin-left:0;justify-content:flex-end}}
-
+body.remote-control>header{flex-direction:row;min-height:56px}
+html.tablet-shell body>header .brand,html.android-shell body.remote-control>header .brand{display:none}
+html.android-shell body.remote-control>header #toggle-toolbar{order:-1;margin-left:auto;align-self:center}
+/* One modal page with normal document flow, without floating submenus. */
+body #header-menu{box-sizing:border-box;width:min(960px,calc(100vw - 40px));height:min(820px,calc(100dvh - 40px));max-width:none;max-height:none;padding:0;margin:auto;border:1px solid var(--line);border-radius:22px;background:#101c23;color:var(--text,#eef4f4);overflow:hidden}
+body #header-menu[open]{display:flex;flex-direction:column;gap:0}
+#header-menu::backdrop{background:#050b10c9;backdrop-filter:blur(5px)}
+#header-menu [hidden]{display:none!important}
+#header-menu .navigation-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:22px 26px 16px;flex-shrink:0}
+#header-menu .navigation-head>div{min-width:0}
+#header-menu .navigation-head .eyebrow{font-size:11px;letter-spacing:.17em;margin:0 0 5px;color:var(--accent)}
+#header-menu h2{margin:0;font-size:28px;line-height:1.2;letter-spacing:-.03em}
+#header-menu button{touch-action:manipulation}
+#header-menu #navigation-close{min-height:44px;padding:9px 12px;font-size:14px;white-space:nowrap;background:transparent}
+#header-menu .navigation-context{margin:0;padding:10px 26px;background:#182a33;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px;color:#b8c9d0;flex-shrink:0}
+#navigation-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;flex:1;padding:20px 26px 26px}
+#header-menu .navigation-intro{margin:0 0 18px;color:var(--muted,#a9bdc7);font-size:15px;line-height:1.5}
+#navigation-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#header-menu .navigation-category{display:flex;align-items:flex-start;gap:14px;min-width:0;min-height:128px;text-align:left;padding:22px 18px;background:#20313b;border:1px solid var(--line);border-radius:16px;color:inherit}
+#header-menu .navigation-category svg{flex-shrink:0;width:27px;height:27px;fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-top:2px}
+#header-menu .navigation-category>span{min-width:0;flex:1}
+#header-menu .navigation-category strong{display:block;font-size:20px;line-height:1.25;margin-bottom:8px}
+#header-menu .navigation-category small{display:block;font-size:13px;line-height:1.5;font-weight:400;color:#b8c9d0}
+#header-menu .navigation-category>b{font-size:25px;color:var(--accent);line-height:1}
+#header-menu .navigation-category:hover,#header-menu .navigation-category:focus-visible{border-color:var(--accent);background:#304638}
+#header-menu #navigation-back{min-height:44px;font-size:14px;padding:8px 12px;background:transparent;margin:0 0 12px;text-align:left}
+#navigation-description{font-size:15px;line-height:1.5;color:#b8c9d0;margin:0 0 24px}
+#header-menu .navigation-section{margin:0 0 24px}
+#header-menu h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#83d9ef;margin:0 0 10px}
+#header-menu .navigation-action-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#header-menu .navigation-action{min-width:0;padding:14px;background:#142129;border:1px solid var(--line);border-radius:14px}
+#header-menu .navigation-action>button,#header-menu .navigation-action>a{position:static!important;display:block;width:100%;min-height:48px;white-space:normal;text-align:left;padding:10px 12px;font-size:16px;line-height:1.35;border-radius:9px;overflow-wrap:anywhere}
+#header-menu .navigation-action>p{font-size:13px;font-weight:400;line-height:1.5;margin:10px 2px 0;color:#b8c9d0}
+#header-menu .navigation-action:has(>button:disabled){opacity:.65}
 #header-menu #settings{color:#ffad66}
 #header-menu #android-update-action{color:#ff7777}
-
-/* Group device actions together; the selected color palette remains unchanged. */
-#header-menu{flex-wrap:wrap;max-width:100%}
-#camera-game-controls{display:flex;gap:6px;align-items:center}
-#camera-game-controls button{min-height:44px;padding:10px 12px;font-size:14px;white-space:nowrap;background:#20313b;color:#fff;border:1px solid var(--line);border-radius:12px}
+#header-menu .navigation-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 26px;border-top:1px solid var(--line);background:#101c23;flex-shrink:0}
+#navigation-version{font-size:12px;color:#a9bdc7}
+#header-menu #navigation-resume{min-height:44px;padding:9px 14px;font-size:14px}
+#header-menu .navigation-about{display:flex;align-items:center;gap:16px;grid-column:1/-1;padding:16px;border:1px solid var(--line);border-radius:14px}
+#header-menu .navigation-about img{width:54px;height:54px;border-radius:50%;object-fit:cover}
+#header-menu .navigation-about p{margin:4px 0 10px;font-size:13px;color:#b8c9d0}
+#header-menu .navigation-about a{font-size:13px;color:var(--accent);overflow-wrap:anywhere}
+#header-menu .navigation-empty{font-size:15px;color:var(--muted);line-height:1.5}
+#camera-game-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#camera-game-controls button{flex:1;min-width:100px;min-height:48px;padding:10px 12px;font-size:15px;background:#20313b;color:#fff;border:1px solid var(--line);border-radius:9px}
 #camera-game-controls button[aria-pressed="true"],#autoscoring-dialog button[aria-pressed="true"]{background:#42752e!important;color:#fff!important;border-color:#a6df71!important;box-shadow:inset 0 0 0 1px #a6df71}
 .camera-on-short{display:none}
-@media(max-width:1000px){#header-menu{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:visible;scrollbar-width:none;overscroll-behavior-x:contain;padding:2px 0;max-width:100%}#header-menu::-webkit-scrollbar{display:none}#header-menu details{flex:none}#header-menu summary{white-space:nowrap}#header-menu .menu-panel{position:fixed;right:10px;top:116px}}
-@media(max-width:600px){#header-menu{gap:6px}#header-menu summary,#camera-game-controls button{font-size:12px;padding:10px 8px}#header-menu summary{gap:4px}.camera-on-full{display:none}.camera-on-short{display:inline}}
-@media(max-width:360px){#header-menu{gap:3px}#camera-game-controls{gap:3px}#header-menu summary,#camera-game-controls button{font-size:11px;padding:10px 3px}}
-
-/* De oude 600px-tablet gebruikt de hele kopregel voor de vier hoofdknoppen. */
-html.tablet-shell body>header .brand{display:none}
-html.android-shell body.remote-control>header .brand{display:none}
-html.android-shell body.remote-control>header #toggle-toolbar{order:-1;margin-left:auto;align-self:center}
-html.tablet-shell #header-menu{margin-left:0;justify-content:flex-end}
-html.tablet-shell #header-menu summary,html.tablet-shell #camera-game-controls button{padding-left:9px;padding-right:9px}
+@media(max-width:600px){
+ body #header-menu{width:100vw;height:100dvh;margin:0;max-width:100vw;border:0;border-radius:0}
+ #header-menu .navigation-head{padding:calc(16px + env(safe-area-inset-top,0px)) 16px 14px}
+ #header-menu h2{font-size:23px}
+ #header-menu .navigation-context{padding:10px 16px}
+ #navigation-scroll{padding:18px 16px 24px}
+ #navigation-categories{grid-template-columns:1fr;gap:10px}
+ #header-menu .navigation-category{min-height:102px;padding:17px 14px}
+ #header-menu .navigation-category strong{font-size:19px;margin-bottom:5px}
+ #header-menu .navigation-action-list{grid-template-columns:1fr}
+ #header-menu .navigation-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+ #app-version{font-size:12px}
+}
+@media(max-height:500px){#header-menu .navigation-head{padding:10px 18px}#header-menu .navigation-head .eyebrow{display:none}#header-menu .navigation-foot{padding:8px 18px}#header-menu h2{font-size:22px}}

@@ -23,7 +23,7 @@ function paint(){
  const own=canControl();
  button.textContent=own?(tabletShell?'Bediening gekoppeld':'Bediening op deze telefoon'):'Bediening overnemen';
  button.disabled=claiming||own;
- note.textContent=errorText||(own?'Scorebediening actief':status?'Meekijken - kies Bediening overnemen via Verbindingen':'Bediening controleren...');
+ note.textContent=errorText||(own?'Scorebediening actief':status?'Meekijken - kies Bediening overnemen via NUC & verbinding':'Bediening controleren...');
  document.body.classList.toggle('controller-viewer',!own);
  const mode=document.getElementById('mode-status');
  if(mode&&mode.classList.contains('nuc')){
@@ -51,7 +51,7 @@ async function claim(takeover){
    refreshing=true;
    document.dispatchEvent(new Event('controller-refresh'));
   }
- }catch{failedAutoClaim=true;errorText='Overname niet bevestigd; probeer opnieuw via Verbindingen.';}
+ }catch{failedAutoClaim=true;errorText='Overname niet bevestigd; probeer opnieuw via NUC & verbinding.';}
  finally{claiming=false;paint();}
 }
 export function controllerRefreshed(){refreshing=false;paint();}
@@ -77,7 +77,7 @@ if(remote){
  // Read-only on followers, while device menus and the takeover button remain usable.
  for(const type of ['click','keydown','submit','change','input'])document.addEventListener(type,event=>{
   if(canControl()||!event.isTrusted)return;
- if(event.target.closest('#result-later,.result-local-continue,.lives-summary-share,.game-report-share,#archive-report-dialog,#connection-health,#connection-health-dialog,#mouse-control-open,#mouse-control-dialog,#camera-game-controls,#autoscoring-open,#autoscoring-dialog,#desktop-update-action,#desktop-update-dialog,#transfer-dialog,#take-control,#header-menu summary,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#players-list,#players-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock,.wizard-video-link,#game-video-dialog,#online-video-dialog,#club-open,#club-dialog,#online-host-open,#online-new-open,#online-join-open,#online-leave-open,#online-invitations-open,#online-club-invite-dialog,#online-invitations-dialog,#online-dialog,#online-starter'))return;
+ if(event.target.closest('#result-later,.result-local-continue,.lives-summary-share,.game-report-share,#archive-report-dialog,#connection-health,#connection-health-dialog,#mouse-control-open,#mouse-control-dialog,#camera-game-controls,#autoscoring-open,#autoscoring-dialog,#desktop-update-action,#desktop-update-dialog,#transfer-dialog,#take-control,#header-menu,#fullscreen,#layout-open,#layout-dialog,#toggle-toolbar,#toggle-history,#network-open,#network-dialog,#players-list,#players-dialog,#open-kiosk,#android-app-action,#android-update-action,#android-download-dialog,#mobile-dock,.wizard-video-link,#game-video-dialog,#online-video-dialog,#club-open,#club-dialog,#online-host-open,#online-new-open,#online-join-open,#online-leave-open,#online-invitations-open,#online-club-invite-dialog,#online-invitations-dialog,#online-dialog,#online-starter'))return;
   event.preventDefault();event.stopImmediatePropagation();
  },true);
 }
