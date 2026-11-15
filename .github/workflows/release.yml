@@ -51,6 +51,7 @@ jobs:
           node tests/camera-game-rules.mjs
           node tests/lives-correction.mjs
           node tests/training-bot-darts.mjs
+          node tests/gotcha-bot.mjs
           node tests/nuc-update-client.mjs
           python3 tests/test_nuc_update.py
           python3 tests/test_legacy_migration.py

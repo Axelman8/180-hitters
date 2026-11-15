@@ -96,19 +96,52 @@ export function cricketTarget(state,hits=[]){
  // remaining targets. Re-evaluate after EACH dart, including overflow points.
  return target(danger[0]||open[0]||scoring[0]||20);
 }
+// Prefer broad singles to a difficult double/triple when spare darts allow it.
+// These costs affect route choice only; throwAt still supplies the original
+// level-dependent physical scatter, including misses and neighbouring numbers.
+const gotchaSegments=[
+ ...Array.from({length:20},(_,i)=>({...aim(20-i,1),cost:1})),
+ {...aim(25,1),cost:2.6},
+ ...Array.from({length:20},(_,i)=>({...aim(20-i,2),cost:3})),
+ ...Array.from({length:20},(_,i)=>({...aim(20-i,3),cost:3.3})),
+ {...aim(25,2),cost:4.2}
+];
+const gotchaRoutes=new Map();
+function gotchaResetRoute(score,left){
+ if(score===0)return {cost:0,hits:[]};
+ if(left<1||score<0||score>60*left)return null;
+ const key=score+'/'+left;if(gotchaRoutes.has(key))return gotchaRoutes.get(key);
+ let best=null;
+ for(const segment of gotchaSegments){
+  const rest=gotchaResetRoute(score-segment.number*segment.mult,left-1);if(!rest)continue;
+  const cost=segment.cost+rest.cost;
+  if(!best||cost<best.cost-1e-8)best={cost,hits:[aim(segment.number,segment.mult),...rest.hits]};
+ }
+ gotchaRoutes.set(key,best);return best;
+}
+export function gotchaPlan(state,hits=[]){
+ if(state.game!=='gotcha'||state.phase!=='playing')return null;
+ const live=previewGotcha(state,hits),left=3-hits.length,own=live.players[state.active];
+ if(left<1||live.bust||live.finished)return null;
+ const remaining=state.start-own.remaining;
+ const winning=gotchaSegments.find(segment=>segment.number*segment.mult===remaining&&(state.out==='single'||segment.mult===2||(state.out==='master'&&segment.mult===3)));
+ if(winning)return {kind:'finish',target:aim(winning.number,winning.mult),route:[aim(winning.number,winning.mult)]};
+ // Reset the highest reachable opponent first, including near the finish.
+ // Positive route darts stay below that opponent's score, avoiding a bust.
+ const opponents=live.players.map((player,index)=>({player,index})).filter(({player,index})=>index!==state.active&&player.remaining>own.remaining&&player.remaining<state.start&&(state.out==='single'||player.remaining!==state.start-1)).sort((a,b)=>b.player.remaining-a.player.remaining);
+ for(const {player,index} of opponents){
+  const route=gotchaResetRoute(player.remaining-own.remaining,left);if(!route)continue;
+  return {kind:'reset',opponent:index,target:route.hits[0],route:route.hits};
+ }
+ return {kind:'score',target:xTarget(state,remaining,true,left)};
+}
 export function chooseBotTarget(state,hits=[]){
  const p=state.players[state.active],left=3-hits.length;
  if(state.game==='fourinarow')return fourTarget(state,hits);
  if(state.game==='tenlives')return aim(p.livesTarget,p.livesTarget===25?2:state.livesMode==='triple'?3:2);
  if(state.game==='bobs27')return aim(state.bobsTarget,2);
  if(state.game==='x01'){const live=previewTurn(state,hits);return xTarget(state,live.remaining,live.opened,left);}
- if(state.game==='gotcha'){
-  const live=previewGotcha(state,hits),remaining=state.start-live.players[state.active].remaining;
-  if(remaining<=170)return xTarget(state,remaining,true,left);
-  const victims=live.players.filter((_,i)=>i!==state.active).map(other=>other.remaining-live.players[state.active].remaining).filter(diff=>diff>0&&diff<=60);
-  const reset=victims.sort((a,b)=>b-a).find(value=>checkout(value,'single',1));
-  return reset?routeTarget(checkout(reset,'single',1)[0]):aim(20);
- }
+ if(state.game==='gotcha')return gotchaPlan(state,hits)?.target||aim(20);
  if(['cricket','tactics'].includes(state.game)){
   return cricketTarget(state,hits);
  }

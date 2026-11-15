@@ -75,6 +75,8 @@ After nine human darts in X01, 121 or Gotcha, the bot follows half of the positi
 
 Bot turns are coordinated across the NUC and controllers to prevent duplicates. Camera input waits during bot turns. Online lanes currently use human participants.
 
+In Gotcha, BOT 40 and BOT 50 deliberately aim to match an opponent's score and reset it to zero. They plan routes using up to three remaining darts, prefer broad singles where practical and recalculate after every hit or miss. A legal one-dart win takes priority; otherwise the highest-scoring reachable opponent is targeted, including near the finish. The BOT banner displays its intended segment and opponent. Physical accuracy and natural misses remain governed by the selected skill level.
+
 Hitters Challenge saves each bot dart immediately while retaining the three visible dart slots across state updates. A new three-dart group or a change of player starts again at slot 1; reconnecting reconstructs the visible group from the shared recorded history.
 
 ## Saved matches, corrections and reports
