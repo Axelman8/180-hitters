@@ -2,8 +2,9 @@
 // the same player misses into neighbouring segments in every game.
 import {makeDart,checkout,previewTurn,previewCricket,previewGotcha,applyTurn} from './engine.js';
 import {fourWinningLine} from './four-in-row.js';
+import {botDifficulty,botSpread} from './bot-level.js';
+export {botLevel,botDifficulty} from './bot-level.js';
 const sectors=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
-export const botLevel=player=>player?.bot?Number(player.botLevel)===40?40:50:0;
 // Calibrated on complete 501, straight-in/double-out legs, including misses
 // at doubles and busts. Short matches naturally vary around the target.
 export const botSigma={40:20,50:16};
@@ -19,7 +20,7 @@ export function boardHit(x,y){
 export function throwAt(target,level=50,random=Math.random){
  const radius=target.number===25?0:target.mult===2?166:target.mult===3?103:135;
  const angle=sectors.indexOf(target.number)*Math.PI/10;
- const spread=botSigma[level===40?40:50];
+ const spread=level===40||level===50?botSigma[level]:botSpread(level);
  const distance=Math.sqrt(-2*Math.log(Math.max(1e-12,random())))*spread;
  const direction=2*Math.PI*random();
  return boardHit(Math.sin(angle)*radius+distance*Math.cos(direction),-Math.cos(angle)*radius+distance*Math.sin(direction));
@@ -64,6 +65,37 @@ function previewSonny(state,hits){
  // preview of the current player's targets without changing the live match.
  try{return applyTurn(state,{hits:[...hits,...Array(3-hits.length).fill(makeDart(0))]});}catch{return state;}
 }
+export function cricketTarget(state,hits=[]){
+ const players=previewCricket(state,hits).players,own=players[state.active],opponents=players.filter((_,i)=>i!==state.active);
+ const open=state.numbers.filter(n=>(own.marks[n]||0)<3),target=n=>aim(n,n===25?2:3);
+ const cut=state.scoring==='cut-throat',noScore=state.scoring==='no-score';
+ const winningScore=noScore||opponents.every(other=>cut?own.cricketPoints<=other.cricketPoints:own.cricketPoints>=other.cricketPoints);
+ // A legal finish takes precedence over building a points cushion.
+ if(open.length===1&&winningScore)return target(open[0]);
+ if(noScore||!opponents.length)return target(open[0]||20);
+ const buffer=60,behind=!winningScore;
+ const needsPoints=cut?opponents.some(other=>other.cricketPoints<own.cricketPoints+buffer):own.cricketPoints<Math.max(...opponents.map(other=>other.cricketPoints))+buffer;
+ // In Cut Throat, attack the opponents whose points are still below ours.
+ // Scoring against an already losing opponent cannot repair that deficit.
+ const relevant=opponents.filter(other=>!cut||other.cricketPoints<own.cricketPoints+(behind?1:buffer));
+ const vulnerable=n=>relevant.filter(other=>(other.marks[n]||0)<3);
+ const value=n=>n*(n===25?.45:1); // Bull is harder to hit than a number's treble.
+ const scoring=state.numbers.filter(n=>(own.marks[n]||0)===3&&vulnerable(n).length).sort((a,b)=>value(b)*(cut?vulnerable(b).length:1)-value(a)*(cut?vulnerable(a).length:1));
+ const danger=open.filter(n=>opponents.some(other=>(other.marks[n]||0)===3)).sort((a,b)=>value(b)/(3-(own.marks[b]||0))-value(a)/(3-(own.marks[a]||0)));
+ // Stop a small number of opposing scoring routes before trading points on
+ // different numbers indefinitely. Keep our own open scoring route for later.
+ if(behind&&scoring.length&&danger.length&&danger.length<=2)return target(danger[0]);
+ if(needsPoints&&scoring.length)return target(scoring[0]);
+ if(behind){
+  // Create a scoring opportunity first when every already closed target is
+  // also closed by the relevant opponent. Finishing other targets cannot win.
+  const opening=open.filter(n=>vulnerable(n).length).sort((a,b)=>value(b)/(3-(own.marks[b]||0))-value(a)/(3-(own.marks[a]||0)));
+  if(opening.length)return target(opening[0]);
+ }
+ // Close numbers on which opponents can currently score, then work down the
+ // remaining targets. Re-evaluate after EACH dart, including overflow points.
+ return target(danger[0]||open[0]||scoring[0]||20);
+}
 export function chooseBotTarget(state,hits=[]){
  const p=state.players[state.active],left=3-hits.length;
  if(state.game==='fourinarow')return fourTarget(state,hits);
@@ -78,10 +110,7 @@ export function chooseBotTarget(state,hits=[]){
   return reset?routeTarget(checkout(reset,'single',1)[0]):aim(20);
  }
  if(['cricket','tactics'].includes(state.game)){
-  const players=previewCricket(state,hits).players,own=players[state.active];
-  const behind=state.scoring==='cut-throat'?players.some(other=>other.cricketPoints<own.cricketPoints):players.some(other=>other.cricketPoints>own.cricketPoints);
-  if(behind&&state.scoring!=='no-score'){const scoring=state.numbers.find(n=>(own.marks[n]||0)===3&&players.some((other,i)=>i!==state.active&&(other.marks[n]||0)<3));if(scoring)return aim(scoring,scoring===25?2:3);}
-  const number=state.numbers.find(n=>(own.marks[n]||0)<3)||20;return aim(number,number===25?2:3);
+  return cricketTarget(state,hits);
  }
  const shadow=previewSonny(state,hits),own=shadow.players[state.active];
  if(state.game==='scram'){
@@ -99,7 +128,7 @@ export function chooseBotTarget(state,hits=[]){
  throw Error('Voor dit spel ontbreekt een BOT-strategie.');
 }
 export function botDart(state,hits=[],random=Math.random){
- const target=chooseBotTarget(state,hits),hit=throwAt(target,botLevel(state.players[state.active]),random);
+ const target=chooseBotTarget(state,hits),hit=throwAt(target,botDifficulty(state).level,random);
  if(state.game!=='fourinarow')return hit;
  const {owners}=fourShadow(state,hits);
  let cell=hit.number===25?hit.mult===2?12:(state.fourBoard[target.cell]?.startsWith('sb')&&owners[target.cell]===null?target.cell:state.fourBoard.findIndex((id,i)=>id.startsWith('sb')&&owners[i]===null)):state.fourBoard.indexOf('n'+hit.number);

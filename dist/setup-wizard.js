@@ -112,7 +112,7 @@ function renderIndividuals(content){
  const type=el('fieldset',undefined,'wizard-option wizard-bot-choice');type.append(el('legend',`Speler ${slot+1}: mens of BOT`));
  const types=el('div',undefined,'wizard-options');
  for(const [level,label] of [[0,'Speler'],[40,'BOT 40'],[50,'BOT 50']]){const choice=button(label,()=>{const field=names()[slot];const old=Number(field.dataset.botLevel)||0;field.dataset.botLevel=String(level);if(level){if(!old)field.dataset.humanName=field.value;field.value=`BOT ${level} #${slot+1}`;}else if(old)field.value=field.dataset.humanName||`Speler ${slot+1}`;field.dispatchEvent(new Event('input',{bubbles:true}));render();});choice.setAttribute('aria-pressed',String((Number(names()[slot]?.dataset.botLevel)||0)===level));types.append(choice);}
- type.append(types,el('p','40 en 50 zijn richtgemiddelden per drie darts bij 501, dubbel-uit. In andere spellen geldt dezelfde nauwkeurigheid. Een BOT neemt één spelersplek in, ook met vier spelers.','wizard-hint'));content.append(type);
+ type.append(types,el('p','40 en 50 zijn basisgemiddelden per drie darts bij 501, dubbel-uit. Na negen menselijke darts volgt de BOT de helft van het hogere gemiddelde, tot niveau 100. Cricket/Tactics gebruiken marks als maatstaf. Bij andere trainingen blijft het basisniveau gelden. Een BOT neemt één spelersplek in, ook met vier spelers.','wizard-hint'));content.append(type);
  if(selected==='fourinarow')renderFourSymbols(content);
  if(Number(names()[slot]?.dataset.botLevel))return;
  rosterGroups(content);

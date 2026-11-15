@@ -20,6 +20,24 @@ The original bot model aims at a point on the board and applies two-dimensional
 Gaussian scatter, so neighbouring segments, singles, doubles, triples and misses
 follow the board geometry. No third-party bot source is bundled.
 
+After a human has thrown at least nine darts in X01, 121, or Gotcha, a bot follows
+half of the gap above its selected base level: a human averaging 50 against
+BOT 40 gives the bot a target of 45; a human averaging 60 gives it 50. With
+multiple humans, the strongest measured human sets the reference. Bots never
+feed back into each other's level. The target can return towards the base as
+the human average falls, and is capped at 100. The live bot banner shows the
+current target and base. Confirmed darts and scores are never rewritten.
+
+Cricket and Tactics estimate playing strength from marks per round (MPR), using
+separate references for Standard, Cut Throat, and No Score. Their scoreboard
+points are strategic positions, not a 501 average. Other training and positional
+games retain the selected base accuracy because their scores are not comparable.
+The closing-game strategy re-evaluates after each dart: score on open opponents,
+repair deficits, create new scoring routes, close opposing scoring numbers,
+and take a legal winning dart immediately. Cut Throat targets the opponents
+whose low scores matter; No Score never deliberately farms points. A solo game
+has no opponents to score against.
+
 Darts appear individually with varying, human-paced pauses. A shared execution
 lease prevents the NUC and its controllers from running duplicate bot turns.
 Each visible dart is saved, allowing a disconnected executor to resume the
@@ -27,7 +45,9 @@ unfinished visit. Camera detection pauses during bot turns. Bot matches use
 the regular match library and reports. Online dart lanes remain human multiplayer.
 
 Validation: `node tests/bot-engine.mjs` simulates every game and calibrates each
-level over 1,500 complete 501 legs; `python tests/test_bots.py` checks the real
+level over 1,500 complete 501 legs; `node tests/bot-adaptive.mjs` checks adaptation,
+multi-player closing-game tactics, and intermediate target calibration;
+`python tests/test_bots.py` checks the real
 setup UI, timed darts, shared execution and reconnect recovery.
 
 ### Eenvoudig installeren

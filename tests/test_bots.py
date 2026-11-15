@@ -4,6 +4,7 @@ import json,os,subprocess,sys,tempfile,time,threading
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from playwright.sync_api import sync_playwright,expect
 root=Path(__file__).resolve().parents[1]
+(root/'.repair-check').mkdir(exist_ok=True)
 class Detector(BaseHTTPRequestHandler):
  def log_message(self,*args):pass
  def do_GET(self):
@@ -45,8 +46,9 @@ with tempfile.TemporaryDirectory() as temp:
    # Explicit claim: only owner can publish/commit; a changed match invalidates
    # an in-flight ticket. A new executor resumes the already saved dart.
    phone.locator('#toggle-toolbar').click();screen.locator('#toggle-toolbar').click()
-   state=saved();game=state['match']['state'];game['active']=1
+   state=saved();game=state['match']['state'];game['active']=1;game['players'][0]['points']=150;game['players'][0]['darts']=9
    assert phone.request.post(url+'/api/state',data={'revision':state['revision'],'match':{'state':game,'undo':[]}}).ok
+   for view in [phone,screen]:expect(view.locator('#bot-status strong small')).to_have_text('Niveau 45 · basis 40')
    revision=saved()['revision']
    claim=lambda owner:phone.request.post(url+'/api/bot/claim',data={'revision':revision,'owner':owner}).json()
    assert claim('executor-A')['granted'] and not claim('executor-B')['granted']
@@ -60,6 +62,7 @@ with tempfile.TemporaryDirectory() as temp:
    phone.reload();phone.locator('#navigation-close').click();phone.wait_for_timeout(900)
    expect(phone.locator('#bot-status .thrown')).to_have_count(2)
    expect(phone.locator('#bot-status .thrown')).to_have_text(['20','20'])
+   expect(phone.locator('#bot-status strong small')).to_have_text('Niveau 45 · basis 40')
    deadline=time.monotonic()+15
    while saved()['match']['state']['active']!=2 and time.monotonic()<deadline:phone.wait_for_timeout(100)
    result=saved()['match']['state'];assert len(result['history'])==2,(result['active'],[(h['name'],h.get('labels')) for h in result['history']])

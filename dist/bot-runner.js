@@ -1,11 +1,14 @@
-import {botDart,botVisit,botLevel} from './bot.js';
+import {botDart,botVisit,botLevel,botDifficulty} from './bot.js';
 let panel;
 export function paintBot(state,hits=[]){
  const playing=state?.phase==='playing'&&!!botLevel(state.players[state.active]);
  document.body.classList.toggle('bot-turn',playing);
  if(!panel){panel=document.createElement('section');panel.id='bot-status';panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');document.getElementById('game').prepend(panel);const css=document.createElement('link');css.rel='stylesheet';css.href='bot.css';document.head.append(css);}
  panel.hidden=!playing;if(!playing)return;
- panel.replaceChildren();const label=document.createElement('strong');label.textContent=`${state.players[state.active].name} gooit`;panel.append(label);
+ panel.replaceChildren();const label=document.createElement('strong'),name=document.createElement('b'),level=document.createElement('small'),difficulty=botDifficulty(state);
+ name.textContent=`${state.players[state.active].name} gooit`;level.textContent=`Niveau ${difficulty.level.toLocaleString('nl-NL',{maximumFractionDigits:1})} · basis ${difficulty.base}`;
+ label.title=difficulty.adaptive?`Bijgestuurd op ${difficulty.reference.toFixed(2)} ${difficulty.metric} van de sterkste menselijke speler (${difficulty.samples} darts).`:'Basisniveau; bijsturing start na negen darts van een menselijke speler in X01, 121, Gotcha, Cricket en Tactics.';
+ label.append(name,level);panel.append(label);
  for(let index=0;index<3;index++){const dart=document.createElement('span');dart.textContent=hits[index]?.label||`Pijl ${index+1}`;dart.className=hits[index]?'thrown':index===hits.length?'aiming':'';panel.append(dart);}
 }
 // The server lease makes the NUC and its controllers a single bot executor.
