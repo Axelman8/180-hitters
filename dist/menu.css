@@ -21,13 +21,13 @@ body.remote-control>header{flex-direction:row;flex-wrap:wrap!important;min-heigh
 #header-menu #settings{color:#ffad66}
 #header-menu #android-update-action{color:#ff7777}
 
-/* Camera choice stays next to the two menus on display and phone. */
+/* Group device actions together; the selected color palette remains unchanged. */
 #header-menu{flex-wrap:wrap;max-width:100%}
 #camera-game-controls{display:flex;gap:6px;align-items:center}
-#header-menu details:nth-child(1){order:0}#header-menu details:nth-child(2){order:1}#header-menu details:nth-child(3){order:2}#camera-game-controls{order:3}
 #camera-game-controls button{min-height:44px;padding:10px 12px;font-size:14px;white-space:nowrap;background:#20313b;color:#fff;border:1px solid var(--line);border-radius:12px}
 #camera-game-controls button[aria-pressed="true"],#autoscoring-dialog button[aria-pressed="true"]{background:#42752e!important;color:#fff!important;border-color:#a6df71!important;box-shadow:inset 0 0 0 1px #a6df71}
 .camera-on-short{display:none}
+@media(max-width:1000px){#header-menu{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:visible;scrollbar-width:none;overscroll-behavior-x:contain;padding:2px 0;max-width:100%}#header-menu::-webkit-scrollbar{display:none}#header-menu details{flex:none}#header-menu summary{white-space:nowrap}#header-menu .menu-panel{position:fixed;right:10px;top:116px}}
 @media(max-width:600px){#header-menu{gap:6px}#header-menu summary,#camera-game-controls button{font-size:12px;padding:10px 8px}#header-menu summary{gap:4px}.camera-on-full{display:none}.camera-on-short{display:inline}}
 @media(max-width:360px){#header-menu{gap:3px}#camera-game-controls{gap:3px}#header-menu summary,#camera-game-controls button{font-size:11px;padding:10px 3px}}
 

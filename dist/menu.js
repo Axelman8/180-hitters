@@ -52,8 +52,9 @@ compactForFourInRow();
 const definitions=[
  ['play','Spelen'],
  ['online','Online darten'],
- ['connections','Verbindingen'],
- ['application','Applicatie']
+ ['players','Spelers'],
+ ['devices','Apparaten'],
+ ['settings','Instellingen']
 ];
 const groups={};
 for(const [key,label] of definitions){
@@ -76,20 +77,22 @@ document.addEventListener('open-play-menu',()=>{
 });
 
 const order={
- play:['settings','edit-match','team-manager','players-list','transfer-to-nuc','match-backups','screen-input-shortcut'],
- online:['club-open','online-invitations-open','online-host-open','online-new-open','online-join-open','online-leave-open'],
- connections:['android-app-action','take-control','connection-health','mouse-control-open','bluetooth-open','network-open'],
- application:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','screen-orientation','desktop-update-action','android-update-action','camera-test','venue-open']
+ play:['settings','edit-match','team-manager','screen-input-shortcut','match-backups','transfer-to-nuc'],
+ online:['online-host-open','online-new-open','online-join-open','online-invitations-open','online-leave-open','club-open'],
+ players:['players-list'],
+ devices:['take-control','connection-health','mouse-control-open','bluetooth-open','network-open'],
+ settings:['android-app-action','kiosk-mode-toggle','open-kiosk','fullscreen','screen-orientation','desktop-update-action','android-update-action','venue-open','camera-test']
 };
 
 function destination(node){
  const id=node.id;
  if(order.play.includes(id))return groups.play;
  if(order.online.includes(id))return groups.online;
- if(id==='android-app-action')return window.DartsAndroid?groups.connections:groups.application;
- if(order.connections.includes(id))return groups.connections;
- if(order.application.includes(id))return groups.application;
- return groups.application;
+ if(order.players.includes(id))return groups.players;
+ if(id==='android-app-action')return groups.settings;
+ if(order.devices.includes(id))return groups.devices;
+ if(order.settings.includes(id))return groups.settings;
+ return groups.settings;
 }
 
 function arrange(panel,ids){
@@ -105,7 +108,7 @@ function arrange(panel,ids){
 
 function collect(){
  const camera=document.getElementById('camera-game-controls');
- if(camera&&camera.parentElement!==menu)menu.append(camera);
+ if(camera&&camera.parentElement!==groups.devices)groups.devices.append(camera);
  for(const node of [...actions.children]){
   if(node.matches('button,a'))destination(node).append(node);
  }
@@ -113,7 +116,8 @@ function collect(){
  if(android&&!menu.contains(android))destination(android).append(android);
  for(const [key] of definitions)arrange(groups[key],order[key]);
  const venue=document.getElementById('venue-open');if(venue)venue.textContent='Locatie-instellingen';
- const network=document.getElementById('network-open');if(network)network.textContent='Wifi-netwerken / hotspot';
+ const network=document.getElementById('network-open');if(network)network.textContent='Wifi en hotspot';
+ const players=document.getElementById('players-list');if(players)players.textContent='Spelers beheren';
  const fullscreen=document.getElementById('fullscreen');if(fullscreen)fullscreen.textContent='Volledig scherm';
  const kiosk=document.getElementById('open-kiosk');if(kiosk)kiosk.textContent='App op NUC openen';
  if(android&&!window.DartsAndroid)android.textContent='Android-app installeren';
@@ -127,7 +131,7 @@ const localNuc=['127.0.0.1','localhost','::1'].includes(location.hostname)&&!win
 if(localNuc){
  const orientationButton=document.createElement('button');orientationButton.id='screen-orientation';orientationButton.type='button';orientationButton.textContent='Schermstand';
  const dialog=document.createElement('dialog');dialog.id='screen-orientation-dialog';dialog.innerHTML='<h2>Schermstand NUC</h2><p id="screen-orientation-current">Schermstand ophalen...</p><button class="wide" data-orientation="landscape">Landscape</button><button class="wide" data-orientation="portrait-left">Portrait linksom</button><button class="wide" data-orientation="portrait-right">Portrait rechtsom</button><p id="screen-orientation-status" role="status"></p><button id="screen-orientation-close" class="wide" type="button">Sluiten</button>';
- document.body.append(dialog);groups.application.append(orientationButton);arrange(groups.application,order.application);
+ document.body.append(dialog);groups.settings.append(orientationButton);arrange(groups.settings,order.settings);
  const current=dialog.querySelector('#screen-orientation-current'),status=dialog.querySelector('#screen-orientation-status');
  async function refreshOrientation(){
   try{const response=await fetch('/api/display/orientation',{cache:'no-store'}),data=await response.json();if(!response.ok)throw Error(data.error);current.textContent='Actief: '+data.label;for(const choice of dialog.querySelectorAll('[data-orientation]'))choice.classList.toggle('primary',choice.dataset.orientation===data.orientation);}
@@ -145,7 +149,7 @@ if(localNuc)fetch('/api/camera/status').then(response=>{
  if(!response.ok)return;
  const button=document.createElement('button');button.id='camera-test';
  button.textContent='Camera-test';button.onclick=()=>{location.href='camera.html';};
- groups.application.append(button);arrange(groups.application,order.application);
+ groups.settings.append(button);arrange(groups.settings,order.settings);
 }).catch(()=>{});
 
 document.addEventListener('click',event=>{
