@@ -32,6 +32,8 @@ The app starts at its main menu while keeping the current match. The version is 
 
 NUC-only controls appear when connected. The connection indicator shows whether the device controls the NUC. Android system settings and installer screens use Android's own navigation.
 
+On connected phones and tablets, **Camera’s** appears directly after Play in the menu overview, with **Camera aan / herstart** and **Camera uit**. This shortcut is hidden during local play and when the Bluetooth connection is lost. The NUC display keeps its camera controls under **NUC & verbinding**.
+
 ## All games and tutorial videos
 
 All twelve games support up to four player seats, including **BOT 40** and **BOT 50**. Games that require opponents need at least two participants; a bot can fill a seat. Supported match games also offer temporary teams with up to five members each.

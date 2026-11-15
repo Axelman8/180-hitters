@@ -19,7 +19,7 @@ with tempfile.TemporaryDirectory() as tmp:
                 page.route('**/lobby',lambda route:route.fulfill(json={'rooms':[]},headers={'Access-Control-Allow-Origin':'*'}))
                 page.goto('http://127.0.0.1:8788/?android=1')
                 expect(page.locator('#header-menu')).to_be_visible()
-                expect(page.locator('#navigation-categories button strong')).to_have_text(['Spelen','Online darten','Spelers & teams','NUC & verbinding','App-instellingen'])
+                expect(page.locator('#navigation-categories button:visible strong')).to_have_text(['Spelen','Online darten','Spelers & teams','NUC & verbinding','App-instellingen'])
                 assert page.locator('#header-menu details').count()==0
                 assert page.locator('.navigation-action').evaluate_all('(cards)=>cards.every(card=>card.querySelector("button,a,#camera-game-controls"))')
                 # Every screen stays inside the menu; scrolling never affects its close controls.
