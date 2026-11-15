@@ -1,4 +1,5 @@
 import {applyTurn,makeDart,previewTurn,previewCricket,previewGotcha,previewBobs27} from './engine.js';
+import {sonnyGameIds,sonnyAutoCommit} from './sonny-games.js';
 
 // Pure adapter: camera events use precisely the same rules as manual darts.
 export function applyCameraEvent(match,draft,event){
@@ -20,13 +21,22 @@ export function applyCameraEvent(match,draft,event){
   turn={trainingHit:hit.number===p.livesTarget&&hit.mult===(p.livesTarget===25?2:state.livesMode==='triple'?3:2)};
  }else if(state.game==='fourinarow'){
   if(hits.some(item=>item.needsBullCorner))throw Error('Kies eerst op telefoon of tablet welk sB-hoekvak is geraakt.');
-  const hit=makeDart(event.hit.number,event.hit.mult);let cell=null,needsBullCorner=false;
-  if(hit.number===25&&hit.mult===1)needsBullCorner=true;
+  let cell=null,needsBullCorner=false;
+  if(hit.number===25&&hit.mult===1){
+   const corners=state.fourBoard.map((id,index)=>id.startsWith('sb')?index:-1).filter(index=>index>=0);
+   const free=corners.filter(index=>state.fourOwners[index]===null&&!hits.some(dart=>dart.cell===index));
+   // An unclaimed corner needs the player's choice. If all corners have
+   // already been claimed, a bull still counts as a dart without a new claim.
+   if(free.length)needsBullCorner=true;else cell=corners[0];
+  }
   else if(hit.number===25&&hit.mult===2)cell=state.fourBoard.indexOf('bb');
-  else cell=state.fourBoard.indexOf('n'+hit.number);
+  else if(hit.number!==0)cell=state.fourBoard.indexOf('n'+hit.number);
   if(cell<0&&!needsBullCorner)throw Error('Deze cameraworp hoort niet bij een vak op het speelveld.');
   hits.push({...hit,cell,needsBullCorner,label:needsBullCorner?'Kies sB-hoek':hit.label});
   if(!needsBullCorner){let ended=false;try{ended=applyTurn(state,{hits}).phase!=='playing';}catch{}if(hits.length===3||ended){turn={hits};closed=true;}}
+ }else if(sonnyGameIds.includes(state.game)){
+  hits.push(hit);
+  if(sonnyAutoCommit(state,hits)){turn={hits};closed=true;}
  }else{
   hits.push(hit);
   const preview=state.game==='gotcha'?previewGotcha(state,hits):state.game==='bobs27'?previewBobs27(state,hits):['tactics','cricket'].includes(state.game)?previewCricket(state,hits):previewTurn(state,hits);
