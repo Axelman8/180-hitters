@@ -1,5 +1,6 @@
 import './mouse-control.js';
 import './mobile-diagnostics.js';
+import './matches.js';
 
 const $=id=>document.getElementById(id),actions=$('top-actions'),android=window.DartsAndroid;
 const localNuc=['127.0.0.1','localhost','::1'].includes(location.hostname)&&!android;
@@ -32,6 +33,7 @@ const routes={
  'edit-match':['play','current','Pas de instellingen van de lopende partij aan.'],
  'screen-input-shortcut':['play','current','Toon de scoreknoppen op het speelscherm.'],
  'match-backups':['play','saved','Open een bewaarde partij of bekijk het rapport.'],
+ 'matches-open':['play','saved','Alle bewaarde spellen, nieuwste bovenaan. Hervat een partij of bekijk het rapport.'],
  'players-list':['players','roster','Beheer de spelers op dit apparaat en de clubspelers op de NUC.'],
  'team-manager':['players','teams','Verander de volgorde, voeg een invaller toe of vervang een speler.'],
  'online-host-open':['online','lanes','Maak een nieuwe dartbaan of open je actieve dartbaan.'],
@@ -95,6 +97,10 @@ menu.addEventListener('close',()=>menuToggle.setAttribute('aria-expanded','false
 menu.addEventListener('click',event=>{if(event.target.closest('.navigation-action-list button,.navigation-action-list a'))closeMenu();},true);
 menu.addEventListener('click',event=>{if(event.target===menu)closeMenu();});
 document.addEventListener('open-play-menu',()=>openMenu('play'));
+document.addEventListener('open-main-menu',()=>openMenu());
+document.addEventListener('close-navigation',closeMenu);
+// A fresh app/WebView starts at the menu, with the active match kept behind it.
+queueMicrotask(()=>openMenu());
 
 function visible(node){return !!node&&!node.hidden&&getComputedStyle(node).display!=='none';}
 function refreshSections(){

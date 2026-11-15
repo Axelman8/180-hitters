@@ -1,3 +1,14 @@
 .archive-match-row{display:grid;gap:8px;margin-bottom:12px;padding:12px;border:1px solid #2d4652;border-radius:12px;background:#14242d}
 .archive-match-row strong{line-height:1.35}
 #archive-report-dialog{width:min(960px,calc(100% - 20px));max-height:94vh;overflow:auto}
+#matches-dialog,#matches-report-dialog{width:min(820px,calc(100vw - 24px));max-width:none;max-height:90dvh;overflow:auto}
+#matches-search{margin-bottom:10px}
+#matches-status{color:#ffc38c}
+.saved-game{padding:18px;border:1px solid var(--line);border-radius:14px;background:#142129;margin:12px 0}
+.saved-game h3{margin:0 0 8px;color:var(--accent);font-size:20px}
+.saved-game>strong{display:block;overflow-wrap:anywhere}
+.saved-game>p{margin:8px 0;font-size:13px}
+.saved-game-status{display:block;font-size:13px;color:#83d9ef;line-height:1.5}
+.saved-game-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.saved-game-actions button{flex:1;min-height:48px}
+#matches-close{position:sticky;bottom:0;background:#20313b;margin-top:12px}

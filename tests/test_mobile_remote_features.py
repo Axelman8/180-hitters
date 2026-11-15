@@ -46,7 +46,6 @@ with tempfile.TemporaryDirectory() as tmp:
             mode_box = page.locator('#mode-status').bounding_box()
             menu_box = page.locator('#toggle-toolbar').bounding_box()
             assert mode_box['x'] < menu_box['x'] and abs(mode_box['y'] - menu_box['y']) < 2
-            page.locator('#toggle-toolbar').click()
             page.locator('#navigation-categories [data-menu="nuc"]').click()
             expect(page.locator('#camera-game-on')).to_be_visible()
             expect(page.locator('#camera-game-off')).to_be_visible()
@@ -60,7 +59,7 @@ with tempfile.TemporaryDirectory() as tmp:
                 '#edit-match': 'play',                                # 5
                 '#team-manager': 'players',                           # 6
                 '#players-list': 'players',                           # 6
-                '#match-backups': 'play',                             # 7
+                '#matches-open': 'play',                              # 7
                 '#android-update-action': 'app',                      # 8
                 '#kiosk-mode-toggle': 'nuc',                          # 3
                 '#venue-open': 'nuc',

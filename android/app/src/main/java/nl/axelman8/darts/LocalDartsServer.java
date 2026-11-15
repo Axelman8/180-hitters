@@ -29,6 +29,7 @@ final class LocalDartsServer extends NanoHTTPD {
     private final File displayFile;
     private final File venueFile;
     private final File onlineFile;
+    private final GameLibrary library;
     private JSONObject state;
     private JSONArray players;
     private JSONObject display;
@@ -49,6 +50,15 @@ final class LocalDartsServer extends NanoHTTPD {
         venueFile = new File(context.getFilesDir(), "local-venue.json");
         onlineFile = new File(context.getFilesDir(), "local-online.json");
         state = readObject(stateFile, new JSONObject().put("revision", 0).put("match", JSONObject.NULL));
+        library = new GameLibrary(new File(context.getFilesDir(), "local-games"));
+        try {
+            JSONObject match=state.optJSONObject("match");
+            if(match!=null){
+                JSONObject saved=null;try{saved=library.get(GameLibrary.identity(match));}catch(Exception ignored){}
+                if(saved!=null&&saved.getJSONObject("match").toString().equals(match.toString())&&saved.optJSONObject("draft")!=null){draft=saved.getJSONObject("draft").put("revision",state.getInt("revision"));draftTime=System.currentTimeMillis();}
+                else library.record(match,null);
+            }
+        }catch(Exception error){Log.w("180HittersGames","Partijenlijst laden mislukt",error);}
         players = readArray(playersFile, new JSONArray());
         display = readObject(displayFile, new JSONObject().put("inputCollapsed", false));
         venue = readObject(venueFile, defaultVenue());
@@ -61,6 +71,7 @@ final class LocalDartsServer extends NanoHTTPD {
 
     synchronized void importSnapshot(String snapshot) throws JSONException, IOException {
         JSONObject match = new JSONObject(snapshot);
+        try{library.record(state.optJSONObject("match"),draft);library.record(match,null);}catch(Exception e){throw new IOException("Partij bewaren mislukt",e);}
         JSONObject updated = new JSONObject().put("revision", state.optInt("revision", 0) + 1).put("match", match);
         writeAtomic(stateFile, updated.toString());
         state = updated;
@@ -113,7 +124,13 @@ final class LocalDartsServer extends NanoHTTPD {
     }
 
     private Response get(String path, String knownRevision) throws Exception {
+        if(path.startsWith("/api/matches/")){
+            try{return json(Response.Status.OK,library.get(path.substring("/api/matches/".length())));}
+            catch(java.nio.file.NoSuchFileException error){return json(Response.Status.NOT_FOUND,new JSONObject().put("error","Partij niet gevonden."));}
+            catch(IllegalArgumentException error){return json(Response.Status.BAD_REQUEST,new JSONObject().put("error",error.getMessage()));}
+        }
         switch (path) {
+            case "/api/matches": return json(Response.Status.OK,new JSONObject().put("matches",library.items(state.optJSONObject("match"))));
             case "/api/state": {
                 JSONObject result = String.valueOf(state.getInt("revision")).equals(knownRevision)
                         ? new JSONObject().put("revision", state.getInt("revision")) : new JSONObject(state.toString());
@@ -145,15 +162,34 @@ final class LocalDartsServer extends NanoHTTPD {
                 JSONObject match = incoming.getJSONObject("match");
                 JSONObject matchState = match.optJSONObject("state");
                 if (matchState == null || matchState.optInt("version") != 2) return json(Response.Status.BAD_REQUEST, new JSONObject().put("error", "Ongeldige partij"));
+                if(!String.valueOf(GameLibrary.identity(state.optJSONObject("match"))).equals(GameLibrary.identity(match)))library.record(state.optJSONObject("match"),draft);
+                library.record(match,null);
                 JSONObject updated = new JSONObject().put("revision", state.getInt("revision") + 1).put("match", match);
                 writeAtomic(stateFile, updated.toString()); state = updated; draft = null; draftSequences.clear();
                 return json(Response.Status.OK, state);
             }
             case "/api/match/discard": {
+                library.record(state.optJSONObject("match"),draft);
                 JSONObject updated = new JSONObject().put("revision", state.getInt("revision") + 1).put("match", JSONObject.NULL);
                 writeAtomic(stateFile, updated.toString()); state = updated; draft = null; draftSequences.clear();
                 setup.put("version", setup.optInt("version") + 1).put("value", JSONObject.NULL);
                 return json(Response.Status.OK, state);
+            }
+            case "/api/matches/resume": {
+                if(incoming.optInt("revision",-1)!=state.getInt("revision"))return json(Response.Status.CONFLICT,new JSONObject().put("error","De partij is gewijzigd. Open de lijst opnieuw."));
+                JSONObject saved;
+                try{saved=library.get(incoming.optString("id"));}catch(Exception e){return json(Response.Status.NOT_FOUND,new JSONObject().put("error","Partij niet gevonden."));}
+                JSONObject match=saved.getJSONObject("match");
+                if("won".equals(match.getJSONObject("state").optString("phase")))return json(Response.Status.BAD_REQUEST,new JSONObject().put("error","Deze partij is afgerond. Je kunt het rapport bekijken."));
+                boolean same=incoming.optString("id").equals(GameLibrary.identity(state.optJSONObject("match")));
+                if(online.optBoolean("active")&&!same)return json(Response.Status.CONFLICT,new JSONObject().put("error","Verlaat eerst de online dartbaan om een andere partij te openen."));
+                if(same)return json(Response.Status.OK,new JSONObject(state.toString()).put("draft",draft==null?JSONObject.NULL:draft));
+                library.record(state.optJSONObject("match"),draft);
+                JSONObject updated=new JSONObject().put("revision",state.getInt("revision")+1).put("match",match);
+                JSONObject pending=saved.optJSONObject("draft");if(pending!=null)pending.put("revision",updated.getInt("revision"));
+                library.record(match,pending);writeAtomic(stateFile,updated.toString());state=updated;draft=pending;draftTime=System.currentTimeMillis();draftSequences.clear();
+                setup.put("version",setup.optInt("version")+1).put("value",JSONObject.NULL);
+                return json(Response.Status.OK,new JSONObject(state.toString()).put("draft",draft==null?JSONObject.NULL:draft));
             }
             case "/api/draft": {
                 if (incoming.getInt("revision") != state.getInt("revision")) return json(Response.Status.CONFLICT, state);
@@ -165,6 +201,7 @@ final class LocalDartsServer extends NanoHTTPD {
                         .put("hits", incoming.optJSONArray("hits") == null ? new JSONArray() : incoming.getJSONArray("hits"))
                         .put("entry", incoming.optString("entry")).put("revision", state.getInt("revision"));
                 draftTime = System.currentTimeMillis();
+                library.record(state.optJSONObject("match"),draft);
                 return json(Response.Status.OK, new JSONObject().put("ok", true));
             }
             case "/api/players": {

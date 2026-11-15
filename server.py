@@ -15,11 +15,60 @@ import subprocess
 import sys
 import time
 import uuid
+import hashlib
 
 BACKUP_COUNT = 30
 BACKUP_BYTES = 100 * 1024 * 1024
 STORAGE_RESERVE = 50 * 1024 * 1024
 CURRENT_SCREEN_ORIENTATION = None
+
+
+class MatchLibrary:
+    """One durable snapshot per game; independent of rotating recovery backups."""
+    def __init__(self, directory):
+        self.directory = Path(directory)
+
+    @staticmethod
+    def identity(match):
+        state = (match or {}).get('state') or {}
+        if not state.get('players'): return None
+        source = str(state.get('game', 'x01')) + ':' + str(state.get('startedAt') or json.dumps([p.get('name') for p in state['players']]))
+        return hashlib.sha256(source.encode('utf-8')).hexdigest()[:32]
+
+    def get(self, game_id):
+        if not isinstance(game_id, str) or not re.fullmatch('[a-f0-9]{32}', game_id):
+            raise ValueError('Ongeldige partij.')
+        return json.loads((self.directory / (game_id + '.json')).read_text(encoding='utf-8'))
+
+    def record(self, match, draft=None, timestamp=None):
+        game_id = self.identity(match)
+        if not game_id or match.get('historyNavigation'): return game_id
+        try: previous = self.get(game_id)
+        except (OSError, ValueError): previous = None
+        if previous and timestamp is not None and previous['time'] > timestamp: return game_id
+        if previous and previous['match'] == match and previous.get('draft') == draft: return game_id
+        self.directory.mkdir(parents=True, exist_ok=True)
+        value = {'id': game_id, 'time': timestamp if timestamp is not None else time.time(), 'match': match, 'draft': draft}
+        target = self.directory / (game_id + '.json')
+        temporary = target.with_suffix('.tmp')
+        with temporary.open('w', encoding='utf-8') as handle:
+            json.dump(value, handle, ensure_ascii=False, allow_nan=False)
+            handle.flush(); os.fsync(handle.fileno())
+        temporary.replace(target)
+        return game_id
+
+    def items(self, current=None):
+        result = []
+        for file in self.directory.glob('*.json'):
+            try:
+                saved = self.get(file.stem); state = saved['match']['state']
+                result.append({'id': file.stem, 'time': saved['time'], 'game': state['game'],
+                               'training121': state.get('training121', False), 'startedAt': state.get('startedAt'),
+                               'players': [p['name'] for p in state['players']], 'phase': state['phase'],
+                               'winner': state.get('winner'), 'turns': len(state.get('history', [])),
+                               'current': file.stem == self.identity(current)})
+            except (OSError, ValueError, KeyError, TypeError): continue
+        return sorted(result, key=lambda item: item['time'], reverse=True)
 
 
 def prune_backups(directory, max_count=BACKUP_COUNT, max_bytes=BACKUP_BYTES):
@@ -370,6 +419,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     online_local = {'active':False,'ready':False,'role':None,'code':'','base':'','key':'','remoteRevision':0}
     storage = {'checked': 0, 'free': STORAGE_RESERVE * 2}
     backups = path.with_name(path.stem + '-backups')
+    library = MatchLibrary(path.with_name(path.stem + '-games'))
     try: prune_backups(backups)
     except OSError: pass  # Cleanup failure must not prevent playing.
 
@@ -450,6 +500,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     def archive_match(match, pending=None):
         """Store one complete match before it is replaced; caller holds lock."""
         if not match: return None
+        library.record(match, pending)
         backups.mkdir(parents=True, exist_ok=True)
         backup_id = uuid.uuid4().hex
         durable_json(backups / (backup_id + '.json'), {
@@ -489,6 +540,20 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
         restored = (current.get('match') or {}).get('editTurn') or {}
         if restored.get('hits'):
             draft.update(value={'owner': 'restored-turn', 'hits': restored['hits'], 'revision': current['revision']}, time=time.monotonic())
+
+    # Import earlier recovery copies without replacing a newer library entry.
+    for file in backups.glob('*.json'):
+        try:
+            saved = json.loads(file.read_text(encoding='utf-8'))
+            library.record(saved['match'], saved.get('draft'), saved['time'])
+        except (OSError, ValueError, KeyError, TypeError): pass
+    if current.get('match'):
+        try:
+            saved = library.get(library.identity(current['match']))
+            if saved['match'] == current['match'] and saved.get('draft'):
+                draft.update(value={**saved['draft'], 'revision': current['revision']}, time=time.monotonic())
+            else: library.record(current['match'], draft['value'])
+        except (OSError, ValueError, TypeError): library.record(current['match'], draft['value'])
 
     camera = AutoDartsBridge(lock, path.with_name('camera-observations'),
                             os.environ.get('DARTS_AUTODARTS_URL', 'http://127.0.0.1:3180'))
@@ -633,6 +698,14 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             elif route == '/api/setup':
                 with lock:
                     self.reply(200, {**shared_setup, 'revision': current['revision']})
+            elif route == '/api/matches':
+                with lock:
+                    self.reply(200, {'matches': library.items(current.get('match'))})
+            elif route.startswith('/api/matches/'):
+                with lock:
+                    try: self.reply(200, library.get(route.rsplit('/', 1)[-1]))
+                    except FileNotFoundError: self.reply(404, {'error': 'Partij niet gevonden.'})
+                    except (OSError, ValueError): self.reply(400, {'error': 'Deze partij kan niet worden geopend.'})
             elif route == '/api/match-backups':
                 with lock:
                     items = []
@@ -723,7 +796,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
+            if self.path not in ('/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/matches/resume', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -755,12 +828,37 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if self.path == '/api/match/discard':
                     with lock:
                         if not self.may_edit(incoming): return
+                        library.record(current.get('match'), draft['value'])
                         updated = {**current, 'revision': current['revision'] + 1, 'match': None, 'cameraDraft': {}}
                         durable_json(path, updated); current.update(updated)
                         draft.update(value=None, time=time.monotonic()); sequences.clear()
                         shared_setup.update(version=shared_setup['version']+1, value=None)
                         follow_camera()
                         return self.reply(200, current)
+                if self.path == '/api/matches/resume':
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        if incoming.get('revision') != current['revision']:
+                            return self.reply(409, {'error': 'De partij is gewijzigd. Open de lijst opnieuw.'})
+                        try: source = library.get(incoming.get('id'))
+                        except FileNotFoundError: return self.reply(404, {'error': 'Partij niet gevonden.'})
+                        match, pending = transfer_match(source)
+                        if match['state'].get('phase') == 'won':
+                            return self.reply(400, {'error': 'Deze partij is afgerond. Je kunt het rapport bekijken.'})
+                        same_game = library.identity(current.get('match')) == incoming.get('id')
+                        if online_local['active'] and not same_game:
+                            return self.reply(409, {'error': 'Verlaat eerst de online dartbaan om een andere partij te openen.'})
+                        if same_game:
+                            return self.reply(200, {**current, 'draft': draft['value']})
+                        library.record(current.get('match'), draft['value'])
+                        updated = {**current, 'revision': current['revision'] + 1, 'match': match, 'cameraDraft': {}}
+                        pending = {**pending, 'revision': updated['revision']} if pending else None
+                        library.record(match, pending)
+                        durable_json(path, updated); current.update(updated)
+                        draft.update(value=pending, time=time.monotonic()); sequences.clear()
+                        shared_setup.update(version=shared_setup['version'] + 1, value=None)
+                        follow_camera()
+                        return self.reply(200, {**current, 'draft': pending})
                 if self.path == '/api/autoscoring/reset':
                     with lock:
                         if not self.may_edit(incoming): return
@@ -817,6 +915,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         # response can never apply the same physical dart twice.
                         durable_json(path, updated)
                         current.update(updated)
+                        library.record(current.get('match'), pending_draft or None)
                         draft['value'] = pending_draft or None
                         draft['time'] = time.monotonic()
                         sequences.clear()
@@ -856,6 +955,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         durable_json(path, updated)
                         current.update(updated)
                         draft.update(value={**pending,'revision':current['revision']} if pending else None,time=time.monotonic())
+                        library.record(current.get('match'), draft['value'])
                         sequences.clear()
                         shared_setup.update(version=shared_setup['version']+1, value=None)
                         follow_camera()
@@ -1078,6 +1178,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             current['cameraDraft'] = {}
                             durable_json(path, current)
                         draft['time'] = time.monotonic()
+                        library.record(current.get('match'), draft['value'])
                         return self.reply(200, {'ok': True})
                 match = incoming['match']
                 if not isinstance(match, dict) or not isinstance(match.get('undo'), list):
@@ -1117,6 +1218,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     temporary.write_text(encoded, encoding='utf-8')
                     temporary.replace(path)
                     current.update(updated)
+                    library.record(match)
                     shared_setup.update(version=shared_setup['version']+1, value=None)
                     restored = match.get('editTurn') or {}
                     hits = restored.get('hits')

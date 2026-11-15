@@ -74,7 +74,6 @@ let transferButton=null;
 if(local&&android?.prepareNucTransfer){
  transferButton=button('transfer-to-nuc','Partij overzetten naar NUC',()=>document.dispatchEvent(new Event('prepare-phone-transfer')));
 }else if(!local){
- button('match-backups','Opgeslagen NUC-partijen',listBackups);
  if(pending()){
   transferButton=button('transfer-to-nuc','Partij van telefoon overzetten',previewTransfer);
   const timer=setInterval(()=>{if(canControl()&&!pendingShown){pendingShown=true;clearInterval(timer);void previewTransfer();}},750);
