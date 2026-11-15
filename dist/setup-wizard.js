@@ -68,7 +68,6 @@ function options(id,title){
  }
  group.append(tiles);return group;
 }
-function activeNameInputs(){return isTeams()?memberInputs():names();}
 function applyFourSymbols(){if(selected!=='fourinarow')return;names().forEach((input,index)=>input.dataset.fourSymbol=fourSymbolChoices[index]);}
 function syncFourSymbolsFromInputs(){
  if(selected!=='fourinarow')return;
@@ -87,38 +86,69 @@ function renderFourSymbols(content){
  names().forEach((input,index)=>{const row=el('div',undefined,'wizard-symbol-player');row.append(el('strong',input.value||`Speler ${index+1}`));const choices=el('div',undefined,'wizard-symbol-choices');for(const symbol of fourSymbols){const choice=button(symbol,()=>selectFourSymbol(index,symbol));choice.setAttribute('aria-label',`${input.value||`Speler ${index+1}`}: ${symbol}`);choice.setAttribute('aria-pressed',String(fourSymbolChoices[index]===symbol));choices.append(choice);}row.append(choices);section.append(row);});
  content.append(section);applyFourSymbols();
 }
-function assign(name){
- const inputs=activeNameInputs(),index=isTeams()?memberSlot:slot,input=inputs[index];if(!input)return;
- input.dataset.botLevel='0';input.value=name;input.dispatchEvent(new Event('input',{bubbles:true}));
- if(isTeams())memberSlot=Math.min(memberSlot+1,inputs.length-1);else slot=Math.min(slot+1,inputs.length-1);
- render();
+function refreshNameLabels(){
+ root.querySelectorAll('.wizard-player-card').forEach((card,index)=>{card.querySelector('strong').textContent=names()[index]?.value||`Speler ${index+1}`;});
+ root.querySelectorAll('.wizard-team').forEach((team,index)=>team.querySelectorAll('.wizard-team-slots strong').forEach((name,i)=>{name.textContent=memberInputs(index)[i]?.value||'Kies naam';}));
+ root.querySelectorAll('.wizard-symbol-player').forEach((row,index)=>{
+  const name=names()[index]?.value||`Speler ${index+1}`;row.querySelector('strong').textContent=name;
+  row.querySelectorAll('button').forEach((choice,i)=>choice.setAttribute('aria-label',`${name}: ${fourSymbols[i]}`));
+ });
+ root.querySelectorAll('.wizard-option[data-field="starter"] button').forEach((choice,i)=>{choice.textContent=$('starter').options[i]?.textContent||'';});
+ const summary=root.querySelector('.wizard-summary');
+ if(summary)summary.lastElementChild.textContent=isTeams()?teamDraft().map(team=>`${team.name}: ${team.members.filter(Boolean).join(', ')}`).join(' | '):names().map(input=>input.value).join(' → ');
 }
-function rosterGroups(content){
- const current=activeNameInputs(),selectedIndex=isTeams()?memberSlot:slot;
- for(const [title,list,source] of [[venueLabel(),venueRoster,'venue'],['Mijn spelers',mobileRoster,'mobile']]){
-  const group=el('section',undefined,'wizard-roster-group');group.dataset.source=source;group.append(el('h3',title));
-  const rosterTiles=el('div',undefined,'wizard-roster');
-  for(const name of list){const b=button(name,()=>assign(name));b.disabled=allMembers().concat(isTeams()?[]:names()).some(input=>input!==current[selectedIndex]&&input.value===name);rosterTiles.append(b);}
-  if(!list.length)rosterTiles.append(el('p',source==='venue'?`Geen spelers in ${venueLabel()} beschikbaar.`:'Nog geen persoonlijke spelers.','wizard-roster-empty'));
-  group.append(rosterTiles);content.append(group);
+function updateRosterPickers(){
+ for(const select of root.querySelectorAll('.wizard-roster-select')){
+  const source=select.nameSource,placeholder=el('option',venueRoster.length||mobileRoster.length?'Kies uit spelerslijst':'Geen opgeslagen spelers — typ een naam');placeholder.value='';
+  const groups=[];
+  for(const [title,list] of [[venueLabel(),venueRoster],['Mijn spelers',mobileRoster]]){
+   if(!list.length)continue;
+   const group=el('optgroup');group.label=title;
+   for(const name of list){const option=el('option',name);option.value=name;option.disabled=allMembers().concat(isTeams()?[]:names()).some(input=>input!==source&&input.value===name);group.append(option);}
+   groups.push(group);
+  }
+  select.replaceChildren(placeholder,...groups);select.value=[...venueRoster,...mobileRoster].includes(source.value)?source.value:'';select.disabled=!groups.length;
  }
 }
+function namePicker(source,title,pickerTitle){
+ const section=el('section',undefined,'wizard-name-picker');
+ const label=el('label',title,'wizard-custom'),input=el('input');input.value=source?.value||'';input.maxLength=24;input.autocomplete='off';input.placeholder='Typ een naam';input.spellcheck=false;input.enterKeyHint='done';
+ const apply=value=>{
+  if(!source)return;source.value=value;source.dispatchEvent(new Event('input',{bubbles:true}));
+  if(input.value!==value)input.value=value;refreshNameLabels();updateRosterPickers();queueSetup();
+ };
+ input.oninput=()=>apply(input.value);
+ input.onfocus=()=>{if(/^Speler [1-4]$/.test(input.value))input.select();};
+ label.append(input);section.append(label);
+ const rosterLabel=el('label',pickerTitle,'wizard-roster-label'),select=el('select',undefined,'wizard-roster-select');select.nameSource=source;
+ select.onchange=()=>{if(select.value)apply(select.value);};rosterLabel.append(select);section.append(rosterLabel);
+ return section;
+}
+function setBotLevel(index,level){
+ const field=names()[index],old=Number(field.dataset.botLevel)||0;field.dataset.botLevel=String(level);
+ if(level){if(!old)field.dataset.humanName=field.value;field.value=`BOT ${level} #${index+1}`;}
+ else if(old)field.value=field.dataset.humanName||`Speler ${index+1}`;
+ field.dispatchEvent(new Event('input',{bubbles:true}));render();
+}
 function renderIndividuals(content){
- syncFourSymbolsFromInputs();
- slot=Math.min(slot,names().length-1);
- content.append(el('p','Kies een plek en tik daarna op een naam uit de spelerslijst.','wizard-hint'));
- const slots=el('div',undefined,'wizard-slots');
- names().forEach((input,i)=>{const b=button('',()=>{slot=i;render();});b.setAttribute('aria-pressed',String(i===slot));b.append(el('small',`Speler ${i+1}`),el('strong',input.value));if(selected==='fourinarow')b.append(el('span',fourSymbolChoices[i],'wizard-slot-symbol'));slots.append(b);});content.append(slots);
+ syncFourSymbolsFromInputs();slot=Math.min(slot,names().length-1);
+ content.append(el('p','Vul bij iedere speler een naam in of kies iemand uit de spelerslijst.','wizard-hint'));
+ const slots=el('div',undefined,'wizard-slots wizard-player-cards');
+ names().forEach((input,index)=>{
+  const card=el('section',undefined,'wizard-player-card');card.dataset.player=String(index);
+  const choose=button('',()=>{slot=index;render();},'wizard-player-select');choose.setAttribute('aria-pressed',String(index===slot));choose.append(el('small',`Speler ${index+1}`),el('strong',input.value));
+  if(selected==='fourinarow')choose.append(el('span',fourSymbolChoices[index],'wizard-slot-symbol'));card.append(choose);
+  if(Number(input.dataset.botLevel)){
+   card.append(el('p','Dit is een BOT. Kies hieronder voor een menselijke speler om zelf een naam in te voeren.','wizard-hint'),button('Menselijke speler',()=>setBotLevel(index,0),'wizard-human-switch'));
+  }else card.append(namePicker(input,`Naam speler ${index+1}`,`Kies speler ${index+1} uit spelerslijst`));
+  slots.append(card);
+ });content.append(slots);
  const type=el('fieldset',undefined,'wizard-option wizard-bot-choice');type.append(el('legend',`Speler ${slot+1}: mens of BOT`));
  const types=el('div',undefined,'wizard-options');
- for(const [level,label] of [[0,'Speler'],[40,'BOT 40'],[50,'BOT 50']]){const choice=button(label,()=>{const field=names()[slot];const old=Number(field.dataset.botLevel)||0;field.dataset.botLevel=String(level);if(level){if(!old)field.dataset.humanName=field.value;field.value=`BOT ${level} #${slot+1}`;}else if(old)field.value=field.dataset.humanName||`Speler ${slot+1}`;field.dispatchEvent(new Event('input',{bubbles:true}));render();});choice.setAttribute('aria-pressed',String((Number(names()[slot]?.dataset.botLevel)||0)===level));types.append(choice);}
- type.append(types,el('p','40 en 50 zijn basisgemiddelden per drie darts bij 501, dubbel-uit. Na negen menselijke darts volgt de BOT de helft van het hogere gemiddelde, tot niveau 100. Cricket/Tactics gebruiken marks als maatstaf. Bij andere trainingen blijft het basisniveau gelden. Een BOT neemt één spelersplek in, ook met vier spelers.','wizard-hint'));content.append(type);
+ for(const [level,label] of [[0,'Speler'],[40,'BOT 40'],[50,'BOT 50']]){const choice=button(label,()=>setBotLevel(slot,level));choice.setAttribute('aria-pressed',String((Number(names()[slot]?.dataset.botLevel)||0)===level));types.append(choice);}
+ type.append(types);
+ const explanation=el('details',undefined,'wizard-bot-explanation');explanation.append(el('summary','Uitleg BOT-niveaus'),el('p','40 en 50 zijn basisgemiddelden per drie darts bij 501, dubbel-uit. Na negen menselijke darts volgt de BOT de helft van het hogere gemiddelde, tot niveau 100. Cricket/Tactics gebruiken marks als maatstaf. Bij andere trainingen blijft het basisniveau gelden. Een BOT neemt één spelersplek in, ook met vier spelers.','wizard-hint'));type.append(explanation);content.append(type);
  if(selected==='fourinarow')renderFourSymbols(content);
- if(Number(names()[slot]?.dataset.botLevel))return;
- rosterGroups(content);
- const label=el('label',`Naam speler ${slot+1}`,'wizard-custom'),input=el('input');input.value=names()[slot]?.value||'';input.maxLength=24;input.autocomplete='off';
- input.oninput=()=>{const field=names()[slot];field.value=input.value;field.dispatchEvent(new Event('input',{bubbles:true}));slots.children[slot].querySelector('strong').textContent=input.value;queueSetup();};
- input.onchange=()=>render();label.append(input);content.append(label);
 }
 function renderTeams(content){
  const editors=teamEditors();teamSlot=Math.min(teamSlot,editors.length-1);memberSlot=Math.min(memberSlot,memberInputs().length-1);
@@ -133,9 +163,9 @@ function renderTeams(content){
   const add=button('Naam toevoegen',()=>{team.querySelector('.team-member-add').click();teamSlot=index;memberSlot=memberInputs(index).length-1;render();});add.disabled=memberInputs(index).length>=5;actions.append(add);
   const remove=button('Geselecteerde naam weghalen',()=>{if(index!==teamSlot)return;const rows=team.querySelectorAll('.team-member-row');rows[memberSlot]?.querySelector('.team-member-remove').click();memberSlot=Math.min(memberSlot,memberInputs(index).length-1);render();});remove.disabled=index!==teamSlot||memberInputs(index).length<=1;actions.append(remove);panel.append(actions);content.append(panel);
  });
- rosterGroups(content);
- const active=memberInputs()[memberSlot],label=el('label',`Naam ${memberSlot+1} van ${names()[teamSlot]?.value||`Team ${teamSlot+1}`}`,'wizard-custom'),input=el('input');input.value=active?.value||'';input.maxLength=24;input.autocomplete='off';
- input.oninput=()=>{if(!active)return;active.value=input.value;active.dispatchEvent(new Event('input',{bubbles:true}));queueSetup();};input.onchange=()=>render();label.append(input);content.append(label);
+ const active=memberInputs()[memberSlot];
+ content.append(namePicker(active,`Naam ${memberSlot+1} van ${names()[teamSlot]?.value||`Team ${teamSlot+1}`}`,'Kies een naam uit spelerslijst'));
+
 }
 function render(){
  root.replaceChildren();
@@ -173,12 +203,18 @@ function render(){
  }
  const actions=el('div',undefined,'wizard-actions');
  if(step)actions.append(button(step===2?(document.body.classList.contains('editing-current-match')?'Wijzigingen toepassen →':'Start partij →'):'Kies spelers →',()=>{if(step===1){move(2);return;}const required=isTeams()?allMembers().concat(names()):names();if(required.some(input=>!input.value.trim())){root.querySelector('.wizard-custom input')?.focus();return;}applyFourSymbols();remember();$('setup-form').requestSubmit();},'primary wizard-next'));
- root.append(actions);queueSetup();
+ root.append(actions);updateRosterPickers();queueSetup();
 }
-function applyRosters(data){const sort=list=>(list||[]).slice().sort((a,b)=>a.localeCompare(b,'nl',{sensitivity:'base'}));venueRoster=sort(data.venuePlayers??data.players??[]);mobileRoster=sort(data.mobilePlayers??[]);if(step===2)render();}
+function applyRosters(data){
+ const sort=list=>(list||[]).slice().sort((a,b)=>a.localeCompare(b,'nl',{sensitivity:'base'}));
+ venueRoster=sort(data.venuePlayers??data.players??[]);
+ let personal=data.mobilePlayers??[];
+ try{if(window.DartsAndroid?.getMobilePlayers)personal=JSON.parse(window.DartsAndroid.getMobilePlayers());}catch{}
+ mobileRoster=sort(personal);updateRosterPickers();
+}
 async function refreshRoster(){try{const response=await fetch('/api/players',{cache:'no-store'});if(response.ok)applyRosters(await response.json());}catch{}}
 document.addEventListener('players-lists-updated',event=>applyRosters(event.detail));
-document.addEventListener('venue-profile-ready',()=>{if(step===2)render();});
+document.addEventListener('venue-profile-ready',updateRosterPickers);
 new MutationObserver(()=>{if(applying)return;if(!$('setup').hidden){step=0;render();refreshRoster();}else{localSetupOwner=false;queueSetup();}}).observe($('setup'),{attributes:true,attributeFilter:['hidden']});
 document.addEventListener('tablet-edit-match-open',event=>{if(event.detail?.selected&&games.some(game=>game[0]===event.detail.selected))selected=event.detail.selected;step=0;render();refreshRoster();});
 try{const saved=JSON.parse(localStorage.getItem('darts.setup.preferences'));if(saved){for(const id of fields)if(saved.values?.[id]&&[...$(id).options].some(option=>option.value===saved.values[id]))change(id,saved.values[id]);if(Array.isArray(saved.fourSymbols)&&saved.fourSymbols.length===4&&saved.fourSymbols.every(symbol=>fourSymbols.includes(symbol))&&new Set(saved.fourSymbols).size===4)fourSymbolChoices=[...saved.fourSymbols];if(games.some(game=>game[0]===saved.selected))chooseGame(saved.selected);}}catch{}

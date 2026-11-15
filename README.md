@@ -22,6 +22,8 @@ Advanced packages: `180-Hitters-Linux-x64.tar.gz` and `180-Hitters-Windows-x64.z
 
 The app starts at its main menu while keeping the current match. The version is centered in the top bar. **TERUG** (Back) is at the top of app menus, dialogs and the match wizard, including long reports.
 
+Every human player has a name field and a player-list selector directly inside their player card, including when another player is a BOT. Choose a NUC club player or a player saved on the current phone/tablet, or type a name for the match. List synchronization preserves typing focus and the on-screen keyboard. This applies to all twelve games and the selected members of teams.
+
 | App menu | Contents |
 | --- | --- |
 | **Spelen** (Play) | Start or change a match, show screen input, browse saved games and resume unfinished matches. |

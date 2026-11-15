@@ -30,6 +30,17 @@ body #setup-wizard{display:block;padding:10px 8px 0}
 .wizard-roster-group{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0}.wizard-roster-group h3{margin:0;color:var(--accent);font-size:15px}.wizard-roster-group .wizard-roster{margin:10px 0 0}.wizard-roster-empty{color:var(--muted);margin:6px 0;font-size:13px}
 .wizard-custom{margin:16px 0 24px;color:#a9bdc7;font-size:14px}
 .wizard-custom input{font-size:18px}
+.wizard-player-card{min-width:0;padding:12px;border:1px solid var(--line);border-radius:14px;background:#142129}
+.wizard-player-card>.wizard-player-select{width:100%;min-height:68px}
+.wizard-player-card .wizard-name-picker{margin-top:12px}
+.wizard-player-card .wizard-custom{margin:0 0 12px}
+.wizard-name-picker input,.wizard-name-picker select{min-width:0;font-size:16px;min-height:48px;padding:10px;width:100%}
+.wizard-roster-label{font-size:13px;color:var(--muted)}
+.wizard-player-cards .wizard-name-picker label{gap:6px}
+.wizard-human-switch{width:100%;white-space:normal;font-size:14px}
+.wizard-bot-explanation{margin:12px 0;color:var(--muted);font-size:14px}
+.wizard-bot-explanation summary{cursor:pointer;min-height:32px;padding:6px 0}
+@media(max-width:420px){.wizard-player-cards{grid-template-columns:1fr}}
 .wizard-summary,.wizard-info{background:#1c332c;border:1px solid #3d5a47;border-radius:14px;padding:16px;line-height:1.5;margin:20px 0}
 .wizard-video-link{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;margin:-10px 0 18px;border:1px solid #6e8c4c;border-radius:12px;background:#293f31;color:var(--accent);font-weight:800;text-decoration:none}.wizard-video-link:hover,.wizard-video-link:focus-visible{background:#36533e;outline:3px solid var(--accent);outline-offset:3px}
 .game-video-dialog{width:min(94vw,920px);max-width:920px;padding:18px}.game-video-dialog video{display:block;width:100%;max-height:72dvh;margin:14px 0;background:#000;border:1px solid var(--line);border-radius:12px}.game-video-dialog h2{color:var(--accent)}
