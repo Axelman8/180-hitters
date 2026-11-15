@@ -23,6 +23,31 @@ STORAGE_RESERVE = 50 * 1024 * 1024
 CURRENT_SCREEN_ORIENTATION = None
 
 
+def camera_bull_corner_choice(state, previous, hits):
+    """Only resolving a detected single bull may retain later camera events."""
+    before = (previous or {}).get('hits') or []
+    if (state.get('game') != 'fourinarow' or state.get('phase') != 'playing'
+            or len(before) != len(hits)):
+        return False
+    choices = [i for i, (old, new) in enumerate(zip(before, hits))
+               if old.get('needsBullCorner') is True and not new.get('needsBullCorner')]
+    if len(choices) != 1:
+        return False
+    selected = choices[0]
+    for i, (old, new) in enumerate(zip(before, hits)):
+        if i != selected and (any(old.get(key) != new.get(key) for key in ('number', 'mult', 'cell'))
+                              or bool(old.get('needsBullCorner')) != bool(new.get('needsBullCorner'))):
+            return False
+    hit = hits[selected]
+    cell = hit.get('cell')
+    board, owners = state.get('fourBoard') or [], state.get('fourOwners') or []
+    return (before[selected].get('number') == 25 and before[selected].get('mult') == 1
+            and hit.get('number') == 25 and hit.get('mult') == 1 and not hit.get('needsBullCorner')
+            and type(cell) is int and 0 <= cell < len(board) and cell < len(owners)
+            and str(board[cell]).startswith('sb') and owners[cell] is None
+            and not any(i != selected and other.get('cell') == cell for i, other in enumerate(hits)))
+
+
 class MatchLibrary:
     """One durable snapshot per game; independent of rotating recovery backups."""
     def __init__(self, directory):
@@ -1249,24 +1274,42 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     with lock:
                         if not self.may_edit(incoming): return
                         if not self.bot_ticket_valid(incoming): return
-                        if incoming['revision'] != current['revision']:
-                            return self.reply(409, current)
                         state = (current['match'] or {}).get('state', {})
+                        choice = incoming.get('bullChoice')
+                        if choice is not None:
+                            previous = (draft['value'] or {}).get('hits') or []
+                            index = choice.get('index') if isinstance(choice, dict) else None
+                            if (not isinstance(choice, dict) or choice.get('startedAt') != state.get('startedAt')
+                                    or choice.get('turns') != state.get('turns') or choice.get('active') != state.get('active')
+                                    or type(index) is not int or not 0 <= index < len(previous)):
+                                return self.reply(409, {**current, 'draft': draft['value']})
+                            # Cameras may already have appended darts 2 and 3.
+                            # Resolve this one dart in the latest draft atomically.
+                            hits = [dict(hit) for hit in previous]
+                            hits[index] = {'number': 25, 'mult': 1, 'cell': choice.get('cell'), 'label': 'sB'}
+                            entry = ''
+                            if not camera_bull_corner_choice(state, draft['value'], hits):
+                                return self.reply(409, {**current, 'draft': draft['value']})
+                        elif incoming['revision'] != current['revision']:
+                            return self.reply(409, current)
                         if state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone') or state.get('phase') != 'playing':
                             return self.reply(409, current)
                         if seq <= sequences.get(owner, -1):
-                            return self.reply(200, {'ok': True})
+                            return self.reply(200, {**current, 'draft': draft['value']} if choice is not None else {'ok': True})
                         sequences[owner] = seq
                         if len(sequences) > 128:
                             sequences.pop(next(iter(sequences)))
+                        bull_choice = (not entry and camera.enabled and camera.expected_revision == current['revision']
+                                       and camera_bull_corner_choice(state, draft['value'], hits))
                         draft['value'] = {'owner': owner, 'hits': hits, 'entry': entry, 'revision': current['revision']}
-                        follow_camera(allow_draft=True)
+                        if not bull_choice:
+                            follow_camera(allow_draft=True)
                         if current.get('cameraDraft'):
-                            current['cameraDraft'] = {}
+                            current['cameraDraft'] = draft['value'] if bull_choice else {}
                             durable_json(path, current)
                         draft['time'] = time.monotonic()
                         library.record(current.get('match'), draft['value'])
-                        return self.reply(200, {'ok': True})
+                        return self.reply(200, {**current, 'draft': draft['value']} if choice is not None else {'ok': True})
                 match = incoming['match']
                 if not isinstance(match, dict) or not isinstance(match.get('undo'), list):
                     raise ValueError()

@@ -61,9 +61,11 @@ const el=(tag,text,cls)=>{const node=document.createElement(tag);if(text!==undef
 const playerSymbol=(state,index)=>fourSymbols.includes(state.players[index]?.fourSymbol)?state.players[index].fourSymbol:fourSymbols[index];
 export function renderFourInRow(root,state,pending,actions){
  root.replaceChildren();
- const needsBullCorner=pending.some(hit=>hit.needsBullCorner);
+ const bullChoiceIndex=pending.findIndex(hit=>hit.needsBullCorner),needsBullCorner=bullChoiceIndex>=0;
+ root.classList.toggle('four-bull-selecting',needsBullCorner);
  const legend=el('div',undefined,'four-legend');state.players.forEach((player,index)=>{const item=el('article',undefined,index===state.active?'active':'');item.style.setProperty('--player-color',`var(--four-p${index})`);item.append(el('b',playerSymbol(state,index),'four-symbol'),el('strong',player.name),player.bot?el('small','BOT · ±50 gemiddeld'):el('small',index===state.active?'Aan de beurt':''));legend.append(item);});root.append(legend);
  legend.querySelectorAll('article').forEach((item,index)=>{const player=state.players[index];if(player.bot)item.querySelector('small').textContent=`BOT ${player.botLevel||50}`;});
+ if(needsBullCorner){const notice=el('p',`Pijl ${bullChoiceIndex+1}: single bull! Kies een oplichtend sB-vak. Je kunt doorgooien.`,'four-bull-choice-note');notice.setAttribute('role','status');root.append(notice);}
  const layout=el('div',undefined,'four-layout'),board=el('section',undefined,'four-board');board.setAttribute('aria-label','4 op een rij speelveld');
  const pendingMarks=new Map();for(const hit of pending)if(Number.isInteger(hit.cell)){const id=state.fourBoard[hit.cell];pendingMarks.set(hit.cell,(pendingMarks.get(hit.cell)||0)+(id==='bb'||id.startsWith('sb')?3:hit.mult));}
  state.fourBoard.forEach((id,index)=>{
@@ -72,12 +74,15 @@ export function renderFourInRow(root,state,pending,actions){
   else cell.append(el('strong',label(id)));
   if(state.fourWinningCells?.includes(index))cell.classList.add('winning');
   const progress=el('span',undefined,'four-progress');progress.style.fontSize='clamp(18px,3.4vmin,34px)';progress.style.fontWeight='900';progress.style.lineHeight='1';progress.style.textShadow='0 1px 5px #000';if(!pendingClaim)state.players.forEach((player,playerIndex)=>{const marks=Math.min(3,(player.fourMarks[index]||0)+(playerIndex===state.active?(pendingMarks.get(index)||0):0));if(marks){const marker=el('i',playerSymbol(state,playerIndex).repeat(marks),`player-${playerIndex}`);marker.setAttribute('aria-label',`${player.name}: ${marks} van 3 treffers`);progress.append(marker);}});cell.append(progress);
-  cell.disabled=state.phase!=='playing'||(!actions.editing&&(pendingClaim||!!state.players[state.active]?.bot))||(needsBullCorner?(!id.startsWith('sb')||owner!==null):!actions.editing&&pending.length>=3);cell.onclick=()=>actions.hit(index);board.append(cell);
+  cell.disabled=state.phase!=='playing'||(!actions.editing&&(pendingClaim||!!state.players[state.active]?.bot))||(needsBullCorner?(!id.startsWith('sb')||displayOwner!==null):!actions.editing&&pending.length>=3);
+  if(needsBullCorner&&!cell.disabled){cell.classList.add('bull-choice');cell.setAttribute('aria-label','Vrij sB-vak kiezen: hoek '+({0:'linksboven',4:'rechtsboven',20:'linksonder',24:'rechtsonder'}[index]||index));}
+  cell.onclick=()=>actions.hit(index);board.append(cell);
  });
  layout.append(board);
- const controls=el('aside',undefined,'four-controls');controls.append(el('p',needsBullCorner?'Autodarts zag single bull. Kies nu één van de vrije sB-hoekvakken.':'Getallen: maak 3 marks binnen deze beurt. Losse marks vervallen. sB en BB claim je direct.','four-help'));
+ const controls=el('aside',undefined,'four-controls');controls.append(el('p',needsBullCorner?'Single bull geregistreerd. Kies tijdens of na het gooien een oplichtend sB-vak.':'Getallen: maak 3 marks binnen deze beurt. Losse marks vervallen. sB en BB claim je direct.','four-help'));
  const multipliers=el('div',undefined,'four-multipliers');for(const [mult,text] of [[1,'Single'],[2,'Double'],[3,'Triple']]){const button=el('button',text,mult===actions.multiplier?'selected':'');button.type='button';button.onclick=()=>actions.setMultiplier(mult);multipliers.append(button);}controls.append(multipliers);
  const darts=el('div',undefined,'four-darts');renderDartSlots(darts,pending,{editing:actions.editing,selected:actions.selectedDart,select:actions.select,placeholder:index=>`Pijl ${index+1}`});controls.append(darts);
+ pending.forEach((hit,index)=>{if(hit.needsBullCorner){const slot=darts.children[index];slot.classList.add('bull-choice-pending');slot.setAttribute('aria-label',`Pijl ${index+1}: single bull, kies sB-vak`);if(index===bullChoiceIndex)slot.classList.add('bull-choice-current');}});
  const miss=el('button','Mis','four-miss');miss.type='button';miss.disabled=(!actions.editing&&pending.length>=3)||needsBullCorner;miss.onclick=actions.miss;
  const remove=el('button','Laatste pijl wissen');remove.type='button';remove.disabled=!pending.length;remove.onclick=actions.remove;
  const confirm=el('button','Beurt bevestigen','primary');confirm.type='button';let valid=pending.length===3;if(actions.editing){try{applyFourTurn(state,{hits:pending});valid=true;}catch{valid=false;}}confirm.disabled=!valid||needsBullCorner;confirm.onclick=actions.confirm;

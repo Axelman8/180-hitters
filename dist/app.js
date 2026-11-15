@@ -72,7 +72,7 @@ const draftOwner=Date.now().toString(36)+Math.random().toString(36).slice(2);
 let sharedDraft=null,draftSequence=0,draftWrites=0;
 async function publishDraft(){
  if(!state||state.phase!=='playing'||!ready||busy)return;
- const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult,cell,label})=>({number,mult,cell,label})),entry:mode==='total'&&!cricket()?entry:'',...(botTicket?{_bot:botTicket}:{})};
+ const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult,cell,label,needsBullCorner})=>({number,mult,cell,label,...(needsBullCorner?{needsBullCorner:true}:{})})),entry:mode==='total'&&!cricket()?entry:'',...(botTicket?{_bot:botTicket}:{})};
  document.dispatchEvent(new CustomEvent('dart-draft-changed',{detail:payload}));
  draftWrites++;
  try{const res=await fetch('/api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(4000)});if(!res.ok&&payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer de stand.');return res.ok;}catch{if(payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer je verbinding.');return false;}
@@ -264,16 +264,41 @@ function addFourDart(cell=null){
  if(replaceCorrectionDart(cell===null?{cell:null,mult:1,number:0,label:'Mis'}:fourDart(cell)))return;
  const unresolved=dartList.findIndex(hit=>hit.needsBullCorner);
  if(unresolved>=0){
-  if(cell===null||!state.fourBoard[cell]?.startsWith('sb')){message('Kies één van de vrije sB-hoekvakken.');return;}
-  dartList[unresolved]=fourDart(cell);
-  if(fourTurnEnds(dartList)||dartList.length===3)void commit({hits:[...dartList]});else{renderFourGame();publishDraft();}
+  if(cell===null||!state.fourBoard[cell]?.startsWith('sb')||state.fourOwners[cell]!==null||dartList.some((hit,index)=>index!==unresolved&&hit.cell===cell)){message('Kies één van de vrije sB-hoekvakken.');return;}
+  void chooseFourBullCorner(unresolved,cell);
   return;
  }
  if(dartList.length>=3)return;
  dartList.push(cell===null?{cell:null,mult:1,number:0,label:'Mis'}:fourDart(cell));
- if(fourTurnEnds(dartList)||dartList.length===3)void commit({hits:[...dartList]});else{renderFourGame();publishDraft();}
+ completeFourInput();
 }
-function fourTurnEnds(hits){try{return applyTurn(state,{hits:[...hits]}).phase!=='playing';}catch{return false;}}
+async function chooseFourBullCorner(index,cell){
+ if(busy)return;busy=true;let selected=false;
+ try{
+  const choice={index,cell,startedAt:state.startedAt,turns:state.turns,active:state.active},body=JSON.stringify({revision,owner:draftOwner,seq:++draftSequence,hits:dartList,entry:'',bullChoice:choice});
+  const send=()=>fetch('/api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body,signal:AbortSignal.timeout(5000)});
+  let response;try{response=await send();}catch(error){if(!['TimeoutError','TypeError'].includes(error.name))throw error;response=await send();}
+  const data=await response.json();
+  if(!response.ok&&response.status!==409)throw Error(data.error||'sB-keuze niet opgeslagen. Probeer opnieuw.');
+  if(!data.match)throw Error('Werk de NUC bij om single-bullvakken met de camera te kiezen.');
+  const saved=data.draft?.hits?.[index],sameVisit=['startedAt','turns','active'].every(key=>data.match.state[key]===choice[key]);
+  selected=response.ok||(sameVisit&&saved?.number===25&&saved.mult===1&&saved.cell===cell&&!saved.needsBullCorner);
+  receive(data);dartList=structuredClone(data.draft?.hits||[]);renderFourGame();
+  if(!selected)message('De worpen zijn bijgewerkt. Kies opnieuw een oplichtend sB-vak.');
+ }catch(error){message(error.message||'sB-keuze niet opgeslagen. Probeer opnieuw.');}
+ finally{busy=false;}
+ if(selected)completeFourInput(false);
+}
+function completeFourInput(publish=true){
+ // Resolving an earlier bull may reveal a winning dart before later physical
+ // throws. End on that winning dart, exactly as with ordinary live input.
+ for(let count=1;count<=dartList.length;count++){
+  if(dartList[count-1].needsBullCorner)break;
+  try{const hits=dartList.slice(0,count);if(applyTurn(state,{hits}).phase!=='playing'){void commit({hits});return;}}catch{}
+ }
+ if(dartList.length===3&&!dartList.some(hit=>hit.needsBullCorner))void commit({hits:[...dartList]});
+ else{renderFourGame();if(publish)publishDraft();}
+}
 function renderFourGame(){
  if(!state||state.game!=='fourinarow')return;
  $('setup').hidden=true;$('game').hidden=false;$('players').hidden=true;$('fourinarow-root').hidden=false;
@@ -899,6 +924,9 @@ cameraControls(async event=>{
   if(!response.ok)return;
   const base=await response.json(),serverHits=base.draft?.hits||[],sameFourVisit=state?.game==='fourinarow'&&base.match?.state?.game==='fourinarow'&&base.match.state.startedAt===state.startedAt&&base.match.state.active===state.active;
   const inputDraft=sameFourVisit&&dartList.length>serverHits.length?{...(base.draft||{}),hits:structuredClone(dartList)}:base.draft;
+  // Darts 2 and 3 keep scoring immediately while bull choices are pending.
+  // Only a removal receipt waits until those choices complete the visit.
+  if(event.kind==='removed'&&base.match?.state?.game==='fourinarow'&&(inputDraft?.hits?.some(hit=>hit.needsBullCorner)||inputDraft?.hits?.length===3))return;
   const result=applyCameraEvent(base.match,inputDraft,event),expectedHits=structuredClone(result.hits||[]);
   const res=await fetch('/api/autoscoring/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:base.revision,event:event.id,...result}),signal:AbortSignal.timeout(5000)});
   if(res.ok){const data=await res.json();receive(data);const receivedHits=data.draft?.hits||[],stableHits=!result.closed&&expectedHits.length>receivedHits.length?expectedHits:receivedHits;dartList=state?.game==='fourinarow'?structuredClone(stableHits):stableHits.map(d=>makeDart(d.number,d.mult));if(dartList.length)setMode('dart');const liveDraft=dartList.length?{...(data.draft||{}),hits:structuredClone(dartList)}:null;document.dispatchEvent(new CustomEvent('dart-draft-observed',{detail:liveDraft}));if(state?.game==='fourinarow')renderFourGame();else renderInput();}

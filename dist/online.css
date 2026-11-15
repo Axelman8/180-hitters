@@ -1,1 +1,39 @@
 #online-indicator{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));z-index:45;transform:translateX(-50%);max-width:calc(100vw - 20px);padding:8px 14px;border:1px solid #5f7b49;border-radius:999px;background:#172b21ed;color:#dfffa6;font-size:12px;font-weight:800;box-shadow:0 5px 25px #0008}body.online-waiting[data-game=fourinarow] .four-board,body.online-waiting[data-game=fourinarow] .four-controls{pointer-events:none;filter:saturate(.65);opacity:.78}body.online-session #undo,body.online-session #redo,body.online-session #edit-match,body.online-session #team-manager{pointer-events:none;opacity:.45}.online-dialog{max-width:620px}.online-dialog fieldset{border:1px solid var(--line);border-radius:14px;margin:12px 0;padding:14px}.online-dialog label{margin:8px 0}.online-dialog label.online-check{display:flex;align-items:center;gap:10px}.online-dialog label.online-check input{width:auto}.online-dialog-status{min-height:22px;color:#ffd09c}.online-dialog .online-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.online-active-summary{display:grid;gap:5px;margin:14px 0;padding:18px;border:1px solid #78905f;border-radius:14px;background:#172b21}.online-active-summary span{color:#c9d5ce}.online-active-summary strong{font-size:clamp(30px,8vw,46px);letter-spacing:.14em;color:var(--accent)}#online-host-controls{display:grid;gap:8px}.online-lobby-heading,.online-lobby-room{display:flex;align-items:center;justify-content:space-between;gap:10px}.online-lobby-heading{margin:14px 0 8px}.online-lobby{display:grid;gap:8px;max-height:245px;overflow:auto}.online-lobby-room{padding:10px;border:1px solid var(--line);border-radius:10px;background:#ffffff08}.online-lobby-room span{overflow-wrap:anywhere}.online-lobby-room button{flex:none}.online-dialog details{margin-top:14px}.online-dialog details summary{cursor:pointer;color:var(--accent)}.online-starter{position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:20px;background:#071014e8}.online-starter[hidden]{display:none}.online-starter>div{width:min(460px,100%);padding:28px;border:2px solid #89c95d;border-radius:22px;background:#172a32;text-align:center;box-shadow:0 20px 70px #000c}.online-starter span{color:#c9d5ce;font-weight:800}.online-starter h2{margin:10px 0;color:#dfffa6;font-size:clamp(30px,9vw,50px)}.online-starter p{margin:0 0 22px;color:#f4f7f2}#online-starter-options{display:grid;gap:10px;margin:18px 0}#online-starter-options button{min-height:52px;font-size:18px;font-weight:850}@media(max-width:600px){#online-indicator{font-size:10px}.online-dialog .online-actions{grid-template-columns:1fr}.online-lobby-room{align-items:stretch;flex-direction:column}.online-lobby-room button{width:100%}}
+#online-dialog,#online-club-invite-dialog,#online-invitations-dialog,#online-video-dialog,#club-dialog{box-sizing:border-box;width:min(760px,calc(100vw - 40px));max-width:none;max-height:calc(100dvh - 40px);padding:22px 26px 26px;border:1px solid var(--line);border-radius:22px;background:#101c23;color:#eef4f4;overflow:auto;overscroll-behavior:contain}
+.online-dialog::backdrop,#club-dialog::backdrop{background:#050b10c9;backdrop-filter:blur(5px)}
+.online-dialog .dialog-navigation,#club-dialog .dialog-navigation{background:#101c23;margin-bottom:14px;padding-top:0}
+.online-dialog .dialog-back,#club-dialog .dialog-back{background:transparent;border-color:var(--line)}
+.online-dialog h2,#club-dialog h2{font-size:28px;line-height:1.2;letter-spacing:-.03em;margin:0 0 14px}
+.online-dialog p,#club-dialog p{font-size:14px;line-height:1.5;color:#b8c9d0}
+.online-dialog fieldset,#club-dialog>section,#club-dialog>details{min-width:0;padding:18px;margin:18px 0;border:1px solid var(--line);border-radius:14px;background:#142129}
+.online-dialog legend{padding:0 7px;color:var(--accent);font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.online-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+.online-form-grid>label{min-width:0;margin:0}
+.online-dialog label,#club-dialog label{font-size:13px;line-height:1.4;color:#b8c9d0}
+.online-dialog input,.online-dialog select,#club-dialog input{min-height:52px;background:#0c171e;border-color:#40545f;color:#eef4f4}
+.online-dialog button,#club-dialog button{min-height:48px;font-size:15px;line-height:1.35;border-radius:10px;white-space:normal;overflow-wrap:anywhere}
+.online-dialog button:not(.primary),#club-dialog button:not(.primary){background:#20313b;border-color:var(--line)}
+.online-dialog button.primary,#club-dialog button.primary{background:var(--accent);border-color:var(--accent);color:#182416}
+.online-dialog button:hover,#club-dialog button:hover{border-color:var(--accent)}
+.online-dialog button.primary:hover,#club-dialog button.primary:hover{background:#d9ff92}
+.online-dialog label.online-check{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#20313b;flex-direction:row;align-items:center;gap:12px;text-align:left}
+.online-dialog .online-check input{flex:none;width:24px;height:24px;min-height:24px;margin:0;accent-color:var(--accent)}
+.online-check strong,.online-check small{display:block}.online-check strong{color:#eef4f4;font-weight:650}.online-check small{margin-top:4px;color:#b8c9d0;font-size:12px;font-weight:400}
+.online-dialog .online-active-summary{background:#142129;border-color:var(--line);padding:18px;border-radius:14px}
+.online-dialog .online-active-summary span{color:#b8c9d0}
+.online-dialog #online-host-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:16px;border:1px solid var(--line);border-radius:14px;background:#142129}
+#online-host-controls>p{grid-column:1/-1;margin:0 0 4px}
+.online-dialog .online-lobby-heading{align-items:center;flex-wrap:wrap;margin:20px 0 12px;color:#eef4f4}
+.online-dialog .online-lobby{max-height:36dvh;min-height:68px;gap:10px}
+.online-dialog .online-lobby>p{margin:0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#20313b}
+.online-dialog .online-lobby-room{padding:14px;border-radius:14px;background:#20313b;border-color:var(--line)}
+.online-dialog .online-lobby-room>button:first-of-type{background:var(--accent);border-color:var(--accent);color:#182416}
+.online-dialog details{padding:14px;margin-top:18px;border:1px solid var(--line);border-radius:14px;background:#142129}
+.online-dialog details summary,#club-dialog details summary{min-height:24px;font-size:14px;font-weight:750;color:var(--accent);cursor:pointer}
+.online-dialog .online-dialog-status{color:#ffc38c}
+.online-dialog .online-actions:empty{display:none}
+.online-starter>div{background:#101c23;border:1px solid var(--line);border-radius:22px}
+.online-starter h2,.online-starter>div>span{color:var(--accent)}
+.online-starter #online-starter-options button{background:#20313b;border-color:var(--line);color:#eef4f4}
+.online-starter #online-starter-options button:hover{background:#304638;border-color:var(--accent)}
+@media(max-width:600px){#online-dialog,#online-club-invite-dialog,#online-invitations-dialog,#online-video-dialog,#club-dialog{width:calc(100vw - 24px);max-height:calc(100dvh - 24px);padding:16px 18px 20px;border-radius:20px}.online-dialog h2,#club-dialog h2{font-size:24px}.online-form-grid,.online-dialog #online-host-controls{grid-template-columns:1fr}.online-dialog fieldset,#club-dialog>section,#club-dialog>details{padding:14px}.online-dialog .online-lobby{max-height:30dvh}.online-dialog .online-lobby-heading{align-items:stretch;flex-direction:column}.online-dialog .online-lobby-room{align-items:stretch;flex-direction:column}.online-dialog .online-lobby-room>button{width:100%}}

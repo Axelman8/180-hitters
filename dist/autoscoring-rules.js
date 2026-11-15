@@ -20,20 +20,21 @@ export function applyCameraEvent(match,draft,event){
   const p=state.players[state.active];
   turn={trainingHit:hit.number===p.livesTarget&&hit.mult===(p.livesTarget===25?2:state.livesMode==='triple'?3:2)};
  }else if(state.game==='fourinarow'){
-  if(hits.some(item=>item.needsBullCorner))throw Error('Kies eerst op telefoon of tablet welk sB-hoekvak is geraakt.');
   let cell=null,needsBullCorner=false;
   if(hit.number===25&&hit.mult===1){
    const corners=state.fourBoard.map((id,index)=>id.startsWith('sb')?index:-1).filter(index=>index>=0);
    const free=corners.filter(index=>state.fourOwners[index]===null&&!hits.some(dart=>dart.cell===index));
    // An unclaimed corner needs the player's choice. If all corners have
    // already been claimed, a bull still counts as a dart without a new claim.
-   if(free.length)needsBullCorner=true;else cell=corners[0];
+   const reserved=hits.filter(dart=>dart.needsBullCorner).length;
+   if(free.length>reserved)needsBullCorner=true;
+   else cell=corners.find(index=>state.fourOwners[index]!==null||hits.some(dart=>dart.cell===index))??corners[0];
   }
   else if(hit.number===25&&hit.mult===2)cell=state.fourBoard.indexOf('bb');
   else if(hit.number!==0)cell=state.fourBoard.indexOf('n'+hit.number);
   if(cell<0&&!needsBullCorner)throw Error('Deze cameraworp hoort niet bij een vak op het speelveld.');
   hits.push({...hit,cell,needsBullCorner,label:needsBullCorner?'Kies sB-hoek':hit.label});
-  if(!needsBullCorner){let ended=false;try{ended=applyTurn(state,{hits}).phase!=='playing';}catch{}if(hits.length===3||ended){turn={hits};closed=true;}}
+  if(!hits.some(item=>item.needsBullCorner)){let ended=false;try{ended=applyTurn(state,{hits}).phase!=='playing';}catch{}if(hits.length===3||ended){turn={hits};closed=true;}}
  }else if(sonnyGameIds.includes(state.game)){
   hits.push(hit);
   if(sonnyAutoCommit(state,hits)){turn={hits};closed=true;}

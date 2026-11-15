@@ -70,6 +70,8 @@ with tempfile.TemporaryDirectory() as folder:
                     route.fulfill(json={**initial})
                 elif path == '/club/invitations':
                     route.fulfill(json={'invitations': []})
+                elif path == '/lobby':
+                    route.fulfill(json={'rooms': [{'host': 'Leen', 'code': 'ABC234', 'joined': 1, 'capacity': 2}]})
                 else:
                     route.fulfill(status=400, json={'error': 'Unexpected test request'})
 
@@ -115,6 +117,36 @@ with tempfile.TemporaryDirectory() as folder:
             expect(page.locator('#club-dialog')).to_be_visible()
             expect(page.locator('#club-dialog h2')).to_have_text('Toegang tot online vrienden')
             page.locator('#club-close').click()
+            # Online forms use the same navigation and remain usable on narrow,
+            # folded, tablet and desktop displays. No real lane is created.
+            def open_online(button):
+                page.evaluate("document.dispatchEvent(new Event('open-main-menu'))")
+                page.locator('#navigation-categories [data-menu="online"]').click()
+                page.locator(button).click()
+                expect(page.locator('#online-dialog')).to_be_visible()
+            open_online('#online-host-open')
+            expect(page.locator('#online-host-symbol')).to_be_visible()
+            page.locator('#online-host-name').fill('Test User')
+            page.locator('#online-capacity').select_option('4')
+            page.locator('#online-host-symbol').select_option(index=2)
+            for width, height in [(320, 740), (393, 852), (744, 900), (1024, 600), (1920, 1080)]:
+                page.set_viewport_size({'width': width, 'height': height})
+                box = page.locator('#online-dialog').bounding_box()
+                assert box['x'] >= 0 and box['x'] + box['width'] <= width
+                assert box['y'] >= 0 and box['y'] + box['height'] <= height
+                assert page.locator('#online-dialog').evaluate('e=>e.scrollWidth<=e.clientWidth')
+            page.set_viewport_size({'width': 393, 'height': 852})
+            page.locator('#online-dialog').evaluate('e=>e.scrollTop=0')
+            page.screenshot(path=str(ROOT / '.repair-check/online-host-uniform.png'))
+            expect(page.locator('#online-dialog > .dialog-navigation')).to_have_count(1)
+            page.locator('#online-close').click()
+            open_online('#online-join-open')
+            expect(page.locator('#online-guest-symbol')).to_be_visible()
+            expect(page.locator('.online-lobby-room')).to_contain_text('Leen')
+            page.screenshot(path=str(ROOT / '.repair-check/online-join-uniform.png'))
+            page.locator('#online-dialog details').filter(has=page.locator('#online-invite-input')).locator('summary').click()
+            expect(page.locator('#online-invite-input')).to_be_visible()
+            page.locator('#online-close').click()
             page.locator('#toggle-toolbar').click()
             page.locator('#navigation-categories [data-menu="play"]').click()
             page.locator('#settings').click()

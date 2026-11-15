@@ -63,7 +63,18 @@ assert.equal(four.match.state.players[0].fourMarks[cell],0,'Unclaimed marks expi
 assert.equal(four.match.state.history[0].darts,3);
 let corner=camera(fixture('fourinarow'),d(25));
 assert.equal(corner.hits[0].needsBullCorner,true);assert.equal(corner.closed,false);
-assert.throws(()=>camera(corner,d(0)),/Kies eerst/);
+corner=camera(corner,d(0));assert.equal(corner.hits.length,2);
+corner=camera(corner,d(20,3));assert.equal(corner.hits.length,3);
+assert.equal(corner.hits[0].needsBullCorner,true);
+assert.equal(corner.closed,false,'Darts 2 and 3 register before the player chooses a bull corner');
+assert.equal(corner.match.state.history.length,0,'A visit with an unresolved corner cannot commit');
+let threeBulls=fixture('fourinarow');
+for(let i=0;i<3;i++)threeBulls=camera(threeBulls,d(25));
+assert.equal(threeBulls.hits.filter(hit=>hit.needsBullCorner).length,3);
+let lastCorner=fixture('fourinarow');
+for(const cell of [0,4,24])lastCorner.match.state.fourOwners[cell]=1;
+for(let i=0;i<3;i++)lastCorner=camera(lastCorner,d(25));
+assert.equal(lastCorner.hits.filter(hit=>hit.needsBullCorner).length,1,'One free corner needs one choice; later bulls still count');
 const corners=[0,4,20,24];
 for(const pendingLast of [false,true]){
  let occupied=fixture('fourinarow');for(const index of corners)occupied.match.state.fourOwners[index]=1;

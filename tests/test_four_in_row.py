@@ -20,6 +20,9 @@ with tempfile.TemporaryDirectory() as tmp:
             response = phone.request.post('http://127.0.0.1:8802/api/state', data={'revision':current['revision'],'match':{'state':state,'undo':[]}})
             assert response.ok
             phone.reload();screen.goto('http://127.0.0.1:8802/')
+            for view in (phone, screen):
+                expect(view.locator('#header-menu')).to_be_visible()
+                view.locator('#navigation-close').click()
             expect(phone.locator('.four-board')).to_be_visible()
             expect(screen.locator('.four-board')).to_be_visible()
             assert phone.locator('.four-cell').count() == 25
@@ -76,6 +79,7 @@ with tempfile.TemporaryDirectory() as tmp:
             latest = phone.request.get('http://127.0.0.1:8802/api/state').json()
             assert phone.request.post('http://127.0.0.1:8802/api/state', data={'revision':latest['revision'],'match':{'state':visual,'undo':[]}}).ok
             screen.reload();expect(screen.locator('.four-board')).to_be_visible()
+            screen.locator('#navigation-close').click()
             screen.screenshot(path=str(root/'tests'/'four-in-row-two-players.png'), full_page=True)
             assert screen.locator('body').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
 
@@ -84,7 +88,6 @@ with tempfile.TemporaryDirectory() as tmp:
             won.update({'phase':'won','winner':0,'reason':'four-in-row','fourWinningCells':[0,1,2,3]})
             latest = phone.request.get('http://127.0.0.1:8802/api/state').json()
             assert phone.request.post('http://127.0.0.1:8802/api/state', data={'revision':latest['revision'],'match':{'state':won,'undo':[]}}).ok
-            screen.reload()
             expect(screen.locator('#result-dialog #result-title')).to_contain_text('Anna wint')
             expect(screen.locator('#result-dialog')).to_have_class(re.compile(r'.*winner-party.*'))
             expect(screen.locator('#result-dialog #game-report')).to_be_visible()
