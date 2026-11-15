@@ -109,6 +109,18 @@ def migrate(account, data, app, stop=stop_legacy):
     return True
 
 
+def set_data_owner(data, account):
+    # Kiosk state belongs to the signed-in desktop user. Only server data
+    # copied by this migration should receive the service account's ownership.
+    paths = [data]
+    for child in data.iterdir():
+        if child.name in (*DATA, 'match-games', 'match-backups', 'legacy-backups') or child.name.startswith('legacy-migration-'):
+            paths.append(child)
+            if child.is_dir() and not child.is_symlink(): paths.extend(child.rglob('*'))
+    for path in paths:
+        if not path.is_symlink(): os.chown(path, account.pw_uid, account.pw_gid)
+
+
 def main():
     if os.geteuid() != 0: raise SystemExit('Run this migration through the Linux installer.')
     data = Path('/var/lib/dartsapp');app = Path('/usr/lib/dartsapp')
@@ -116,9 +128,7 @@ def main():
         if account.pw_uid == 0 or 1000 <= account.pw_uid < 65534:
             migrate(account, data, app)
     account = pwd.getpwnam('dartsapp')
-    if data.exists():
-        for path in [data, *data.rglob('*')]:
-            if not path.is_symlink(): os.chown(path, account.pw_uid, account.pw_gid)
+    if data.exists(): set_data_owner(data, account)
 
 
 if __name__ == '__main__': main()
