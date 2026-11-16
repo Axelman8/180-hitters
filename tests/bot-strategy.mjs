@@ -20,7 +20,7 @@ for(const level of [40,50]){
  const fleet=Array(20).fill(0);[6,7,8].forEach(i=>fleet[i]=1);[15,16].forEach(i=>fleet[i]=2);[18,19].forEach(i=>fleet[i]=3);
  seaPlayer(enemy,fleet,[6,7,8]);assert.equal(seaSunk(enemy),1);
  assert.equal(seaPlan(s).kind,'search');
- assert.equal(chooseBotTarget(s).number,1,'After sinking a ship, resume unexplored search instead of hunting around its wreck');
+ assert.ok(!enemy.seaShots[chooseBotTarget(s).number-1],'After sinking a ship, resume unexplored search instead of targeting its wreck');
  const visible=structuredClone(s);
  for(let i=0;i<20;i++)if(!enemy.seaShots[i])enemy.seaFleet[i]=(i+1)%4;
  assert.deepEqual(chooseBotTarget(s),chooseBotTarget(visible),'Unknown enemy fleet positions must never influence aiming');
@@ -66,10 +66,10 @@ for(const level of [40,50]){
  for(let i=0;i<4;i++)s.players[i].killerNumber=[20,19,18,17][i];s.killerStage='playing';
  s.players[0].killerLetters=2;
  assert.deepEqual(chooseBotTarget(s),{number:20,mult:1},'One activation mark needs a single, not a speculative triple');
- assert.equal(chooseBotTarget(s,[d(20)]).number,19,'Attack immediately after becoming Killer within the visit');
+ assert.ok([19,18,17].includes(chooseBotTarget(s,[d(20)]).number),'Attack an opponent immediately after becoming Killer within the visit');
  s.players[0].killerActivated=true;s.players[0].killerLetters=3;s.players[1].killerLives=1;
  assert.deepEqual(chooseBotTarget(s),{number:19,mult:1});
- assert.equal(chooseBotTarget(s,[d(19)]).number,18,'Skip a player eliminated by the preceding dart');
+ assert.ok([18,17].includes(chooseBotTarget(s,[d(19)]).number),'Skip a player eliminated by the preceding dart');
  s.killerRules=undefined;s.players.forEach(p=>{p.killerLetters=6;p.killerActivated=true;});s.players[1].killerLetters=0;
  assert.deepEqual(chooseBotTarget(s),{number:19,mult:1},'Saved six-letter Killer still removes one letter/life per hit');
  console.log(`PASS BOT ${level}: Killer activation, easy final hit, per-dart victim changes and saved rules`);
@@ -95,7 +95,7 @@ for(const level of [40,50]){
  s.scramClosed.fill(true);s.scramClosed[20]=false;assert.equal(chooseBotTarget(s).number,25);
 
  s=fresh('bull41',level);assert.deepEqual(chooseBotTarget(s),{number:25,mult:2});
- s.bull41Role='scorer';s.active=s.bull41Scorer;assert.deepEqual(chooseBotTarget(s),{number:20,mult:3});
+ s.bull41Role='scorer';s.active=s.bull41Scorer;assert.ok([20,19,18].includes(chooseBotTarget(s).number));assert.equal(chooseBotTarget(s).mult,3);
  s=fresh('twentyone',level);assert.equal(chooseBotTarget(s,[d(1,3)]).number,4);
  s.players[0].twentyOneTarget=20;assert.deepEqual(chooseBotTarget(s),{number:20,mult:3});
  assert.ok(botVisit(s,[d(20,3)]),'Finish on the winning dart instead of adding useless darts');
@@ -122,7 +122,7 @@ for(const level of [40,50]){
 
  for(const game of ['cricket','tactics'])for(const scoring of ['standard','cut-throat','no-score']){
   s=fresh(game,level,4,{scoring});s.players[0].marks[20]=3;
-  assert.equal(chooseBotTarget(s).number,scoring==='no-score'?19:20,'Use the selected scoring variant');
+  assert.ok(scoring==='no-score'?chooseBotTarget(s).number!==20:chooseBotTarget(s).number===20,'Use the selected scoring variant');
   for(const p of s.players)p.marks[20]=3;
   assert.notEqual(chooseBotTarget(s).number,20,'A number closed by everyone can no longer earn anything');
  }

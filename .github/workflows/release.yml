@@ -48,6 +48,7 @@ jobs:
           node tests/bot-engine.mjs
           node tests/bot-adaptive.mjs
           node tests/bot-strategy.mjs
+          node tests/bot-audit.mjs
           node tests/solo-scoring.mjs
           node tests/camera-game-rules.mjs
           node tests/killer-rules.mjs

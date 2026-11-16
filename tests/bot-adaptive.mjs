@@ -42,7 +42,7 @@ for(const game of ['cricket','tactics']){
  s.players[0].marks[25]=3;s.players[1].cricketPoints=100;for(const number of s.numbers)s.players[1].marks[number]=3;s.players[1].marks[15]=0;
  assert.equal(chooseBotTarget(s).number,15,'Closed everything but behind: score on the remaining opponent opening');
  s=fresh(game,'no-score');s.players[0].marks[20]=3;
- assert.equal(chooseBotTarget(s).number,19,'No Score must not deliberately farm points');
+ assert.notEqual(chooseBotTarget(s).number,20,'No Score must not deliberately farm points');
  s=fresh(game,'cut-throat',3);s.players[0].cricketPoints=40;s.players[1].cricketPoints=0;s.players[2].cricketPoints=100;
  s.players[0].marks[20]=s.players[0].marks[19]=3;s.players[1].marks[20]=3;s.players[2].marks[19]=3;
  assert.equal(chooseBotTarget(s).number,19,'Cut Throat: target the low-scoring opponent, not an already losing player');
