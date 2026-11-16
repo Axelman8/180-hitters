@@ -16,7 +16,7 @@ export function renderVisualGame(state,hits,actions){
  if(!enabled){if(shell){shell.hidden=true;if(scoring&&home)home.prepend(scoring);}return;}
  if(!shell){shell=node('section',undefined,'visual-shell');shell.id='visual-game';document.getElementById('game').append(shell);scoring=document.querySelector('.play-grid .scoring');home=scoring.parentNode;}
  shell.hidden=false;shell.dataset.visual=state.game;if(lastMatch!==state.startedAt){lastMatch=state.startedAt;extraInput=false;document.querySelector('main').scrollTop=0;window.scrollTo(0,0);}shell.classList.toggle('graphic-extra-input',extraInput||!!actions.editing);
- const old=shell.querySelector('.visual-display');if(old)old.remove();scoring.querySelector('.graphic-more-input')?.remove();
+ const old=shell.querySelector('.visual-display');scoring.querySelector('.graphic-more-input')?.remove();
  const display=node('div',undefined,'visual-display'),actor=state.active,bobs=state.game==='bobs27',gotcha=state.game==='gotcha',cricket=!bobs&&!gotcha;
  let players=state.players,live=null;
  if(gotcha){live=previewGotcha(state,hits);players=live.players;}
@@ -51,6 +51,16 @@ export function renderVisualGame(state,hits,actions){
   const row=node('div',undefined,'graphic-compact-buttons');for(const [mult,label] of [[1,'Single'],[2,'Dubbel'],[3,'Triple']]){const b=button(label,()=>actions.setMultiplier(mult),mult===actions.multiplier?'selected':'');b.setAttribute('aria-pressed',String(mult===actions.multiplier));row.append(b);}const miss=button('MIS',()=>actions.hit(0));miss.id='graphic-miss';row.append(miss);compact.append(row);
   const more=button(extraInput?'Beurtbediening inklappen':'Beurtbediening / herstellen',()=>{extraInput=!extraInput;renderVisualGame(state,hits,actions);},'graphic-more-input');more.setAttribute('aria-expanded',String(extraInput));if(extraInput||actions.editing)scoring.prepend(more);else compact.append(more);display.append(compact);
  }
- shell.prepend(display);if(scoring.parentNode!==shell)shell.append(scoring);
+ // Retain the measured SVG/frame while updating its contents. A fresh board
+ // otherwise briefly uses its default height before the next fitting frame.
+ const oldBoard=old?.querySelector('.graphic-dartboard'),newBoard=display.querySelector('.graphic-dartboard');
+ if(oldBoard&&newBoard&&shell.dataset.boardMatch===String(state.startedAt)){
+  const frame=oldBoard.parentElement;
+  oldBoard.replaceChildren(...newBoard.childNodes);
+  newBoard.replaceWith(frame.classList.contains('stage-board-frame')?frame:oldBoard);
+ }
+ shell.dataset.boardMatch=String(state.startedAt);
+ if(old)old.replaceWith(display);else shell.prepend(display);
+ if(scoring.parentNode!==shell)shell.append(scoring);
  let miss=document.getElementById('visual-miss');if(!miss){miss=button('MIS',()=>actions.hit(0),'wide');miss.id='visual-miss';document.getElementById('remove-dart').before(miss);}miss.hidden=!cricket;
 }

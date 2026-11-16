@@ -25,16 +25,16 @@ with tempfile.TemporaryDirectory() as temp:
    page.route(URL+'/**',assets);page.goto(URL+'/?remote=1')
    expect(page.locator('#header-menu')).to_be_visible()
    def saved():return page.request.get(URL+'/api/state').json()
-   def seed(game,level):
-    state=page.evaluate("""async({game,level})=>{
-     const s=(await import('/engine.js')).newMatch(['BOT','Human','Human 2','Human 3'],301,'double',1,
-      {game:game==='121'?'x01':game,training121:game==='121',livesMode:'double',botLevels:[level,0,0,0],maxRounds:0});
-     if(game==='seabattle'){
+   def seed(game,level,duel=False):
+    state=page.evaluate("""async({game,level,duel})=>{
+     const s=(await import('/engine.js')).newMatch(['BOT A',duel?'BOT B':'Human','Human 2','Human 3'],301,'double',1,
+      {game:game==='121'?'x01':game,training121:game==='121',livesMode:'double',botLevels:[level,duel?level:0,0,0],maxRounds:0});
+     if(game==='seabattle'&&!duel){
       // Only one enemy target is not confirmed water; the UI must plan 14.
       for(const [index,p] of s.players.entries())if(index){p.seaShots.fill(1);p.seaFleet.fill(0);p.seaShots[13]=0;p.seaFleet[13]=2;p.seaRemaining=2;}
      }
      return s;
-    }""",{'game':game,'level':level})
+    }""",{'game':game,'level':level,'duel':duel})
     state['startedAt']=int(time.time()*1000)
     assert page.request.post(URL+'/api/state',data={'revision':saved()['revision'],'match':{'state':state,'undo':[]}}).ok
     expect(page.locator('body')).to_have_attribute('data-game','x01' if game=='121' else game)
@@ -43,14 +43,17 @@ with tempfile.TemporaryDirectory() as temp:
    for level in [40,50]:
     for game in ['x01','121','gotcha','cricket','tactics','fourinarow','killer','seabattle','scram','bull41','golf','shanghai','twentyone','bobs27','tenlives']:
      if not page.locator('#header-menu').is_visible():page.locator('#toggle-toolbar').click()
-     state=seed(game,level)
-     if game=='seabattle':expect(page.locator('.bot-strategy')).to_contain_text('D14')
+     state=seed(game,level,duel=True)
+     if game=='seabattle':expect(page.locator('.bot-strategy')).to_contain_text('Richt op')
      page.locator('#navigation-close').click()
-     page.wait_for_function("async(id)=>{const d=await fetch('/api/state').then(r=>r.json());return d.match.state.startedAt===id&&d.match.state.history.length>0}",arg=state['startedAt'],timeout=12000)
+     page.wait_for_function("async(id)=>{const d=await fetch('/api/state').then(r=>r.json());return d.match.state.startedAt===id&&d.match.state.history.some(h=>h.name==='BOT B')}",arg=state['startedAt'],timeout=12000)
+     for name in ['BOT A','BOT B']:
+      expect(page.locator('.game-player-action[aria-label^="'+name+'."]').filter(visible=True).first).to_contain_text('Laatste:')
      assert not errors,(game,errors)
      assert not page.locator('#message').inner_text().startswith('BOT kon'),(game,page.locator('#message').inner_text())
     print('PASS visible BOT',level,'all fifteen games with shared live darts and saved turns','legacy tablet' if LEGACY else 'modern',flush=True)
    if not page.locator('#header-menu').is_visible():page.locator('#toggle-toolbar').click()
+   seed('seabattle',40);expect(page.locator('.bot-strategy')).to_contain_text('D14')
    for base,average,expected,darts in [(40,49.9,40,9),(40,50,45,9),(40,70,65,9),(50,59.9,50,9),(50,60,55,9),(50,70,65,9),(50,100,50,6)]:
     state=seed('x01',base);state['players'][1]['darts']=darts;state['players'][1]['points']=average*darts/3
     assert page.request.post(URL+'/api/state',data={'revision':saved()['revision'],'match':{'state':state,'undo':[]}}).ok

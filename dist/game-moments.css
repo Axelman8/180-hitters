@@ -4,3 +4,23 @@
 #score-celebration.game-moment .moment-symbol{width:120px;height:120px;width:clamp(90px,28vmin,280px);height:clamp(90px,28vmin,280px);fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 14px #ffd76c88);animation:score-build-burst 3.1s linear both;flex-shrink:0}
 #score-celebration.game-moment .moment-detail{display:block;max-width:88vw;margin:0;padding:10px 16px;border:1px solid #ffd76c80;border-radius:12px;background:#101c23e8;color:#eef4f4;font-size:18px;font-size:clamp(16px,2.8vmin,30px);font-weight:750;line-height:1.3;text-align:center;overflow-wrap:anywhere;animation:none}
 @media(prefers-reduced-motion:reduce){#score-celebration.game-moment .moment-symbol{animation:none;filter:none}#score-celebration.game-moment strong{animation:none;transform:none}#score-celebration.game-moment{animation:score-effect-fade 3.1s both}}
+.game-player-action{display:block;grid-column:1/-1;flex-basis:100%;min-width:0;max-width:100%;font-size:12px!important;font-size:clamp(11px,1.2vw,20px)!important;font-weight:650;line-height:1.25;color:#c5d9df;white-space:normal;overflow-wrap:anywhere;margin:2px 0 0}
+.sea-last-action{flex:none;margin:0;font-size:14px;font-size:clamp(13px,1.5vw,24px);line-height:1.3;font-weight:750;color:#e9f3f5;text-align:center;overflow-wrap:anywhere}
+.sea-fleet-tabs .sea-follow{color:#c8f56a}
+.sea-fleet-tabs{display:flex!important;flex-wrap:nowrap;gap:4px}
+.sea-fleet-tabs>button{flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere}
+html body #game .sea-cell .sea-cell-status{font-size:14px;font-size:clamp(12px,2vw,24px);font-weight:850;line-height:1.15;max-width:100%;overflow-wrap:anywhere}
+html body:not(.remote-control) #game .sea-cell .sea-cell-status{font-size:22px;font-size:clamp(18px,2vw,36px)}
+html body #game .sea-cell .sea-cell-credit{font-size:11px;font-size:clamp(10px,1.1vw,18px);line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sea-cell.ship-sunk{box-shadow:inset 0 0 0 2px #ff9fbb;background:#632b40}
+.sea-cell.last-hit{outline:3px solid #c8f56a;outline-offset:-3px}
+@media(max-height:720px){html body #game .sea-cell .sea-cell-credit{display:none}.game-player-action{font-size:11px!important}}
+html body #game .sea-cell{gap:0}
+html body #game .game-player-action{display:block!important}
+html body.appearance-hide-last #game .game-player-action{display:none!important}
+html body #game #bot-status.bot-player-status{grid-area:auto;grid-column:1/-1;grid-row:auto;display:block;margin:0;padding:0;border:0;border-radius:0;background:transparent;min-height:0}
+html body #game #bot-status.bot-player-status[hidden]{display:none}
+html body #game #bot-status.bot-player-status strong b,html body #game #bot-status.bot-player-status .bot-strategy,html body #game #bot-status.bot-player-status>span{display:none}
+html body #game #bot-status.bot-player-status strong small{margin:0;font-size:12px;line-height:1.2}
+html body[data-game=tenlives] #game #bot-status.bot-player-status>span{display:inline-block;padding:3px;min-width:32px;font-size:12px}
+@media(max-height:720px){html body #game .sea-cell{padding:1px}html body #game .sea-cell b{font-size:20px;line-height:1}html body #game .sea-cell .sea-cell-status{font-size:12px;line-height:1}html body:not(.remote-control) #game .sea-cell .sea-cell-status{font-size:18px}}

@@ -1,5 +1,11 @@
 import {botDart,botVisit,botLevel,botDifficulty,gotchaPlan,seaPlan} from './bot.js';
 let panel;
+export function placeBotStatus(state){
+ if(!panel||panel.hidden||!state?.players)return;
+ const selector=state.game==='killer'?'.killer-players>.killer-player':['seabattle','golf','shanghai'].includes(state.game)?'.party-players>.party-player':state.game==='fourinarow'?'.four-legend>article':['scram','bull41','twentyone'].includes(state.game)?'.sonny-players>article':state.game==='tenlives'?'.lives-players>.lives-player':['gotcha','cricket','tactics','bobs27'].includes(state.game)?'.visual-players>.visual-player':'#players>.player';
+ const card=document.querySelectorAll(selector)[state.active];
+ if(card){panel.classList.add('bot-player-status');card.append(panel);}
+}
 // Hitters Challenge commits every physical dart immediately. Reconstruct the
 // current group from that shared history so a new revision does not erase the
 // preceding slots, including after a reload or controller takeover.

@@ -1,7 +1,8 @@
 import {renderDartSlots} from './dart-editor.js';
 import {partyNames,previewParty,partyAutoCommit,seaSunk} from './party-rules.js';
+import {seaLog,seaShotText} from './sea-log.js';
 import {node,button,svg,playerColors,dartboard} from './graphic-board.js';
-let boardPlayer=0,boardMatch=null,scrollMatch=null;
+let boardPlayer=0,boardMatch=null,boardFollow=true,scrollMatch=null;
 export function renderPartyGame(root,state,hits,actions){
  if(scrollMatch!==state.startedAt){scrollMatch=state.startedAt;document.querySelector('main').scrollTop=0;window.scrollTo(0,0);}
  root.replaceChildren();root.className='party-game';root.dataset.party=state.game;
@@ -11,15 +12,38 @@ export function renderPartyGame(root,state,hits,actions){
  preview.players.forEach((player,index)=>{const card=node('article',undefined,'party-player'+(index===actor?' active':'')+(player.seaEliminated?' eliminated':''));card.style.setProperty('--player-color',playerColors[index]);const score=sea?player.seaRemaining:golf?player.golfStrokes:player.shanghaiPoints;card.append(node('strong',player.name),node('b',String(score)),node('small',sea?'scheepslevens':golf?'slagen':'punten'));cards.append(card);});root.append(cards);
  const arena=node('section',undefined,'party-arena');arena.setAttribute('aria-label',partyNames[state.game]+' speelveld');
  if(sea){
-  if(boardMatch!==state.startedAt){boardMatch=state.startedAt;boardPlayer=(actor+1)%state.players.length;}
+  const log=seaLog(state,hits),last=log.last;
+  if(boardMatch!==state.startedAt){boardMatch=state.startedAt;boardFollow=true;}
+  if(boardFollow){
+   const latest=[...log.shots].reverse().find(shot=>shot.results.length),by=latest?.actor??actor;
+   const targets=latest?.results||[];
+   const best=[...targets].sort((a,b)=>Number(b.sunk)-Number(a.sunk)||Number(b.destroyed)-Number(a.destroyed)||b.damage-a.damage)[0];
+   boardPlayer=best?.victim??(by+1)%state.players.length;
+  }
   if(!preview.players[boardPlayer])boardPlayer=0;
-  const chooser=node('div',undefined,'sea-fleet-tabs');state.players.forEach((player,index)=>{const tab=button(player.name,()=>{boardPlayer=index;renderPartyGame(root,state,hits,actions);},index===boardPlayer?'selected':'');tab.setAttribute('aria-pressed',String(index===boardPlayer));chooser.append(tab);});arena.append(chooser);
-  const victim=preview.players[boardPlayer],grid=node('div',undefined,'sea-grid');grid.setAttribute('aria-label',`Vloot van ${victim.name}. Iedere pijl raakt alle tegenstanders op dit getal.`);
+  const chooser=node('div',undefined,'sea-fleet-tabs');state.players.forEach((player,index)=>{
+   const tab=button('Vloot '+player.name,()=>{boardPlayer=index;boardFollow=false;actions.refresh?actions.refresh():renderPartyGame(root,state,hits,actions);},index===boardPlayer?'selected':'');
+   tab.setAttribute('aria-pressed',String(index===boardPlayer));chooser.append(tab);
+  });
+  const follow=button(boardFollow?'Aanval volgen':'Volg de aanval',()=>{boardFollow=true;actions.refresh?actions.refresh():renderPartyGame(root,state,hits,actions);},boardFollow?'selected sea-follow':'sea-follow');
+  follow.setAttribute('aria-pressed',String(boardFollow));chooser.append(follow);arena.append(chooser);
+  const action=node('p',seaShotText(state,last),'sea-last-action');action.setAttribute('role','status');arena.append(action);
+  const victim=preview.players[boardPlayer],grid=node('div',undefined,'sea-grid');grid.dataset.fleetPlayer=String(boardPlayer);grid.setAttribute('aria-label',`Vloot van ${victim.name}. Iedere pijl raakt alle tegenstanders op dit getal.`);
   victim.seaFleet.forEach((ship,cell)=>{
-   const known=victim.seaShots[cell]>0||state.phase==='won',damaged=victim.seaHull[cell]||0,cls=!known?'unknown':ship?(damaged===2?'sunk':'damaged'):'water';
-   const tile=button('',()=>actions.hit(cell+1),'sea-cell '+cls+(hits.some(h=>h.number===cell+1)?' fired':''));tile.disabled=state.phase!=='playing'||!actions.editing&&hits.length>=3;tile.dataset.number=String(cell+1);tile.setAttribute('aria-label',`${cell+1}: ${!known?'onbekend':ship?damaged===2?'scheepsvak vernietigd':'schip geraakt':'water'}`);
-   tile.append(node('b',String(cell+1)),node('span',!known?'?':ship?damaged===2?'VERNIETIGD':'RAAK':'WATER'));if(known&&ship){const boat=svg('svg',{viewBox:'0 0 24 16',class:'sea-ship','aria-hidden':'true'});boat.append(svg('path',{d:'M1 7h22l-6 8H6zM8 1h8v5H8z',fill:damaged===2?'#fa8299':'#ffcd73'}));tile.append(boat);}grid.append(tile);
-  });arena.append(grid,node('p',`Vloot van ${victim.name} · ${victim.seaRemaining}/14 levens | ${seaSunk(victim)}/3 schepen gezonken. Single 1 schade, dubbel/triple 2. Bull doet geen schade.`,'party-caption'));
+   const known=victim.seaShots[cell]>0||state.phase==='won',damaged=victim.seaHull[cell]||0,credit=log.cells[boardPlayer][cell];
+   const whole=known&&ship&&victim.seaFleet.filter((id,i)=>id===ship&&victim.seaHull[i]>=2).length>=(ship===1?3:2);
+   const cls=!known?'unknown':ship?(damaged===2?'sunk':'damaged'):'water';
+   const status=!known?'ONBEKEND':ship?whole?'GEZONKEN':damaged===2?'VERNIETIGD':damaged?'RAAK':'ONGERAAKT':'WATER';
+   const lastHit=last?.number===cell+1&&last.results.some(r=>r.victim===boardPlayer);
+   const tile=button('',()=>actions.hit(cell+1),'sea-cell '+cls+(whole?' ship-sunk':'')+(hits.some(h=>h.number===cell+1)?' fired':'')+(lastHit?' last-hit':''));
+   tile.disabled=state.phase!=='playing'||!actions.editing&&hits.length>=3;tile.dataset.number=String(cell+1);
+   const by=whole?credit.sunkBy:damaged===2?credit.destroyedBy:credit.hitBy;
+   const attribution=known&&ship&&Number.isInteger(by)?'Door '+state.players[by].name:'';
+   tile.setAttribute('aria-label',`${cell+1}: ${status}. ${attribution}`);tile.title=tile.getAttribute('aria-label');
+   tile.append(node('b',String(cell+1)),node('span',status,'sea-cell-status'));
+   if(attribution)tile.append(node('small',attribution,'sea-cell-credit'));
+   if(known&&ship){const boat=svg('svg',{viewBox:'0 0 24 16',class:'sea-ship','aria-hidden':'true'});boat.append(svg('path',{d:'M1 7h22l-6 8H6zM8 1h8v5H8z',fill:damaged===2?'#fa8299':'#ffcd73'}));tile.append(boat);}grid.append(tile);
+  });arena.append(grid,node('p',`Vloot van ${victim.name} | ${victim.seaRemaining}/14 levens | ${seaSunk(victim)}/3 schepen gezonken. Single 1 schade, dubbel/triple 2. Bull doet geen schade.`,'party-caption'));
  }else if(golf){
   const rows=Math.ceil(state.golfHoles/3),course=svg('svg',{viewBox:`0 0 460 ${rows*88+30}`,class:'golf-course',role:'img','aria-label':`Golfbaan, hole ${state.partyTarget} van ${state.golfHoles}`});
   course.append(svg('rect',{x:0,y:0,width:460,height:rows*88+30,rx:22,fill:'#16372e'}));

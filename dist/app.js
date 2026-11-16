@@ -15,6 +15,7 @@ import {renderGameReport} from './game-reports.js';
 import {renderScreenOverview,ensureScreenInputShortcut} from './screen-overview.js';
 import {replayTurns} from './replay.js';
 import {celebrateScore,celebrateDraft,clearEffect} from './celebration.js';
+import {paintGameFeedback} from './game-feedback.js';
 import {showWinner} from './winner.js';
 import {renderFourInRow,fourCellLabel,fourSymbols as fourPlayerSymbols} from './four-in-row.js';
 import {renderSonnyGame,sonnyAutoCommit,sonnyGameIds,sonnyGameNames} from './sonny-games.js';
@@ -191,7 +192,7 @@ function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
 function resetInput(){entry='';dartList=[];multiplier=1;selectedDart=null;livesCorrection=[];message();renderInput();}
 function paintMoment(){if(historyNavigation||editTurn)clearEffect();else celebrateDraft(state,dartList,applyTurn);}
-function renderInput(){try{return renderInputContent();}finally{applyGameAppearance(state);paintMoment();}}
+function renderInput(){try{return renderInputContent();}finally{paintGameFeedback(state,dartList);applyGameAppearance(state);paintMoment();}}
 function renderInputContent(){
  paintBot(state,dartList,!!editTurn);
  renderVisualGame(state,dartList,{hit:number=>{setMode('dart');addDart(number,multiplier);},multiplier,setMultiplier:value=>{multiplier=value;renderInput();},editing:correctingDarts(),selectedDart,select:selectCorrectionDart,reset:resetGotchaOpponent,memberIndex:index=>teamMemberIndex(state,state.players[index])});
@@ -312,7 +313,7 @@ function renderFourGame(){
  const current=state.players[state.active];$('match-label').textContent=`4 OP EEN RIJ / RONDE ${state.round}`;
  $('turn-label').hidden=false;$('turn-label').textContent=state.phase==='playing'?`${current.name} is aan de beurt`:state.winner===null?'Gelijkspel':`${state.players[state.winner].name} heeft 4 op een rij!`;
  $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
- renderFourInRow($('fourinarow-root'),state,dartList,{multiplier,editing:correctingDarts(),selectedDart,select:selectCorrectionDart,hit:addFourDart,miss:()=>addFourDart(null),remove:()=>{dartList.pop();selectedDart=null;renderFourGame();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderFourGame();}});paintMoment();
+ renderFourInRow($('fourinarow-root'),state,dartList,{multiplier,editing:correctingDarts(),selectedDart,select:selectCorrectionDart,hit:addFourDart,miss:()=>addFourDart(null),remove:()=>{dartList.pop();selectedDart=null;renderFourGame();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderFourGame();}});paintGameFeedback(state,dartList);applyGameAppearance(state);paintMoment();
 }
 function sonnyDart(number){const mult=number===0?1:number===25?(multiplier===1?1:2):multiplier;return makeDart(number,mult);}
 let seaInputQueue=Promise.resolve();
@@ -327,7 +328,7 @@ function renderSonny(){
  $('setup').hidden=true;$('game').hidden=false;$('players').hidden=true;$('fourinarow-root').hidden=true;$('sonny-root').hidden=false;document.body.classList.remove('cricket-game','training-game');mode='dart';
  const current=state.players[state.active];$('match-label').textContent=sonnyGameNames[state.game].toUpperCase();$('turn-label').hidden=false;$('turn-label').textContent=`${current.name} is aan de beurt`;
  $('undo').disabled=!undo.length;$('redo').disabled=!future.length;
- renderSonnyGame($('sonny-root'),state,dartList,{multiplier,editing:correctingDarts(),selectedDart,select:selectCorrectionDart,hit:addSonnyDart,miss:()=>addSonnyDart(0),remove:()=>{dartList.pop();selectedDart=null;renderSonny();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderSonny();}});paintMoment();
+ renderSonnyGame($('sonny-root'),state,dartList,{refresh:renderInput,multiplier,editing:correctingDarts(),selectedDart,select:selectCorrectionDart,hit:addSonnyDart,miss:()=>addSonnyDart(0),remove:()=>{dartList.pop();selectedDart=null;renderSonny();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderSonny();}});paintGameFeedback(state,dartList);applyGameAppearance(state);paintMoment();
 }
 function renderGotcha(){
  const pending=state.phase==='playing'?dartList:[],v=previewGotcha(state,pending),p=v.players[state.active];
@@ -424,7 +425,7 @@ function teamMemberIndex(matchState,player){
  if(!player?.members?.length)return -1;
  return matchState.history.filter(turn=>turn.name===player.name).length%player.members.length;
 }
-function render(){try{return renderGameContent();}finally{applyGameAppearance(state);paintMoment();}}
+function render(){try{return renderGameContent();}finally{paintGameFeedback(state,dartList);applyGameAppearance(state);paintMoment();}}
 function renderGameContent(){
  paintBot(state,dartList,!!editTurn);
  renderVisualGame(state,dartList,{hit:number=>{setMode('dart');addDart(number,multiplier);},multiplier,setMultiplier:value=>{multiplier=value;renderInput();},editing:correctingDarts(),selectedDart,select:selectCorrectionDart,reset:resetGotchaOpponent,memberIndex:index=>teamMemberIndex(state,state.players[index])});
