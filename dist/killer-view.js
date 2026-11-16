@@ -1,7 +1,7 @@
 import {renderDartSlots} from './dart-editor.js';
+import {playerColors as colors,getAppearance} from './appearance-settings.js';
 
 const order=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
-const colors=['#5ce0ed','#ff78bc','#c8f56a','#c2a1ff'];
 const ns='http://www.w3.org/2000/svg';
 const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
 const svg=(tag,attrs={})=>{const el=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attrs))el.setAttribute(key,String(value));return el;};
@@ -51,7 +51,8 @@ export function renderKillerGame(root,state,pending,actions,applyTurn){
   if(color)group.style.setProperty('--sector-color',color);
   const start=index*18-9,end=start+18;
   for(const [inner,outer,ring] of [[24,118,'single'],[118,132,'triple'],[132,194,'single'],[194,210,'double']]){
-   group.append(svg('path',{d:sector(inner,outer,start,end),class:`killer-ring ${ring}`,fill:owner>=0?color:index%2?'#49314f':'#30263d','fill-opacity':owner>=0?(ring==='single'?.62:.95):1,stroke:'#111c25','stroke-width':1.5}));
+   const style=getAppearance().board,base=style==='classic'?(ring==='single'?(index%2?'#ded4b5':'#171b20'):(index%2?'#248257':'#b84349')):style==='calm'?(ring==='single'?'#1b2b34':'#354b56'):index%2?'#49314f':'#30263d';
+   group.append(svg('path',{d:sector(inner,outer,start,end),class:`killer-ring ${ring}`,fill:owner>=0?color:base,'fill-opacity':owner>=0?(ring==='single'?.62:.95):1,stroke:'#111c25','stroke-width':1.5}));
   }
   const pos=point(235,index*18),label=svg('text',{x:pos[0],y:pos[1],'text-anchor':'middle','dominant-baseline':'central',fill:color||'#c6c3cf'});label.textContent=String(number);group.append(label);
   const hit=()=>{if(!locked)actions.hit(number);};group.onclick=hit;group.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();hit();}};board.append(group);

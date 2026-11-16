@@ -1,3 +1,4 @@
+import {applyGameAppearance} from './appearance-game.js';
 import {renderVisualGame} from './visual-games.js';
 import {updateControl,controllerRefreshed,canControl,takeControl} from './controller.js';
 import './dialog-navigation.js';
@@ -183,13 +184,14 @@ document.addEventListener('prepare-phone-transfer',async()=>{
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
  if(e.target.closest('.dialog-back'))return;
- if(e.target.closest('#camera-game-controls,#new-match-dialog,#nuc-recovery'))return;
+ if(e.target.closest('#appearance-open,#appearance-dialog,#camera-game-controls,#new-match-dialog,#nuc-recovery'))return;
  if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #matches-dialog,#matches-report-dialog,#archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-video-dialog, #club-open, #club-dialog, #online-host-open, #online-new-open, #online-join-open, #online-leave-open, #online-invitations-open, #online-club-invite-dialog, #online-invitations-dialog, #online-dialog, #online-starter')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}
 function button(text,handler){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=handler;return b;}
 function resetInput(){entry='';dartList=[];multiplier=1;selectedDart=null;livesCorrection=[];message();renderInput();}
-function renderInput(){
+function renderInput(){try{return renderInputContent();}finally{applyGameAppearance(state);}}
+function renderInputContent(){
  paintBot(state,dartList,!!editTurn);
  renderVisualGame(state,dartList,{hit:number=>{setMode('dart');addDart(number,multiplier);},multiplier,setMultiplier:value=>{multiplier=value;renderInput();},editing:correctingDarts(),selectedDart,select:selectCorrectionDart,reset:resetGotchaOpponent,memberIndex:index=>teamMemberIndex(state,state.players[index])});
  if(state?.game==='tenlives'){renderLivesGame();return;}
@@ -421,7 +423,8 @@ function teamMemberIndex(matchState,player){
  if(!player?.members?.length)return -1;
  return matchState.history.filter(turn=>turn.name===player.name).length%player.members.length;
 }
-function render(){
+function render(){try{return renderGameContent();}finally{applyGameAppearance(state);}}
+function renderGameContent(){
  paintBot(state,dartList,!!editTurn);
  renderVisualGame(state,dartList,{hit:number=>{setMode('dart');addDart(number,multiplier);},multiplier,setMultiplier:value=>{multiplier=value;renderInput();},editing:correctingDarts(),selectedDart,select:selectCorrectionDart,reset:resetGotchaOpponent,memberIndex:index=>teamMemberIndex(state,state.players[index])});
  document.body.dataset.game=state?.game||'';
@@ -464,6 +467,7 @@ function render(){
    card.querySelector('.player-top').after(members);
   }
   const matchScores=state.game==='bobs27'?[]:state.training121?[[p.trainingLevel||state.start,'NIVEAU'],[p.trainingBest||state.trainingBest,'BESTE']]:state.matchMode==='sets'?[[p.sets,'SETS'],[p.setLegs,'LEGS (SET)']]:[[p.legs,'LEGS']];
+  card.querySelector('.match-score').dataset.scoreKind=state.training121?'training':'legs';
   card.querySelector('.match-score').replaceChildren(...matchScores.map(([value,label])=>{
    const item=document.createElement('span'),number=document.createElement('b'),caption=document.createElement('small');
    number.textContent=value;caption.textContent=label;item.append(number,caption);item.setAttribute('aria-label',`${value} ${label.toLowerCase()}`);return item;
@@ -949,3 +953,4 @@ cameraControls(async event=>{
   }
  }finally{busy=false;}
 });
+window.addEventListener('hitters-appearance',()=>render());

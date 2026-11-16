@@ -58,6 +58,7 @@ const routes={
  'camera-test':['nuc','camera','Controleer de camera’s van je dartbord.'],
  'fullscreen':['app','display','Toon 180 Hitters over het volledige scherm.'],
  'layout-open':['app','display','Pas de weergave op dit apparaat aan.'],
+ 'appearance-open':['app','display','Speelveld, scorebord, spelerskleuren, dartbordstijl en rustig spelen.'],
  'desktop-update-action':['app','updates','Controleer en installeer een nieuwe versie voor deze NUC.'],
  'android-update-action':['app','updates','Controleer en installeer een nieuwe versie voor dit apparaat.']
 };

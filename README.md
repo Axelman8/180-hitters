@@ -44,6 +44,12 @@ On connected phones and tablets, **Camera aan / herstart** and **Camera uit** ap
 
 ## Graphical games and online game discovery
 
+**App-instellingen > Weergave > Weergave aanpassen** provides device-local presentation controls with a live preview and **Standaard herstellen**. Choose automatic layout, more board space or more input space; narrow screens retain a stacked layout. Pick which relevant supplementary statistics appear on player cards: average/MPR, legs/sets, best visit, darts thrown and the last visit. Current scores, targets, lives and the 121 training level remain available.
+
+Player recognition offers custom colours for four seats, optional shape/number markers and stronger active-player emphasis. Four in a Row keeps the match's actual symbols so names and claimed cells agree. Round dartboards offer the current theme, classic colours or a calm style. **Rustig speelscherm** hides descriptive text and optional clutter during play while retaining Menu, connection recovery and scoring controls. Explicitly selected scoreboard data remains visible.
+
+Preferences are stored on the device, independently of local, Bluetooth and online match data. Changing or resetting them does not write scores, rename players or change another controller or the NUC display.
+
 Gotcha now puts each player's coloured race track and reset action in their score card. Cricket and Tactics show a dartboard with closure indicators and a player-coloured marks table. Phones start with the readable table and compact dart controls; the board button switches views, and expanded turn controls retain correction and total-entry options. Bob's 27 highlights the current double and shows progress through D1-D20 and bull. Existing scoring variants, team members, bots and correction rules remain available.
 
 Three new games support up to four players, BOT 40/50, camera scoring, saved reports and sharing:

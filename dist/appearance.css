@@ -1,0 +1,52 @@
+/* Device-local presentation: layouts stay in normal flow, with no input overlay. */
+body dialog#appearance-dialog.app-dialog{width:calc(100vw - 24px);max-width:1050px!important;overflow-x:hidden}
+#appearance-dialog .appearance-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
+.appearance-fields{min-width:0}.appearance-fields fieldset{margin:0 0 14px;padding:14px;border:1px solid #3f5662;border-radius:12px;min-width:0}
+.appearance-fields legend{font-size:18px;font-weight:800;color:var(--accent);padding:0 6px}
+.appearance-fields label{display:block;margin:8px 0;color:#deebee;font-size:14px}
+.appearance-fields select{display:block;width:100%;min-width:0;min-height:44px;margin-top:5px;font-size:14px;padding:9px}
+.appearance-fields p,#appearance-dialog>p{font-size:13px;line-height:1.5;color:#b9cbd2}
+.appearance-fields .appearance-check{display:flex;align-items:center;gap:10px;min-height:44px;margin:0}
+.appearance-check input{width:24px;height:24px;flex:0 0 24px;accent-color:var(--accent)}
+.appearance-player-row{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px}.appearance-player-row input[type=color]{display:block;width:80px;height:44px;padding:4px;background:#14232b;border:1px solid #536975;border-radius:8px}
+.appearance-preview{position:sticky;top:10px;padding:14px;min-width:0;border:1px solid #49606b;border-radius:14px;background:#101f28}
+.appearance-preview h3{margin:0 0 12px;color:var(--accent)}
+#appearance-preview-players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:12px}
+#appearance-preview-players article{padding:9px;border:1px solid #3b5360;border-left:4px solid var(--preview-color);border-radius:9px;min-width:0}
+#appearance-preview-players strong{display:block;font-size:14px;overflow-wrap:anywhere}#appearance-preview-players b{display:block;color:var(--preview-color);font-size:30px}#appearance-preview-players small{display:block;margin-top:4px;font-size:10px;overflow-wrap:anywhere}
+#appearance-preview-players .active{border-color:var(--preview-color)}#appearance-preview-players[data-emphasis=strong] .active{outline:3px solid var(--preview-color)}#appearance-preview-players[data-emphasis=contrast] .active{background:#e3f4f1;color:#10212b;border:3px solid var(--preview-color)}
+#appearance-preview-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(65px,.8fr);gap:8px;align-items:center}
+#appearance-preview-layout[data-space=board]{grid-template-columns:minmax(0,2fr) minmax(65px,.65fr)}#appearance-preview-layout[data-space=input]{grid-template-columns:minmax(0,1fr) minmax(90px,1.2fr)}
+#appearance-preview-board{min-width:0}#appearance-preview-board .graphic-dartboard{width:100%;max-width:none}
+.appearance-preview-input{display:grid;gap:5px;min-width:0;font-size:11px}.appearance-preview-input span{padding:8px 4px;border:1px solid #405a66;border-radius:7px;background:#21353e;text-align:center}
+#appearance-preview-note{font-size:11px;color:#a5bcc6}
+.appearance-marker{display:inline-block;width:1.1em;height:1.1em;min-width:1.1em;margin-right:.3em;vertical-align:-.12em;color:var(--appearance-player-color,currentColor)}
+body[data-active-emphasis=contrast] [data-appearance-player].active .appearance-marker{color:#10212b!important}
+.appearance-summary{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;padding-top:6px;min-width:0}
+.appearance-summary>span{min-width:0;max-width:100%;text-align:center}.appearance-summary small{display:block!important;font-size:10px!important;color:var(--muted)}
+.appearance-summary b{display:block;font-size:15px!important;line-height:1.35;color:inherit!important;overflow-wrap:anywhere}
+body[data-score-style=custom] #game .player-statistics,body[data-score-style=custom] #game .match-score:not([data-score-kind=training]),body[data-score-style=custom] #game .player-leg-results,body[data-score-style=custom] #game .visual-legs{display:none!important}
+body.appearance-hide-last #screen-player-history,body.appearance-hide-last #history{display:none!important}
+html body.remote-control[data-play-space=board] #game .four-board,html body.remote-control[data-play-space=input] #game .four-board{max-width:100%}
+body.appearance-custom-colors [data-appearance-player]{border-left:4px solid var(--appearance-player-color)!important}
+body.appearance-custom-colors [data-appearance-player].active>strong,body.appearance-custom-colors [data-appearance-player].active .player-top>strong,body.appearance-custom-colors [data-appearance-player].active .killer-player-name{color:var(--appearance-player-color)!important}
+body[data-active-emphasis=strong] [data-appearance-player].active{outline:3px solid var(--appearance-player-color,var(--accent));outline-offset:-3px}
+body[data-active-emphasis=contrast] [data-appearance-player].active{outline:3px solid var(--appearance-player-color,var(--accent));outline-offset:-3px;background:#dcefea!important;color:#10212b!important}
+body[data-active-emphasis=contrast] [data-appearance-player].active strong,body[data-active-emphasis=contrast] [data-appearance-player].active .remaining,body[data-active-emphasis=contrast] [data-appearance-player].active .visual-score,body[data-active-emphasis=contrast] [data-appearance-player].active>b,body[data-active-emphasis=contrast] [data-appearance-player].active small{color:#10212b!important}
+body[data-board-style=calm] .visual-display,body[data-board-style=calm] .party-game,body[data-board-style=calm] #sonny-root.killer-game{background:#14242d!important}
+body[data-board-style=calm] .killer-dartboard{filter:none!important}
+body.appearance-focus #game .visual-heading p,body.appearance-focus #game .party-heading p,body.appearance-focus #game .party-input-help,body.appearance-focus #game .killer-input-help,body.appearance-focus #game .killer-eyebrow,body.appearance-focus #game .section-heading h2,body.appearance-focus #match-label,body.appearance-focus #game .live,body.appearance-focus #mobile-dock{display:none!important}
+body.appearance-focus[data-score-style=standard] #game .player-statistics,body.appearance-focus[data-score-style=standard] #game .player-leg-results,body.appearance-focus[data-score-style=standard] #screen-player-history{display:none!important}
+body[data-play-space=board]{--appearance-arena:1.8fr;--appearance-input:.75fr}body[data-play-space=input]{--appearance-arena:1fr;--appearance-input:1.3fr}
+@media(min-width:900px),(min-width:700px) and (orientation:landscape){
+ html body.remote-control[data-play-space=board] #game .visual-shell,html body.remote-control[data-play-space=input] #game .visual-shell,html body:not(.remote-control):not(.input-collapsed)[data-play-space=board] #game .visual-shell,html body:not(.remote-control):not(.input-collapsed)[data-play-space=input] #game .visual-shell{grid-template-columns:minmax(0,var(--appearance-arena)) minmax(230px,var(--appearance-input))}
+ html body.remote-control[data-play-space=board] #game .party-game,html body.remote-control[data-play-space=input] #game .party-game,html body:not(.remote-control):not(.input-collapsed)[data-play-space=board] #game .party-game,html body:not(.remote-control):not(.input-collapsed)[data-play-space=input] #game .party-game{grid-template-columns:minmax(0,var(--appearance-arena)) minmax(230px,var(--appearance-input));grid-template-areas:'heading heading' 'players players' 'arena controls'}
+ html body.remote-control[data-play-space=board] #game .four-layout,html body.remote-control[data-play-space=input] #game .four-layout,html body.remote-control[data-play-space=board] #game .sonny-layout,html body.remote-control[data-play-space=input] #game .sonny-layout{grid-template-columns:minmax(0,var(--appearance-arena)) minmax(220px,var(--appearance-input))}
+ html body.remote-control[data-play-space=board] #sonny-root.killer-game,html body.remote-control[data-play-space=input] #sonny-root.killer-game{grid-template-columns:minmax(130px,.65fr) minmax(200px,var(--appearance-arena)) minmax(210px,var(--appearance-input));grid-template-areas:'heading heading heading' 'players arena controls'}
+}
+@media(max-width:899px) and (orientation:portrait){
+ body[data-play-space=board] #game .graphic-dartboard{max-width:48vh}body[data-play-space=input] #game .graphic-dartboard{max-width:30vh}
+ body[data-play-space=board] .golf-course{max-height:45vh}body[data-play-space=input] .golf-course{max-height:28vh}
+ #appearance-dialog .appearance-layout{grid-template-columns:1fr}.appearance-preview{position:static;grid-row:1}#appearance-preview-board{max-width:180px;margin:auto}#appearance-preview-players b{font-size:24px}#appearance-dialog{max-width:98vw}
+}
+body[data-score-style=custom] #game .match-score[data-score-kind=training]{display:flex!important}

@@ -1,10 +1,12 @@
-export const playerColors=['#5ce0ed','#ff78bc','#c8f56a','#c2a1ff'];
+import {playerColors,getAppearance} from './appearance-settings.js';
+export {playerColors} from './appearance-settings.js';
 export const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
 export const button=(text,action,cls)=>{const el=node('button',text,cls);el.type='button';el.onclick=action;return el;};
 export function svg(tag,attrs={},text){const el=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value] of Object.entries(attrs))el.setAttribute(key,String(value));if(text!==undefined)el.textContent=text;return el;}
 const point=(r,a)=>[250+r*Math.sin(a*Math.PI/180),250-r*Math.cos(a*Math.PI/180)];
 const wedge=(lo,hi,a,b)=>`M${point(hi,a)} A${hi},${hi} 0 0 1 ${point(hi,b)} L${point(lo,b)} A${lo},${lo} 0 0 0 ${point(lo,a)} Z`;
 export function dartboard({target=null,numbers=null,players=[],active=0,hit=null,centre='',detail='',doubleOnly=false}={}){
+ const style=getAppearance().board;
  const board=svg('svg',{viewBox:'0 0 500 500',class:'graphic-dartboard',role:'group','aria-label':hit?'Dartbord: tik op het gegooide getal':'Dartbord met het actuele doel'});
  board.append(svg('circle',{cx:250,cy:250,r:247,fill:'#0a141d',stroke:'#426173','stroke-width':2}));
  [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5].forEach((number,index)=>{
@@ -13,8 +15,10 @@ export function dartboard({target=null,numbers=null,players=[],active=0,hit=null
   for(const [lo,hi,ring] of [[23,116,'single'],[116,130,'triple'],[130,190,'single'],[190,205,'double']]){
    const mark=players.length?(players[active]?.marks[number]||0):0;
    const closed=players.length&&players.every(p=>(p.marks[number]||0)>=3);
-   const fill=closed?'#22323b':relevant?(doubleOnly&&ring!=='double'?'#283b37':mark===3?'#4a8054':'#9fcd57'):index%2?'#273943':'#172630';
-   group.append(svg('path',{d:wedge(lo,hi,index*18-9,index*18+9),fill,stroke:'#0c1921','stroke-width':2}));
+   const classic=ring==='single'?(index%2?'#ded4b5':'#171b20'):(index%2?'#248257':'#b84349');
+   const fill=closed?'#22323b':style==='classic'?classic:relevant?(doubleOnly&&ring!=='double'?'#283b37':mark===3?'#4a8054':'#9fcd57'):style==='calm'?(ring==='single'?'#1b2b34':'#354b56'):index%2?'#273943':'#172630';
+   const highlight=style==='classic'&&relevant&&(!doubleOnly||ring==='double');
+   group.append(svg('path',{d:wedge(lo,hi,index*18-9,index*18+9),fill,stroke:highlight?'#dafa8e':'#0c1921','stroke-width':highlight?3.5:2}));
    if(players.length&&relevant&&ring==='single'&&lo===130){
     for(let p=0;p<players.length;p++){const pos=point(146+p*11,index*18);group.append(svg('circle',{cx:pos[0],cy:pos[1],r:3.8,fill:(players[p].marks[number]||0)>=3?playerColors[p]:'#53616b'}));}
    }
