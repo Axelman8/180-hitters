@@ -20,10 +20,15 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import android.widget.FrameLayout;
 import android.util.Base64;
 import android.util.Log;
 
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -66,7 +71,23 @@ public final class MainActivity extends Activity {
         catch (Exception error) { Toast.makeText(this, "Lokale dartserver kon niet starten.", Toast.LENGTH_LONG).show(); }
 
         web = new WebView(this);
-        setContentView(web);
+        // Keep touch controls inside the usable window on Android 15+, on
+        // foldables, and when the keyboard opens. Insets belong to the native
+        // container so the WebView receives the correct viewport dimensions.
+        // https://developer.android.com/develop/ui/views/layout/edge-to-edge
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        FrameLayout content = new FrameLayout(this);
+        content.setBackgroundColor(Color.rgb(16,28,35));
+        content.addView(web, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
+            Insets safe = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.ime());
+            view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+            return insets;
+        });
+        setContentView(content);
+        ViewCompat.requestApplyInsets(content);
 
         WebSettings settings = web.getSettings(); settings.setJavaScriptEnabled(true); settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true); settings.setMediaPlaybackRequiresUserGesture(false); settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);

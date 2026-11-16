@@ -42,7 +42,7 @@ with tempfile.TemporaryDirectory() as temp:
      if (width,height) in [(393,852),(1920,1080)]:page.screenshot(path=str(ROOT/f'.repair-check/{game}-new-{width}.png'),full_page=True)
     page.set_viewport_size({'width':393,'height':852})
     if game=='gotcha':
-     page.locator('.gotcha-lane .gotcha-player-reset').first.click();page.wait_for_timeout(200);assert saved()['match']['state']['players'][1]['remaining']==0
+     page.locator('.visual-player .gotcha-player-reset').first.click();page.wait_for_timeout(200);assert saved()['match']['state']['players'][1]['remaining']==0
     elif game in ['cricket','tactics']:
      page.locator('.graphic-more-input').click();expect(page.locator('.visual-shell>.scoring')).to_be_visible()
      expect(page.locator('.graphic-more-input')).to_have_attribute('aria-expanded','true')

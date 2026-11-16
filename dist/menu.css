@@ -88,3 +88,13 @@ html.android-shell body.header-camera-active #mode-status::before{width:12px;hei
  #app-version{font-size:12px}
 }
 @media(max-height:500px){#header-menu .navigation-head{padding:10px 18px}#header-menu .navigation-head .eyebrow{display:none}#header-menu .navigation-foot{padding:8px 18px}#header-menu h2{font-size:22px}}
+
+/* Keep Menu, version and connection state in their own visible header cells. */
+html body>header{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:'mode version menu';height:auto!important;min-height:60px!important;gap:8px;padding:6px 12px;flex-shrink:0}
+html body>header .brand,html body>header #mode-status{grid-area:mode;min-width:0}
+html body>header #app-version{grid-area:version;position:static!important;inset:auto!important;transform:none!important;height:auto;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center;line-height:1.2;justify-self:center}
+html body>header #toggle-toolbar{grid-area:menu;justify-self:end;margin:0!important;min-width:44px;max-width:100%}
+html body>header #camera-game-controls.header-camera-controls{grid-area:cameras;justify-self:center;justify-content:center;flex-wrap:wrap;min-width:0;gap:4px;margin:0!important}
+html.android-shell body.header-camera-active>header{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:'mode cameras menu' 'version version version';min-height:80px!important;gap:4px 6px;padding:6px 10px}
+html.android-shell body.header-camera-active>header #app-version{height:18px;font-size:11px}
+@media(max-width:600px){html body>header .brand{font-size:0;letter-spacing:0}html body>header .brand img{width:36px;height:36px}html body>header #app-version{font-size:12px}}

@@ -1,6 +1,14 @@
 import {renderDartSlots} from './dart-editor.js';
 import {previewGotcha,previewCricket,previewBobs27} from './engine.js';
-import {node,button,playerColors,dartboard} from './graphic-board.js';
+import {node,button,svg,playerColors,dartboard} from './graphic-board.js';
+function closureMark(count){
+ const mark=svg('svg',{viewBox:'0 0 32 32',class:'closure-mark','aria-hidden':'true',focusable:'false',fill:'none',stroke:'currentColor','stroke-width':2.7,'stroke-linecap':'round'});
+ if(count===0)mark.append(svg('path',{d:'M11 16H21',opacity:.35}));
+ if(count>=1)mark.append(svg('path',{d:'M9 23L23 9'}));
+ if(count>=2)mark.append(svg('path',{d:'M9 9L23 23'}));
+ if(count>=3)mark.append(svg('circle',{cx:16,cy:16,r:13}));
+ return mark;
+}
 let shell=null,scoring=null,home=null,cricketView='both',extraInput=false,lastMatch=null;
 export function renderVisualGame(state,hits,actions){
  const enabled=state&&['gotcha','cricket','tactics','bobs27'].includes(state.game);
@@ -25,8 +33,7 @@ export function renderVisualGame(state,hits,actions){
  });display.append(cards);
  const arena=node('section',undefined,'visual-arena');
  if(gotcha){
-  const race=node('div',undefined,'gotcha-race');
-  cards.querySelectorAll('.visual-player').forEach((card,index)=>{const player=players[index],lane=node('div',undefined,'gotcha-lane'+(index===actor?' active':'')),track=node('div',undefined,'gotcha-track'),runner=node('b',String(player.remaining),'gotcha-runner');lane.style.setProperty('--player-color',playerColors[index]);runner.style.left=`${Math.max(0,Math.min(100,player.remaining/state.start*100))}%`;track.append(runner);lane.append(node('span',player.name));const reset=card.querySelector('.gotcha-player-reset');if(reset)lane.append(reset);lane.append(track);race.append(lane);});arena.append(race);
+  cards.querySelectorAll('.visual-player').forEach((card,index)=>{const player=players[index],track=node('div',undefined,'gotcha-track'),runner=node('b',String(player.remaining),'gotcha-runner');runner.style.left=`${Math.max(0,Math.min(100,player.remaining/state.start*100))}%`;track.append(runner);card.append(track);});
   arena.append(node('div',`FINISH ${state.start}`,'gotcha-finish'));
   if(live.resets.length)arena.append(node('p','GOTCHA! '+live.resets.map(i=>players[i].name+' terug naar nul').join(' | '),'gotcha-impact'));
  }else if(bobs){
@@ -36,7 +43,7 @@ export function renderVisualGame(state,hits,actions){
   arena.append(dartboard({numbers:state.numbers,players,active:actor,hit:actions.hit}));
   const marks=node('div',undefined,'graphic-marks');marks.style.setProperty('--mark-columns',String(players.length+1));
   marks.append(node('b','Doel'));players.forEach((p,i)=>{const name=node('b',p.name);name.style.color=playerColors[i];marks.append(name);});
-  state.numbers.forEach(number=>{const target=button(number===25?'BULL':String(number),()=>actions.hit(number),'graphic-mark-target');marks.append(target);players.forEach((p,i)=>{const count=p.marks[number]||0,cell=node('span',count===3?'● ● ●':count===2?'● ● ○':count===1?'● ○ ○':'○ ○ ○');cell.style.color=playerColors[i];cell.setAttribute('aria-label',`${p.name}: ${count} marks op ${number}`);marks.append(cell);});});arena.append(marks);
+  state.numbers.forEach(number=>{const target=button(number===25?'BULL':String(number),()=>actions.hit(number),'graphic-mark-target');marks.append(target);players.forEach((p,i)=>{const count=p.marks[number]||0,cell=node('span');cell.dataset.marks=String(count);cell.append(closureMark(count));cell.style.color=playerColors[i];cell.setAttribute('aria-label',`${p.name}: ${count} marks op ${number}`);marks.append(cell);});});arena.append(marks);
  }
  display.append(arena);
  if(cricket){

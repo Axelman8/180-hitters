@@ -7,7 +7,10 @@ const shown=e=>e&&!e.hidden&&getComputedStyle(e).display!=='none';
 function set(el,key,value){if(el.style.getPropertyValue(key)!==value)el.style.setProperty(key,value);}
 export function fitPlayfield(value){
  state=value;const game=document.getElementById('game');
- const active=!!state&&shown(game)&&document.getElementById('setup')?.hidden;
+ // Keep the established score-entry screens for X01/121, Gotcha and Hitters
+ // Challenge. The board-focused layout is only for graphical playfields.
+ const established=state&&['x01','gotcha','tenlives'].includes(state.game);
+ const active=!!state&&!established&&shown(game)&&document.getElementById('setup')?.hidden;
  document.body.classList.toggle('viewport-game',active);if(!active)return;
  game.dataset.layoutMatch=String(state.startedAt);
  game.dataset.hasHistory=String(!!state.history?.length);

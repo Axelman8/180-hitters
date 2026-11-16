@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ASSETS=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else None
 PORT='8884' if ASSETS else '8883';URL='http://127.0.0.1:'+PORT
 OUT=ROOT/'.repair-check/playfields47';OUT.mkdir(exist_ok=True)
-GAMES=['killer','fourinarow','seabattle','golf','shanghai','cricket','tactics','bobs27','gotcha','scram','bull41','twentyone','tenlives','x01','121']
+GAMES=['killer','fourinarow','seabattle','golf','shanghai','cricket','tactics','bobs27','scram','bull41','twentyone']
 with tempfile.TemporaryDirectory() as temp:
  server=subprocess.Popen([sys.executable,str(ROOT/'server.py'),'--host','127.0.0.1','--port',PORT,'--data-file',str(Path(temp)/'state.json')],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
  try:

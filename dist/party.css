@@ -49,3 +49,5 @@ body:not(.remote-control):not(.input-collapsed).visual-game .visual-shell{grid-t
 
 body.visual-game #game>:not(#visual-game):not(#bot-status){display:none!important}
 @media(min-width:1000px){body:not(.remote-control) .visual-shell[data-visual=cricket] .visual-players,body:not(.remote-control) .visual-shell[data-visual=tactics] .visual-players,body:not(.remote-control) .visual-shell[data-visual=bobs27] .visual-players{grid-template-columns:repeat(4,minmax(0,1fr))}body:not(.remote-control) .visual-shell[data-visual=cricket] .visual-player strong,body:not(.remote-control) .visual-shell[data-visual=tactics] .visual-player strong{font-size:clamp(20px,2vw,34px)}}
+
+.graphic-marks .closure-mark{display:block;width:28px;height:28px;width:clamp(20px,3.2vw,44px);height:clamp(20px,3.2vw,44px);max-width:100%;margin:auto}
