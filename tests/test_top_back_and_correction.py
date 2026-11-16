@@ -48,21 +48,21 @@ with tempfile.TemporaryDirectory() as tmp:
      prefix='.four-darts' if game=='fourinarow' else '.sonny-darts' if game in ['scram','killer','bull41','twentyone'] else '#dart-slots'
      index=len(expected['hits'])-1;slots=page.locator(prefix+' button');expect(slots).to_have_count(3)
      for i,hit in enumerate(expected['hits']):
-      label=hit.get('label') if game=='fourinarow' else 'Mis' if not hit['number'] else ('Bull' if hit['mult']==2 else '25') if hit['number']==25 else ('D' if hit['mult']==2 else 'T' if hit['mult']==3 else '')+str(hit['number'])
+      label=('RAAK' if hit['number']==fixture['before']['bobsTarget'] and hit['mult']==2 else 'MIS') if game=='bobs27' else hit.get('label') if game=='fourinarow' else 'Mis' if not hit['number'] else ('Bull' if hit['mult']==2 else '25') if hit['number']==25 else ('D' if hit['mult']==2 else 'T' if hit['mult']==3 else '')+str(hit['number'])
       expect(slots.nth(i)).to_contain_text(label)
      page.wait_for_timeout(650);assert saved()['match']['editTurn']['hits']==expected['hits']
      slots.nth(index).click()
      if game=='fourinarow':page.locator('.four-miss').click()
      elif game in ['scram','killer','bull41','twentyone']:page.locator('.sonny-actions').get_by_role('button',name='Mis',exact=True).click()
-     else:page.locator('#miss-dart').click()
+     else:page.locator('#visual-miss' if game in ['cricket','tactics'] else '#miss-dart').click()
      assert len(saved()['match']['state']['history'])==len(fixture['before']['history']),'A correction must wait for confirmation'
      # An early finish may originally have used fewer than three darts.
      for extra in range(len(expected['hits']),3):
       page.locator(prefix+' button').nth(extra).click()
       if game=='fourinarow':page.locator('.four-miss').click()
       elif game in ['scram','killer','bull41','twentyone']:page.locator('.sonny-actions').get_by_role('button',name='Mis',exact=True).click()
-      else:page.locator('#miss-dart').click()
-     confirm='.four-actions .primary' if game=='fourinarow' else '.sonny-actions .primary' if game in ['scram','killer','bull41','twentyone'] else '#tactics-confirm' if game=='tactics' else '#submit'
+      else:page.locator('#visual-miss' if game in ['cricket','tactics'] else '#miss-dart').click()
+     confirm='.four-actions .primary' if game=='fourinarow' else '.sonny-actions .primary' if game in ['scram','killer','bull41','twentyone'] else '#submit'
      page.locator(confirm).click()
     deadline=time.monotonic()+7
     while time.monotonic()<deadline:
