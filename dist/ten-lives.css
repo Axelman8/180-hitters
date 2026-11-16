@@ -1,4 +1,11 @@
 #lives-game{display:none}
+.lives-board-frame{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:100%;height:var(--lives-board-size,0px);min-height:0}
+@media(orientation:portrait){.lives-focus>:not(.lives-board-frame){flex-shrink:0}#lives-game>.lives-heading,#lives-game>.lives-players,#lives-game>.lives-controls,#lives-game>.lives-last{flex-shrink:0}}
+.lives-dartboard{display:block;width:var(--lives-board-size,0px);height:var(--lives-board-size,0px);max-width:100%;flex-shrink:0;pointer-events:none}
+.lives-board-sector text{font:800 26px system-ui,sans-serif}
+.lives-board-sector.current text{font-size:30px;font-weight:900}
+.lives-dartboard .target-ring{filter:drop-shadow(0 0 5px #c8f56a88)}
+@media(orientation:landscape){.lives-board-frame{display:none!important}}
 body[data-game="tenlives"] #game> :not(#lives-game):not(#bot-status){display:none!important}
 body[data-game="tenlives"] #game:not([hidden]){display:block!important;height:var(--stage-height,100%)!important;min-height:0!important}
 body[data-game="tenlives"] #lives-game{display:flex!important;flex-direction:column;gap:12px;min-height:0;flex:1;width:100%}

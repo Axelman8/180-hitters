@@ -52,6 +52,7 @@ jobs:
           node tests/camera-game-rules.mjs
           node tests/killer-rules.mjs
           node tests/party-games.mjs
+          node tests/game-moments.mjs
           python3 tests/test_camera_bull_choice.py
           node tests/lives-correction.mjs
           node tests/training-bot-darts.mjs

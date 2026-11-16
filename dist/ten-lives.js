@@ -1,3 +1,5 @@
+import {livesBoard,fitLivesBoard} from './lives-board.js';
+
 export const livesTargets=[20,19,18,17,16,15,14,13,12,11,10,25];
 export const livesLabel=(state,player)=>player.livesTarget===25?'Bull (50)':(state.livesMode==='triple'?'T':'D')+player.livesTarget;
 
@@ -220,7 +222,7 @@ const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefine
 export function renderLives(state,actions){
  let root=document.getElementById('lives-game');
  if(!root){root=el('section',undefined,'lives-game');root.id='lives-game';document.getElementById('game').append(root);}
- root.replaceChildren();
+ root.dataset.match=String(state.startedAt);root.replaceChildren();
  const heading=el('div',undefined,'lives-heading');heading.append(el('h2','Hitters Challenge'),el('span',state.livesMode==='triple'?'Triples · 20 t/m 10 → Bull':'Doubles · 20 t/m 10 → Bull'));root.append(heading);
  const cards=el('div',undefined,'lives-players');cards.style.setProperty('--count',state.players.length);
  state.players.forEach((p,i)=>{
@@ -238,6 +240,7 @@ export function renderLives(state,actions){
  attempts.append(el('strong',String(p.attempts),'lives-attempt-count'),document.createTextNode(' '),el('span',`${p.attempts===1?'poging':'pogingen'} over`,'lives-attempt-label'));
  const focusValues=el('div',undefined,'lives-focus-values');focusValues.append(target,attempts);
  focus.append(el('p',p.name,'lives-name'),focusValues);
+ const boardFrame=el('div',undefined,'lives-board-frame');boardFrame.hidden=true;boardFrame.append(livesBoard(state));focus.append(boardFrame);
  const route=el('div',undefined,'lives-route');
  for(const target of livesTargets){const n=el('span',target===25?'Bull':String(target));if(target===p.livesTarget)n.className='current';route.append(n);}focus.append(route);root.append(focus);
  const controls=el('section',undefined,'lives-controls panel');
@@ -259,6 +262,7 @@ export function renderLives(state,actions){
  const redo=btn('Volgende pijl →','lives-redo',actions.redo);redo.disabled=!actions.canRedo;
  const history=el('div',undefined,'lives-history-actions');history.append(undo,redo);controls.append(history);
  const toggle=btn('Scherminvoer in-/uitklappen','lives-toggle',actions.toggle);controls.append(toggle);root.append(controls);
+ fitLivesBoard(root,focus,boardFrame);
  const last=state.history.at(-1);
  const note=el('p',last?`${last.name}: ${last.target===25?'Bull':(state.livesMode==='triple'?'T':'D')+last.target} ${last.labels.toLowerCase()}${last.ended?(last.lives===0?' · uitgeschakeld':last.target===20?' · één leven kwijt':' · één doel terug'):''}`:'Raak het doel om door te gaan. Overgebleven pijlen + 3 voor het volgende doel.','lives-last');note.setAttribute('aria-live','polite');root.append(note);
 }

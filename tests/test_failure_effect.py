@@ -11,10 +11,12 @@ with tempfile.TemporaryDirectory() as tmp:
    errors=[]
    for page,query in [(phone,'/?remote=1'),(screen,'/')]:
     page.on('pageerror',lambda e:errors.append(str(e)));page.goto(url+query)
+    if page.locator('#header-menu').is_visible():page.locator('#navigation-close').click()
     page.evaluate("window.effects=0;new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.id==='lives-fail-effect')window.effects++}).observe(document.body,{childList:true})")
    state=phone.evaluate("async()=>{const {newMatch}=await import('/engine.js');return newMatch(['A','B'],501,'double',3,{game:'tenlives',livesMode:'double'})}")
    rev=phone.request.get(url+'/api/state').json()['revision'];assert phone.request.post(url+'/api/state',data={'revision':rev,'match':{'state':state,'undo':[]}}).ok
-   expect(phone.locator('#lives-miss')).to_be_visible();phone.locator('#lives-miss').click();expect(phone.locator('.lives-attempt-count')).to_have_text('2')
+   expect(phone.locator('#lives-miss')).to_be_visible();expect(screen.locator('.lives-name')).to_have_text('A')
+   phone.locator('#lives-miss').click();expect(phone.locator('.lives-attempt-count')).to_have_text('2')
    assert phone.evaluate('window.effects')==0
    phone.locator('#lives-miss-three').click()
    expect(phone.locator('#lives-fail-effect')).to_be_visible()

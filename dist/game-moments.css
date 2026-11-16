@@ -1,0 +1,6 @@
+/* Shared impact effects remain click-through on displays and controllers. */
+#score-celebration.game-moment,body.remote-control #score-celebration.game-moment{display:flex;gap:12px;top:0;right:0;bottom:0;left:0;height:100vh;height:100dvh}
+#score-celebration.game-moment strong{font-size:32px;font-size:clamp(28px,5vmin,80px);letter-spacing:0;padding:0;max-width:92vw;text-align:center;line-height:1.1;overflow-wrap:anywhere}
+#score-celebration.game-moment .moment-symbol{width:120px;height:120px;width:clamp(90px,28vmin,280px);height:clamp(90px,28vmin,280px);fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 14px #ffd76c88);animation:score-build-burst 3.1s linear both;flex-shrink:0}
+#score-celebration.game-moment .moment-detail{display:block;max-width:88vw;margin:0;padding:10px 16px;border:1px solid #ffd76c80;border-radius:12px;background:#101c23e8;color:#eef4f4;font-size:18px;font-size:clamp(16px,2.8vmin,30px);font-weight:750;line-height:1.3;text-align:center;overflow-wrap:anywhere;animation:none}
+@media(prefers-reduced-motion:reduce){#score-celebration.game-moment .moment-symbol{animation:none;filter:none}#score-celebration.game-moment strong{animation:none;transform:none}#score-celebration.game-moment{animation:score-effect-fade 3.1s both}}

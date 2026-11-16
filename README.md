@@ -56,6 +56,10 @@ Gotcha keeps progress and opponent-reset actions inside the player cards. Cricke
 
 Menu, version and connection state have separate positions in the top bar. The modern Android app keeps its content within the usable screen edges, including system bars, display cutouts and the on-screen keyboard.
 
+**Hitters Challenge** has a portrait dartboard that highlights the current double, triple or inner bull. It uses the free space inside the target panel and follows hits, misses, BOT turns and corrections. Landscape retains the existing score-entry layout. The guide stays hidden if a small window leaves too little room; scores and input controls keep their space. Standard, classic and calm board styles also apply to this guide.
+
+Short impact animations mark ships sinking and fleets being eliminated in Sea Battle, Killer activation/lost lives/elimination, Gotcha opponent resets, claimed Four in a Row cells, and elimination in Bob's 27 or Hitters Challenge. They appear on NUC displays and phone/tablet controllers, with the player's name and an event-specific vector icon. Pending dart updates can show the event before visit confirmation; confirmation does not replay it. Animations let touches pass through, respect reduced-motion settings and never change scores. Corrections and history navigation do not replay effects. Existing X01 high-score effects and winner screens remain available.
+
 Three new games support up to four players, BOT 40/50, camera scoring, saved reports and sharing:
 
 - **Zeeslag Darts (Sea Battle)** is an original variant. Each player has randomly placed ships of 3, 2 and 2 cells on the numbers 1-20. Each ship cell has two life points. A single inflicts one damage and a double or triple up to two on that cell; bull and water do no damage. A shot attacks all opponents on the same number, while fleet tabs only change the view. Eliminated players are skipped and the final sinking dart ends the game immediately. For online play, unhit enemy positions remain on the relay; only the struck cells are revealed.
