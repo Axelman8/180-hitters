@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory() as temp:
     for width,height in [(320,640),(393,852),(744,900),(872,736),(1024,600),(1920,1080)]:
      page.set_viewport_size({'width':width,'height':height});page.wait_for_timeout(80)
      assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(game,width,height)
-     selectors=['.party-arena','.party-controls'] if game in ['golf','shanghai','seabattle'] else ['.visual-arena','.graphic-compact-input'] if game in ['cricket','tactics'] and width<=600 else ['.visual-display','.visual-shell>.scoring']
+     selectors=['.party-arena','.party-controls'] if game in ['golf','shanghai','seabattle'] else ['.visual-arena','.graphic-compact-input'] if game in ['cricket','tactics'] and width<=600 else ['.visual-arena','.visual-shell>.scoring']
      a,b=[page.locator(selector).bounding_box() for selector in selectors]
 
      if not a or not b:
@@ -42,8 +42,11 @@ with tempfile.TemporaryDirectory() as temp:
      if (width,height) in [(393,852),(1920,1080)]:page.screenshot(path=str(ROOT/f'.repair-check/{game}-new-{width}.png'),full_page=True)
     page.set_viewport_size({'width':393,'height':852})
     if game=='gotcha':
-     page.locator('.visual-player .gotcha-player-reset').first.click();page.wait_for_timeout(200);assert saved()['match']['state']['players'][1]['remaining']==0
+     page.locator('.gotcha-lane .gotcha-player-reset').first.click();page.wait_for_timeout(200);assert saved()['match']['state']['players'][1]['remaining']==0
     elif game in ['cricket','tactics']:
+     page.locator('.graphic-more-input').click();expect(page.locator('.visual-shell>.scoring')).to_be_visible()
+     expect(page.locator('.graphic-more-input')).to_have_attribute('aria-expanded','true')
+     page.locator('.graphic-more-input').click();expect(page.locator('.graphic-compact-input')).to_be_visible()
      page.locator('.graphic-mark-target').first.click();expect(page.locator('#dart-slots .current')).to_have_text(__import__('re').compile('2|—|-'))
      expect(page.locator('#graphic-miss')).to_be_visible();page.locator('#graphic-miss').click();page.locator('#graphic-miss').click()
      page.wait_for_function("async()=>(await fetch('/api/state').then(r=>r.json())).match.state.history.length===1")

@@ -50,7 +50,9 @@ Player recognition offers custom colours for four seats, optional shape/number m
 
 Preferences are stored on the device, independently of local, Bluetooth and online match data. Changing or resetting them does not write scores, rename players or change another controller or the NUC display.
 
-Gotcha now puts each player's coloured race track and reset action in their score card. Cricket and Tactics show a dartboard with closure indicators and a player-coloured marks table. Phones start with the readable table and compact dart controls; the board button switches views, and expanded turn controls retain correction and total-entry options. Bob's 27 highlights the current double and shows progress through D1-D20 and bull. Existing scoring variants, team members, bots and correction rules remain available.
+Scores and player names appear in a compact strip above the playfield in every game. Boards use the actual remaining viewport after the score strip and input panel, and resize when the device rotates or a Fold screen changes. Wide controller screens place input beside the playfield; narrow screens place it below, without overlapping the board. NUC screens with input collapsed devote the remaining space to the playfield.
+
+Gotcha shows coloured race lanes below the score strip, with an opponent-reset action beside each applicable lane. Cricket and Tactics show a dartboard with closure indicators and a player-coloured marks table. Phones start with the readable table and compact dart controls; the board button switches views, and expanded turn controls retain correction and total-entry options. Bob's 27 highlights the current double and shows progress through D1-D20 and bull. Existing scoring variants, team members, bots and correction rules remain available.
 
 Three new games support up to four players, BOT 40/50, camera scoring, saved reports and sharing:
 
@@ -62,7 +64,7 @@ The game picker labels the five supported online games **Online mogelijk**, and 
 
 ## Killer: a board built for four players
 
-Killer now has a responsive, original SVG dartboard with each player's number in their own colour. Four player cards show names, target numbers, three-hit KILLER progress and three lives. The active player and target are highlighted, and each pending dart previews its effect. On phones, the board uses the space left after the player cards and touch controls, keeping entry separate from the board. Larger NUC screens show a bigger board with player cards beside it. New matches use three hits to become Killer and three lives per player. Singles count once, doubles twice and triples three times. The winning dart ends play immediately. Saved six-letter matches retain their original rules.
+Killer now has a responsive, original SVG dartboard with each player's number in their own colour. Four player cards show names, target numbers, three-hit KILLER progress and three lives. The active player and target are highlighted, and each pending dart previews its effect. On phones, the board uses the space left after the player cards and touch controls, keeping entry separate from the board. Larger NUC screens show the player cards across the top and the largest board that fits below them. New matches use three hits to become Killer and three lives per player. Singles count once, doubles twice and triples three times. The winning dart ends play immediately. Saved six-letter matches retain their original rules.
 
 When creating an online dart lane, choose **4 in a Row**, **Killer**, **Zeeslag Darts**, **Dartgolf** or **Shanghai**, with two to four players. Invitations, the public lane list and the agreed starting player work for all five games. Killer synchronizes the initial number selection and each dart, skips eliminated players and shows the winner on every device. All participants need version 1.9.39 or newer to join Killer, and 1.9.40 or newer for the three new games. Existing 4 in a Row lanes remain compatible.
 

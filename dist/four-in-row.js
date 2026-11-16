@@ -78,7 +78,7 @@ export function renderFourInRow(root,state,pending,actions){
   if(needsBullCorner&&!cell.disabled){cell.classList.add('bull-choice');cell.setAttribute('aria-label','Vrij sB-vak kiezen: hoek '+({0:'linksboven',4:'rechtsboven',20:'linksonder',24:'rechtsonder'}[index]||index));}
   cell.onclick=()=>actions.hit(index);board.append(cell);
  });
- layout.append(board);
+ const frame=el('div',undefined,'four-board-frame');frame.append(board);layout.append(frame);
  const controls=el('aside',undefined,'four-controls');controls.append(el('p',needsBullCorner?'Single bull geregistreerd. Kies tijdens of na het gooien een oplichtend sB-vak.':'Getallen: maak 3 marks binnen deze beurt. Losse marks vervallen. sB en BB claim je direct.','four-help'));
  const multipliers=el('div',undefined,'four-multipliers');for(const [mult,text] of [[1,'Single'],[2,'Double'],[3,'Triple']]){const button=el('button',text,mult===actions.multiplier?'selected':'');button.type='button';button.onclick=()=>actions.setMultiplier(mult);multipliers.append(button);}controls.append(multipliers);
  const darts=el('div',undefined,'four-darts');renderDartSlots(darts,pending,{editing:actions.editing,selected:actions.selectedDart,select:actions.select,placeholder:index=>`Pijl ${index+1}`});controls.append(darts);

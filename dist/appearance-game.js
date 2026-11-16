@@ -1,4 +1,5 @@
 import {getAppearance,playerColors,symbolNames} from './appearance-settings.js';
+import {fitPlayfield} from './playfield-layout.js';
 const ns='http://www.w3.org/2000/svg';
 export function playerMarker(kind,index=0){
  const mark=document.createElementNS(ns,'svg');mark.setAttribute('viewBox','0 0 24 24');mark.setAttribute('aria-hidden','true');mark.classList.add('appearance-marker');
@@ -30,7 +31,7 @@ function extraInfo(state,index,prefs){
 export function applyGameAppearance(state){
  const prefs=applyAppearanceDocument();
  document.body.classList.toggle('appearance-focus',prefs.focus&&state?.phase==='playing'&&!document.getElementById('game')?.hidden);
- if(!state?.players)return;
+ if(!state?.players){fitPlayfield(state);return;}
  for(const selector of ['#players>.player','.visual-players>.visual-player','.party-players>.party-player','.killer-players>.killer-player','.four-legend>article','.sonny-players>article','.lives-players>.lives-player']){
   document.querySelectorAll(selector).forEach((card,index)=>{
    if(!state.players[index])return;card.dataset.appearancePlayer=String(index);card.style.setProperty('--appearance-player-color',playerColors[index]);
@@ -47,4 +48,5 @@ export function applyGameAppearance(state){
    if(prefs.scoreboard.mode==='custom')card.append(extraInfo(state,index,prefs));
   });
  }
+ fitPlayfield(state);
 }

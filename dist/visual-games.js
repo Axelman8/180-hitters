@@ -8,7 +8,7 @@ export function renderVisualGame(state,hits,actions){
  if(!enabled){if(shell){shell.hidden=true;if(scoring&&home)home.prepend(scoring);}return;}
  if(!shell){shell=node('section',undefined,'visual-shell');shell.id='visual-game';document.getElementById('game').append(shell);scoring=document.querySelector('.play-grid .scoring');home=scoring.parentNode;}
  shell.hidden=false;shell.dataset.visual=state.game;if(lastMatch!==state.startedAt){lastMatch=state.startedAt;extraInput=false;document.querySelector('main').scrollTop=0;window.scrollTo(0,0);}shell.classList.toggle('graphic-extra-input',extraInput||!!actions.editing);
- const old=shell.querySelector('.visual-display');if(old)old.remove();
+ const old=shell.querySelector('.visual-display');if(old)old.remove();scoring.querySelector('.graphic-more-input')?.remove();
  const display=node('div',undefined,'visual-display'),actor=state.active,bobs=state.game==='bobs27',gotcha=state.game==='gotcha',cricket=!bobs&&!gotcha;
  let players=state.players,live=null;
  if(gotcha){live=previewGotcha(state,hits);players=live.players;}
@@ -25,7 +25,8 @@ export function renderVisualGame(state,hits,actions){
  });display.append(cards);
  const arena=node('section',undefined,'visual-arena');
  if(gotcha){
-  cards.querySelectorAll('.visual-player').forEach((card,index)=>{const player=players[index],track=node('div',undefined,'gotcha-track'),runner=node('b',String(player.remaining),'gotcha-runner');runner.style.left=`${Math.max(0,Math.min(100,player.remaining/state.start*100))}%`;track.append(runner);card.append(track);});
+  const race=node('div',undefined,'gotcha-race');
+  cards.querySelectorAll('.visual-player').forEach((card,index)=>{const player=players[index],lane=node('div',undefined,'gotcha-lane'+(index===actor?' active':'')),track=node('div',undefined,'gotcha-track'),runner=node('b',String(player.remaining),'gotcha-runner');lane.style.setProperty('--player-color',playerColors[index]);runner.style.left=`${Math.max(0,Math.min(100,player.remaining/state.start*100))}%`;track.append(runner);lane.append(node('span',player.name));const reset=card.querySelector('.gotcha-player-reset');if(reset)lane.append(reset);lane.append(track);race.append(lane);});arena.append(race);
   arena.append(node('div',`FINISH ${state.start}`,'gotcha-finish'));
   if(live.resets.length)arena.append(node('p','GOTCHA! '+live.resets.map(i=>players[i].name+' terug naar nul').join(' | '),'gotcha-impact'));
  }else if(bobs){
@@ -41,7 +42,7 @@ export function renderVisualGame(state,hits,actions){
  if(cricket){
   const compact=node('div',undefined,'graphic-compact-input'),slots=node('div',undefined,'sonny-darts');renderDartSlots(slots,hits,{editing:actions.editing,selected:actions.selectedDart,select:actions.select,placeholder:n=>`Pijl ${n+1}`});compact.append(slots);
   const row=node('div',undefined,'graphic-compact-buttons');for(const [mult,label] of [[1,'Single'],[2,'Dubbel'],[3,'Triple']]){const b=button(label,()=>actions.setMultiplier(mult),mult===actions.multiplier?'selected':'');b.setAttribute('aria-pressed',String(mult===actions.multiplier));row.append(b);}const miss=button('MIS',()=>actions.hit(0));miss.id='graphic-miss';row.append(miss);compact.append(row);
-  const more=button(extraInput?'Beurtbediening inklappen':'Beurtbediening / herstellen',()=>{extraInput=!extraInput;renderVisualGame(state,hits,actions);},'graphic-more-input');more.setAttribute('aria-expanded',String(extraInput));compact.append(more);display.append(compact);
+  const more=button(extraInput?'Beurtbediening inklappen':'Beurtbediening / herstellen',()=>{extraInput=!extraInput;renderVisualGame(state,hits,actions);},'graphic-more-input');more.setAttribute('aria-expanded',String(extraInput));if(extraInput||actions.editing)scoring.prepend(more);else compact.append(more);display.append(compact);
  }
  shell.prepend(display);if(scoring.parentNode!==shell)shell.append(scoring);
  let miss=document.getElementById('visual-miss');if(!miss){miss=button('MIS',()=>actions.hit(0),'wide');miss.id='visual-miss';document.getElementById('remove-dart').before(miss);}miss.hidden=!cricket;
