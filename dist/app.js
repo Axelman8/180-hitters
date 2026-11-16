@@ -648,7 +648,7 @@ $('history-latest').onclick=()=>goForward(true);
 for(const b of document.querySelectorAll('[data-darts]'))b.onclick=()=>{$('finish-dialog').close();commit(totalTurn(Number(entry),{darts:Number(b.dataset.darts)}));};
 $('finish-cancel').onclick=()=>$('finish-dialog').close();
 function showResult(){
- if($('header-menu')?.open||$('new-match-dialog')?.open||$('matches-dialog')?.open||$('matches-report-dialog')?.open)return;
+ if($('appearance-dialog')?.open||$('header-menu')?.open||$('new-match-dialog')?.open||$('matches-dialog')?.open||$('matches-report-dialog')?.open)return;
  showWinner(state);
  $('continue').classList.remove('result-local-continue');
  $('result-dialog').querySelector('#lives-summary')?.remove();
@@ -953,4 +953,4 @@ cameraControls(async event=>{
   }
  }finally{busy=false;}
 });
-window.addEventListener('hitters-appearance',()=>render());
+window.addEventListener('hitters-appearance',()=>{if($('setup').hidden)render();else applyGameAppearance(state);});

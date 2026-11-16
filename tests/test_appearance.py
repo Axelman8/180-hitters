@@ -47,6 +47,15 @@ with tempfile.TemporaryDirectory() as temp:
    assert page.locator('.graphic-sector[data-number="1"] path').first.get_attribute('fill')=='#ded4b5'
    appearance();page.locator('#appearance-board').select_option('calm');close()
    assert page.locator('.graphic-sector[data-number="1"] path').first.get_attribute('fill')=='#1b2b34'
+   # Presentation changes must not dismiss a match-setup or edit form.
+   page.locator('#toggle-toolbar').click();page.locator('[data-menu="play"].navigation-category').click();page.locator('#edit-match').click();expect(page.locator('#setup')).to_be_visible()
+   before_names=page.locator('#names input').evaluate_all('nodes=>nodes.map(e=>e.value)')
+   appearance();page.locator('#appearance-space').select_option('auto');close();expect(page.locator('#setup')).to_be_visible()
+   assert page.locator('#names input').evaluate_all('nodes=>nodes.map(e=>e.value)')==before_names
+   for step in range(4):
+    if page.locator('#game').is_visible():break
+    page.locator('.wizard-back').click()
+   expect(page.locator('#game')).to_be_visible()
    print('PASS: immediate changes, reload persistence, distinct device preferences, safe symbols, visible controls and no match/draft writes',flush=True)
    # Check both space preferences in real playfields, not just the preview.
    for game in ['x01','fourinarow','killer','cricket','tactics','bobs27','golf','shanghai','seabattle']:
