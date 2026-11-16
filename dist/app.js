@@ -591,7 +591,7 @@ function addDart(n,m){const dart=makeDart(n,m);if(n===25&&m===1&&state?.game==='
  if(mode==='dart'&&(dartList.length===3||preview.bust||preview.finished)){void commit({hits:[...dartList]});}else publishDraft();
 }
 for(const n of ['1','2','3','4','5','6','7','8','9','bust','0']){
- const key=button(n==='bust'?'BUST / geen score':n,()=>{if(n==='bust')$('bust').click();else addDigit(n);});
+ const key=button(n==='bust'?'BUST':n,()=>{if(n==='bust')$('bust').click();else addDigit(n);});
  if(n==='bust'){key.id='keypad-bust';key.setAttribute('aria-label','Bust / geen score');}
  $('keypad').append(key);
 }

@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory() as temp:
     for width,height in [(320,640),(393,852),(744,900),(872,736),(1024,600),(1920,1080)]:
      page.set_viewport_size({'width':width,'height':height});page.wait_for_timeout(80)
      assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(game,width,height)
-     selectors=['.party-arena','.party-controls'] if game in ['golf','shanghai','seabattle'] else ['.visual-arena','.graphic-compact-input'] if game in ['cricket','tactics'] and width<=600 else ['.visual-arena','.visual-shell>.scoring']
+     selectors=['.party-arena','.party-controls'] if game in ['golf','shanghai','seabattle'] else ['.visual-arena','.graphic-compact-input'] if game in ['cricket','tactics'] else ['.visual-arena','.visual-shell>.scoring']
      a,b=[page.locator(selector).bounding_box() for selector in selectors]
 
      if not a or not b:

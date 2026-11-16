@@ -54,7 +54,7 @@ body.viewport-game[data-playfield] .visual-heading{grid-area:heading}body.viewpo
 body.viewport-game[data-playfield] .visual-shell>.scoring,body.viewport-game[data-playfield] .graphic-compact-input{grid-area:controls;min-width:0;min-height:0!important;align-self:stretch;overflow:auto!important;margin:0}
 body.viewport-game[data-playfield]:not(.stage-input) .visual-shell>.scoring,body.viewport-game[data-playfield]:not(.stage-input) .graphic-compact-input{display:none!important}
 body.viewport-game[data-playfield].stage-input .visual-shell>.scoring{display:block!important}
-@media(max-width:600px){body.viewport-game[data-playfield] .visual-shell[data-visual=cricket]:not(.graphic-extra-input)>.scoring,body.viewport-game[data-playfield] .visual-shell[data-visual=tactics]:not(.graphic-extra-input)>.scoring{display:none!important}}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=cricket]:not(.graphic-extra-input)>.scoring,html body.viewport-game[data-playfield] #game .visual-shell[data-visual=tactics]:not(.graphic-extra-input)>.scoring{display:none!important}
 body.viewport-game[data-playfield] .visual-shell[data-visual=cricket] .visual-arena,body.viewport-game[data-playfield] .visual-shell[data-visual=tactics] .visual-arena{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(180px,1fr);grid-template-rows:minmax(0,1fr)}
 body.viewport-game[data-playfield] .visual-display[data-cricket-view=table] .visual-arena,body.viewport-game[data-playfield] .visual-display[data-cricket-view=board] .visual-arena{display:flex;flex-direction:column}
 body.viewport-game[data-playfield] .visual-display[data-cricket-view=table] .stage-board-frame{display:none!important}
@@ -80,7 +80,7 @@ body.viewport-game[data-playfield]:not(.remote-control) .killer-player-name,body
 body.viewport-game[data-playfield] #fourinarow-root,body.viewport-game[data-playfield] #sonny-root:not(.killer-game):not(.party-game){display:flex!important;flex-direction:column;gap:6px;min-height:0;padding:4px}
 body.viewport-game[data-playfield] #fourinarow-root[hidden],body.viewport-game[data-playfield] #sonny-root[hidden],body.viewport-game[data-playfield] .visual-shell[hidden]{display:none!important}
 body.viewport-game[data-playfield] .four-legend,body.viewport-game[data-playfield] .sonny-players{flex:none;width:100%;max-width:none}
-body.viewport-game[data-playfield] .four-layout,body.viewport-game[data-playfield] .sonny-layout{flex:1;min-height:0;display:grid!important;grid-template-columns:minmax(0,1fr);gap:8px;align-items:stretch}
+body.viewport-game[data-playfield] .four-layout,body.viewport-game[data-playfield] .sonny-layout{flex:1;min-height:0;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-areas:'arena';grid-template-rows:minmax(100px,1fr);gap:8px;align-items:stretch}
 body.viewport-game[data-playfield] .four-board-frame{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden}
 html body.viewport-game[data-playfield] #game .four-board{width:var(--four-size,100%)!important;height:var(--four-size,100%)!important;max-width:100%!important;max-height:100%;margin:0;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));aspect-ratio:auto}
 body.viewport-game[data-playfield] .four-cell{min-height:0!important;min-width:0}
@@ -125,18 +125,106 @@ body.viewport-game[data-playfield=x01] .history{display:none!important}
 body.viewport-game[data-playfield=x01] #screen-player-history{grid-area:history!important;max-height:150px;min-height:0;margin:0!important;overflow:auto}
 body.viewport-game[data-playfield=x01] #screen-player-history h2,body.viewport-game[data-playfield=x01] #screen-player-history>p{display:none}
 body.viewport-game[data-playfield=x01] #screen-player-history td{font-size:16px}
-/* Wide screens use a side input column; score strips still span both columns. */
+/* Input is a horizontal band between the score strip and the playfield. */
+html body.viewport-game[data-playfield].stage-input #sonny-root.killer-game,html body.viewport-game[data-playfield].stage-input #game .party-game,html body.viewport-game[data-playfield].stage-input #game .visual-shell{grid-template-columns:minmax(0,1fr);grid-template-areas:'heading' 'players' 'controls' 'arena';grid-template-rows:auto auto auto minmax(100px,1fr)}
+html body.viewport-game[data-playfield].stage-input #game .four-layout,html body.viewport-game[data-playfield].stage-input #game .sonny-layout{grid-template-columns:minmax(0,1fr);grid-template-areas:'controls' 'arena';grid-template-rows:auto minmax(100px,1fr)}
+body.viewport-game[data-playfield] .four-board-frame,body.viewport-game[data-playfield] .sonny-board{grid-area:arena}
+html body.viewport-game[data-playfield].stage-input #lives-game{grid-template-columns:minmax(0,1fr);grid-template-areas:'heading' 'players' 'controls' 'arena' 'last';grid-template-rows:auto auto auto minmax(100px,1fr) auto}
+html body.viewport-game.stage-input[data-playfield=x01][data-game] #game:not([hidden]){grid-template-columns:minmax(0,1fr);grid-template-areas:'bot' 'heading' 'training' 'players' 'controls' 'arena' 'history';grid-template-rows:auto auto auto auto auto minmax(100px,1fr) auto}
+html body.viewport-game[data-playfield].stage-input #game .killer-controls,html body.viewport-game[data-playfield].stage-input #game .party-controls,html body.viewport-game[data-playfield].stage-input #game .four-controls,html body.viewport-game[data-playfield].stage-input #game .sonny-layout>.sonny-controls{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:center;align-self:start;padding:6px;overflow:visible}
+body.viewport-game[data-playfield] .killer-controls-title,body.viewport-game[data-playfield] .party-controls>strong{display:none}
+body.viewport-game[data-playfield] .sonny-multipliers,body.viewport-game[data-playfield] .sonny-actions,body.viewport-game[data-playfield] .sonny-darts,body.viewport-game[data-playfield] .four-multipliers,body.viewport-game[data-playfield] .four-actions,body.viewport-game[data-playfield] .four-darts{min-width:0;margin:0;gap:4px}
+body.viewport-game[data-playfield] .sonny-darts>*,body.viewport-game[data-playfield] .four-darts>*{min-width:0;min-height:44px;font-size:14px;padding:4px;overflow-wrap:anywhere}
+body.viewport-game[data-playfield] .sonny-actions button,body.viewport-game[data-playfield] .sonny-multipliers button,body.viewport-game[data-playfield] .four-actions button,body.viewport-game[data-playfield] .four-multipliers button{min-width:0;min-height:44px;padding:4px;font-size:14px;overflow-wrap:anywhere}
+body.viewport-game[data-playfield] .killer-input-help,body.viewport-game[data-playfield] .party-input-help,body.viewport-game[data-playfield] .four-help,body.viewport-game[data-playfield] .four-note{grid-column:1/-1;margin:0;font-size:11px;line-height:1.2}
+body.viewport-game[data-playfield] .four-help{grid-row:2}body.viewport-game[data-playfield] .four-note{grid-row:3}
+/* Cricket/Tactics use the compact dart controls on every screen size. */
+body.viewport-game[data-playfield].stage-input .graphic-compact-input{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,.8fr);gap:6px;padding:6px;border:1px solid #405a66;border-radius:12px;align-items:center}
+body.viewport-game[data-playfield] .graphic-compact-input .sonny-darts{margin:0}
+body.viewport-game[data-playfield] .graphic-more-input{margin:0;min-height:44px}
+/* Hitters Challenge retains direct hit/miss and correction actions in the band. */
+html body.viewport-game[data-playfield].stage-input #lives-game .lives-controls{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:6px;align-items:center;padding:6px;overflow:visible}
+body.viewport-game[data-playfield] .lives-entry,body.viewport-game[data-playfield] .lives-history-actions{margin:0;gap:4px}
+body.viewport-game[data-playfield] .lives-entry button,body.viewport-game[data-playfield] .lives-history-actions button,body.viewport-game[data-playfield] #lives-toggle{min-height:44px;margin:0;padding:4px 8px;font-size:14px;min-width:0;overflow-wrap:anywhere}
+body.viewport-game[data-playfield] .lives-hint,body.viewport-game[data-playfield] .lives-correction{grid-column:1/-1;margin:0}
+body.viewport-game[data-playfield] .lives-hint{font-size:11px;line-height:1.2}
+/* Scoring mode is presentation metadata; changing it never submits darts. */
+body.viewport-game[data-playfield] #game .scoring #toggle-input{display:none}
+body.viewport-game[data-playfield] #game .scoring .section-heading>h2{display:none}
+html body.viewport-game[data-playfield] #game .scoring[data-entry-mode=total]{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:4px;padding:6px!important;align-items:center;overflow:visible!important}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #total-input:not([hidden]){display:contents!important}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .section-heading{grid-column:2;grid-row:1;min-width:0;margin:0}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .score-input{grid-column:1;grid-row:1;display:flex!important;min-width:0;min-height:44px;margin:0!important;padding:0;gap:4px;background:none;border:0}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #total-input .visit-value{min-height:44px!important;height:44px!important;min-width:0;flex:1;flex-direction:row;gap:6px;padding:2px 4px}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .visit-value>span{flex:none;white-space:nowrap;font-size:9px}
+html body.viewport-game[data-playfield] #game .scoring[data-entry-mode=total] #entry{font-size:32px;width:auto;min-width:0;flex:none}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #backspace{width:44px;min-width:44px;min-height:44px;padding:4px}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .tabs{width:100%;min-width:0;gap:2px;padding:2px}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .tabs button{flex:1;min-width:0;padding:4px;font-size:11px}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #keypad{grid-column:1/-1;grid-row:3;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:auto;min-height:0;gap:4px}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #keypad button{min-width:0;min-height:44px;font-size:22px;padding:4px;overflow-wrap:anywhere}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #keypad button[data-action],body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #keypad #confirm-total{font-size:12px}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #total-rule-note{grid-column:1/-1;grid-row:2;font-size:11px;line-height:1.2;margin:0}
+body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #gotcha-total-options,body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #points-preview,body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #message,body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .bottom-actions,body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #submit,body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #turn-controls{grid-column:1/-1;min-width:0;margin:0}
 @media(min-width:700px){
- html body.viewport-game[data-playfield].stage-input #sonny-root.killer-game,html body.viewport-game[data-playfield].stage-input #game .party-game,html body.viewport-game[data-playfield].stage-input #game .visual-shell{grid-template-columns:minmax(0,var(--appearance-arena,1fr)) minmax(220px,var(--appearance-input,.45fr));grid-template-areas:'heading heading' 'players players' 'arena controls';grid-template-rows:auto auto minmax(100px,1fr)}
- body.viewport-game[data-playfield].stage-input .four-layout,body.viewport-game[data-playfield].stage-input .sonny-layout{grid-template-columns:minmax(0,var(--appearance-arena,1fr)) minmax(220px,var(--appearance-input,.45fr))}
- html body.viewport-game[data-playfield].stage-input #lives-game{grid-template-columns:minmax(0,1fr) minmax(240px,.45fr);grid-template-areas:'heading heading' 'players players' 'arena controls' 'last last'}
- html body.viewport-game.stage-input[data-playfield=x01][data-game] #game:not([hidden]){grid-template-columns:minmax(0,var(--appearance-arena,1fr)) minmax(260px,var(--appearance-input,.6fr));grid-template-areas:'bot bot' 'heading heading' 'training training' 'players players' 'arena controls' 'history history'}
+ html body.viewport-game[data-playfield] #game .scoring[data-entry-mode=total]{grid-template-columns:minmax(170px,.5fr) minmax(0,2fr)}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .section-heading{grid-column:1;grid-row:1}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .score-input{grid-column:1;grid-row:2}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #total-rule-note{grid-column:1;grid-row:3}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=total] #keypad{grid-column:2;grid-row:1/4;grid-template-columns:repeat(6,minmax(0,1fr))}
+ html body.viewport-game[data-playfield] #game .scoring[data-entry-mode=dart]{display:grid!important;grid-template-columns:minmax(170px,.5fr) minmax(0,2fr);gap:4px;padding:6px!important;align-items:center;overflow:visible!important}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #dart-input:not([hidden]){display:contents!important}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] .section-heading{grid-column:1;grid-row:1}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #multipliers{grid-column:1;grid-row:2;margin:0}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #dart-slots{grid-column:1;grid-row:3;margin:0}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #board-keys{grid-column:2;grid-row:1/4;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));grid-auto-rows:minmax(44px,1fr);gap:4px;margin:0}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #board-keys button{min-width:0;min-height:44px;padding:4px;font-size:18px}
+ body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #remove-dart,body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #visual-miss,body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #submit,body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #message,body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #points-preview,body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] .bottom-actions,body.viewport-game[data-playfield] .scoring[data-entry-mode=dart] #turn-controls,body.viewport-game[data-playfield] .scoring[data-entry-mode=dart]>.graphic-more-input{grid-column:1/-1;margin:0}
+}
+/* Bob's 27 has only MIS/RAAK, with the dart slots in the same compact band. */
+html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27]>.scoring{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.6fr) minmax(0,.6fr);gap:6px;padding:6px!important;overflow:visible!important}
+body.viewport-game[data-playfield]:not(.history-open) .visual-shell[data-visual=bobs27] #dart-input,body.viewport-game[data-playfield]:not(.history-open) .visual-shell[data-visual=bobs27] .bottom-actions{display:contents!important}
+html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #dart-slots{grid-column:1;grid-row:1;margin:0}
+html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #board-keys{grid-column:2;grid-row:1;grid-template-columns:repeat(2,minmax(0,1fr));margin:0}
+html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #remove-dart{grid-column:3;grid-row:1}
+html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #toggle-history{grid-column:4;grid-row:1;min-height:44px}
+html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #message{grid-column:1/-1;grid-row:auto;margin:0}
+body.viewport-game[data-playfield] .scoring #message:empty{display:none}
+body.viewport-game[data-playfield] .sonny-multipliers,body.viewport-game[data-playfield] .sonny-actions,body.viewport-game[data-playfield] .sonny-darts,body.viewport-game[data-playfield] .four-multipliers,body.viewport-game[data-playfield] .four-actions,body.viewport-game[data-playfield] .four-darts{min-width:0;margin:0;gap:4px}
+body.viewport-game[data-playfield] .sonny-multipliers button,body.viewport-game[data-playfield] .sonny-actions button,body.viewport-game[data-playfield] .sonny-darts>*,body.viewport-game[data-playfield] .four-multipliers button,body.viewport-game[data-playfield] .four-actions button,body.viewport-game[data-playfield] .four-darts>*{min-width:0;min-height:44px;padding:4px;font-size:13px;overflow-wrap:anywhere}
+body.viewport-game[data-playfield] .four-help,body.viewport-game[data-playfield] .killer-input-help,body.viewport-game[data-playfield] .party-input-help{grid-column:1/-1;font-size:11px;line-height:1.2;margin:0}
+body.viewport-game[data-playfield] .four-note{display:none}
+body.viewport-game[data-playfield].stage-input .graphic-compact-input{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,.7fr);gap:6px;padding:6px;border:1px solid var(--line);border-radius:12px}
+body.viewport-game[data-playfield] .graphic-compact-input .graphic-more-input{margin:0;min-height:44px}
+body.viewport-game[data-playfield] .graphic-compact-input .sonny-darts{margin:0}
+html body.viewport-game[data-playfield].stage-input .lives-controls{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:6px;align-items:center;padding:6px;align-self:start;overflow:visible}
+body.viewport-game[data-playfield] .lives-history-actions{margin:0;gap:4px}
+body.viewport-game[data-playfield] .lives-entry button,body.viewport-game[data-playfield] .lives-history-actions button,body.viewport-game[data-playfield] #lives-toggle{min-height:44px;padding:4px;font-size:13px;min-width:0;overflow-wrap:anywhere}
+body.viewport-game[data-playfield] .lives-hint,body.viewport-game[data-playfield] .lives-correction{grid-column:1/-1;margin:0;font-size:11px}
+@media(max-width:699px){
+ html body.viewport-game[data-playfield].stage-input #game .killer-controls,html body.viewport-game[data-playfield].stage-input #game .party-controls,html body.viewport-game[data-playfield].stage-input #game .four-controls,html body.viewport-game[data-playfield].stage-input #game .sonny-layout>.sonny-controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px}
+ body.viewport-game[data-playfield] .sonny-multipliers,body.viewport-game[data-playfield] .four-multipliers{grid-column:1;grid-row:1}
+ body.viewport-game[data-playfield] .sonny-actions,body.viewport-game[data-playfield] .four-actions{grid-column:2;grid-row:1}
+ body.viewport-game[data-playfield] .sonny-darts,body.viewport-game[data-playfield] .four-darts{grid-column:1/-1;grid-row:2}
+ body.viewport-game[data-playfield] .four-help{grid-row:3}
+ body.viewport-game[data-playfield] .sonny-multipliers button,body.viewport-game[data-playfield] .sonny-actions button,body.viewport-game[data-playfield] .four-multipliers button,body.viewport-game[data-playfield] .four-actions button{font-size:11px}
+ body.viewport-game[data-playfield].stage-input .graphic-compact-input{grid-template-columns:repeat(2,minmax(0,1fr));padding:4px;gap:4px}
+ body.viewport-game[data-playfield] .graphic-compact-input .sonny-darts{grid-column:1;grid-row:1}
+ body.viewport-game[data-playfield] .graphic-compact-input .graphic-more-input{grid-column:2;grid-row:1;min-width:0;font-size:11px}
+ body.viewport-game[data-playfield] .graphic-compact-buttons{grid-column:1/-1;grid-row:2}
+ html body.viewport-game[data-playfield].stage-input .lives-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.viewport-game[data-playfield] .lives-entry{grid-column:1/-1}
+ html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27]>.scoring{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+ html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #dart-slots{grid-column:1;grid-row:1}
+ html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #board-keys{grid-column:1/-1;grid-row:2}
+ html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #remove-dart{grid-column:2;grid-row:1}
+ html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #toggle-history{grid-column:2;grid-row:2}
 }
 @media(max-width:699px){
- html body.viewport-game[data-playfield].stage-input #sonny-root.killer-game,html body.viewport-game[data-playfield].stage-input #game .party-game,html body.viewport-game[data-playfield].stage-input #game .visual-shell{grid-template-areas:'heading' 'players' 'arena' 'controls';grid-template-rows:auto auto minmax(100px,1fr) auto}
- body.viewport-game[data-playfield].stage-input .four-layout,body.viewport-game[data-playfield].stage-input .sonny-layout{grid-template-rows:minmax(100px,1fr) auto}
- html body.viewport-game[data-playfield].stage-input #lives-game{grid-template-areas:'heading' 'players' 'arena' 'controls' 'last';grid-template-rows:auto auto minmax(100px,1fr) auto auto}
- html body.viewport-game.stage-input[data-playfield=x01][data-game] #game:not([hidden]){grid-template-areas:'bot' 'heading' 'training' 'players' 'arena' 'controls' 'history';grid-template-rows:auto auto auto auto minmax(80px,1fr) auto auto}
+ html body.viewport-game[data-playfield].stage-input #sonny-root.killer-game,html body.viewport-game[data-playfield].stage-input #game .party-game,html body.viewport-game[data-playfield].stage-input #game .visual-shell{grid-template-areas:'heading' 'players' 'controls' 'arena';grid-template-rows:auto auto auto minmax(100px,1fr)}
+ body.viewport-game[data-playfield].stage-input .four-layout,body.viewport-game[data-playfield].stage-input .sonny-layout{grid-template-rows:auto minmax(100px,1fr)}
+ html body.viewport-game[data-playfield].stage-input #lives-game{grid-template-areas:'heading' 'players' 'controls' 'arena' 'last';grid-template-rows:auto auto auto minmax(100px,1fr) auto}
+ html body.viewport-game.stage-input[data-playfield=x01][data-game] #game:not([hidden]){grid-template-areas:'bot' 'heading' 'training' 'players' 'controls' 'arena' 'history';grid-template-rows:auto auto auto auto auto minmax(80px,1fr) auto}
  body.viewport-game[data-playfield] .killer-players,body.viewport-game[data-playfield] .party-players,body.viewport-game[data-playfield] .visual-players,body.viewport-game[data-playfield] .sonny-players,body.viewport-game[data-playfield] .four-legend,body.viewport-game[data-playfield] .lives-players,html body.viewport-game[data-playfield=x01] #players.players{grid-template-columns:repeat(var(--narrow-player-count),minmax(0,1fr))!important}
  body.viewport-game[data-playfield] .killer-heading p,body.viewport-game[data-playfield] .party-heading p,body.viewport-game[data-playfield] .visual-heading p,body.viewport-game[data-playfield] .sonny-heading p,body.viewport-game[data-playfield] .party-input-help,body.viewport-game[data-playfield] .killer-input-help,body.viewport-game[data-playfield] .four-help,body.viewport-game[data-playfield] .four-note,body.viewport-game[data-playfield] .lives-hint{display:none}
  body.viewport-game[data-playfield] .killer-controls,body.viewport-game[data-playfield] .party-controls,body.viewport-game[data-playfield] .four-controls,body.viewport-game[data-playfield] .sonny-controls{padding:4px}
@@ -152,7 +240,7 @@ body.viewport-game[data-playfield=x01] #screen-player-history td{font-size:16px}
  body.viewport-game[data-playfield] .graphic-more-input{min-height:36px;margin-top:3px}
  body.viewport-game[data-playfield] .graphic-compact-input .sonny-darts>*{min-height:28px}
  body.viewport-game[data-playfield] .bobs-route span{font-size:9px;padding:1px}
- html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27],html body.viewport-game[data-playfield] #game .visual-shell[data-visual=gotcha]{grid-template-rows:auto auto minmax(180px,1fr) auto}
+ html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27],html body.viewport-game[data-playfield] #game .visual-shell[data-visual=gotcha]{grid-template-rows:auto auto auto minmax(180px,1fr)}
  body.viewport-game[data-playfield] #game .scoring #toggle-input,body.viewport-game[data-playfield] #game .scoring .section-heading>h2{display:none}
  body.viewport-game[data-playfield] #game .scoring{padding:6px}
  body.viewport-game[data-playfield] #game .score-input{min-height:44px;padding:2px 8px;margin:4px 0}
@@ -162,7 +250,7 @@ body.viewport-game[data-playfield=x01] #screen-player-history td{font-size:16px}
  body.viewport-game[data-playfield] #game .bottom-actions{margin-top:4px;gap:4px}
  body.viewport-game[data-playfield] #game .bottom-actions button{min-height:44px;padding:4px;font-size:11px}
  body.viewport-game[data-playfield] #game #message:empty{display:none}
- html body.viewport-game[data-playfield] #game .visual-shell[data-visual=gotcha]{grid-template-rows:auto auto minmax(calc(var(--player-count)*48px + 24px),1fr) auto}
+ html body.viewport-game[data-playfield] #game .visual-shell[data-visual=gotcha]{grid-template-rows:auto auto auto minmax(calc(var(--player-count)*48px + 24px),1fr)}
  body.viewport-game[data-playfield] .gotcha-race{padding:2px 10px;gap:3px}
  body.viewport-game[data-playfield] .gotcha-lane{min-height:44px}
  body.viewport-game[data-playfield] .gotcha-lane>span{display:none}
@@ -203,3 +291,65 @@ html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-overvie
 html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-overview #checkout b{font-size:clamp(40px,10vh,140px)!important}
 html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-visit-score{font-size:clamp(64px,12vh,160px)}
 @media(max-width:699px){body.viewport-game[data-playfield] .visual-shell[data-visual=gotcha] #total-input #entry{width:auto;flex:none}body.viewport-game[data-playfield] .visual-shell[data-visual=gotcha] .visit-value>span{flex:none;white-space:nowrap;font-size:9px}}
+
+/* Larger-input preference changes touch targets, never reserves a side column. */
+html body.viewport-game[data-play-space=input] #game .killer-controls button,html body.viewport-game[data-play-space=input] #game .party-controls button,html body.viewport-game[data-play-space=input] #game .four-controls button,html body.viewport-game[data-play-space=input] #game .sonny-layout>.sonny-controls button,html body.viewport-game[data-play-space=input] #game .graphic-compact-input button,html body.viewport-game[data-play-space=input] #game .lives-controls button,html body.viewport-game[data-play-space=input] #game .scoring button{min-height:56px!important}
+body.viewport-game[data-play-space=board] .killer-controls,body.viewport-game[data-play-space=board] .party-controls,body.viewport-game[data-play-space=board] .four-controls,body.viewport-game[data-play-space=board] .sonny-controls{padding-top:2px;padding-bottom:2px}
+
+html body.viewport-game[data-playfield][data-game]:not(.stage-input) #game .scoring,html body.viewport-game[data-playfield]:not(.stage-input) #game #visual-game>.scoring,html body.viewport-game[data-playfield]:not(.stage-input) #game .graphic-compact-input{display:none!important}
+
+/* Old floating entry headers and hidden NUC values must not escape the band. */
+html body.viewport-game[data-playfield] #game .scoring>.section-heading{position:static!important;inset:auto!important;transform:none!important;width:auto!important;max-width:none;min-height:0;pointer-events:auto}
+html body.viewport-game[data-playfield] #game .scoring .tabs{position:static!important;inset:auto!important;transform:none!important;pointer-events:auto}
+html body.viewport-game[data-playfield] #game .scoring .visit-value{visibility:visible!important}
+html body.viewport-game[data-playfield] #game #toggle-history{display:block;grid-column:1/-1;min-height:44px;margin:0;padding:4px;font-size:12px}
+html body.viewport-game[data-playfield]:not(.history-open) #game #turn-controls{display:none!important}
+body.viewport-game[data-playfield] #game #keypad-bust{font-size:12px}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #board-keys button{min-height:44px;padding:4px;font-size:24px}
+@media(max-width:699px){html body.viewport-game[data-playfield]:not(.history-open) #game .visual-shell[data-visual=bobs27] #remove-dart{grid-column:1;grid-row:2}}
+
+html body.viewport-game[data-playfield] #game .scoring[data-entry-mode=total] #keypad{height:auto!important;min-height:0!important;grid-template-rows:repeat(2,minmax(44px,auto));grid-auto-rows:minmax(44px,auto);align-content:stretch}
+
+html body.viewport-game[data-playfield] #game .scoring[data-entry-mode=total] #total-input:not([hidden]){display:contents!important}
+@media(min-width:700px){html body.viewport-game[data-playfield] #game .scoring[data-entry-mode=dart] #dart-input:not([hidden]){display:contents!important}}
+
+html body.viewport-game[data-playfield] #game .scoring[data-entry-mode]{grid-template-rows:none;grid-auto-rows:auto}
+html body.viewport-game[data-playfield] #game #keypad #keypad-bust,html body.viewport-game[data-playfield] #game #keypad #confirm-total{font-size:12px;line-height:1.2}
+
+html body.viewport-game[data-playfield] #game .scoring[data-entry-mode]{height:max-content!important;align-self:start;flex:none}
+html body.viewport-game[data-playfield] #game .scoring[data-entry-mode=total] #keypad{min-height:92px!important}
+
+/* Fixed areas keep Bob's two hit buttons and history controls independent. */
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27]>.scoring{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.6fr) minmax(0,.6fr)!important;grid-template-areas:'slots hits remove history-toggle' 'turn turn turn turn' 'submit submit submit submit' 'message message message message';grid-template-rows:auto auto auto auto;gap:4px;padding:6px!important}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #dart-input{display:contents!important}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #dart-slots{grid-area:slots!important;min-width:0;margin:0}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #board-keys{grid-area:hits!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto;min-height:44px;height:auto!important;align-self:stretch;margin:0}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #remove-dart{grid-area:remove!important;min-width:0;min-height:44px;height:auto;align-self:stretch;margin:0}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #toggle-history{grid-area:history-toggle!important;width:100%;min-height:44px;height:auto;align-self:stretch;margin:0}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #turn-controls{grid-area:turn!important;min-width:0;margin:0}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #turn-controls .bottom-actions{display:flex!important;flex-wrap:wrap;gap:4px}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #submit{grid-area:submit!important}
+html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27] #message{grid-area:message!important}
+@media(max-width:699px){html body.viewport-game[data-playfield] #game .visual-shell[data-visual=bobs27]>.scoring{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:'slots hits' 'remove history-toggle' 'turn turn' 'submit submit' 'message message';grid-template-rows:auto auto auto auto auto}}
+html body.viewport-game[data-playfield]:not(.stage-input) #game #visual-game>.scoring{display:none!important}
+
+html body.viewport-game[data-playfield] #game .scoring>#toggle-input{display:none!important}
+@media(min-width:700px){
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart]{grid-template-areas:'mode numbers' 'multipliers numbers' 'slots numbers' 'remove remove' 'miss miss' 'submit submit' 'points points' 'message message' 'more more' 'options options' 'historyToggle historyToggle' 'turn turn';grid-template-rows:repeat(12,auto)}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart]>.section-heading{grid-area:mode!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #multipliers{grid-area:multipliers!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #dart-slots{grid-area:slots!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #board-keys{grid-area:numbers!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #remove-dart{grid-area:remove!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #visual-miss{grid-area:miss!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #submit{grid-area:submit!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #points-preview{grid-area:points!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #message{grid-area:message!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart]>.graphic-more-input{grid-area:more!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #gotcha-total-options{grid-area:options!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #toggle-history{grid-area:historyToggle!important}
+ html body.viewport-game[data-playfield]:not([data-game=bobs27]) #game .scoring[data-entry-mode=dart] #turn-controls{grid-area:turn!important}
+}
+
+body.viewport-game[data-playfield] .stage-board-frame,body.viewport-game[data-playfield] .four-board-frame{align-items:flex-start}
+@media(max-width:699px){body.viewport-game[data-playfield] .scoring[data-entry-mode=total] .visit-value>span{display:none}}

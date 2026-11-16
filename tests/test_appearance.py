@@ -65,7 +65,7 @@ with tempfile.TemporaryDirectory() as temp:
      for width,height in [(320,640),(393,852),(744,900),(872,736),(1024,600),(1920,1080)]:
       page.set_viewport_size({'width':width,'height':height});page.wait_for_timeout(90)
       assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(game,space,width,height)
-      pair=['.four-board','.four-controls'] if game=='fourinarow' else ['.killer-arena','.killer-controls'] if game=='killer' else ['.party-arena','.party-controls'] if game in ['golf','shanghai','seabattle'] else ['.visual-arena','.visual-shell>.scoring'] if game in ['bobs27'] else ['.visual-arena','.graphic-compact-input' if width<=600 else '.visual-shell>.scoring'] if game in ['cricket','tactics'] else ['#players','.scoring']
+      pair=['.four-board','.four-controls'] if game=='fourinarow' else ['.killer-arena','.killer-controls'] if game=='killer' else ['.party-arena','.party-controls'] if game in ['golf','shanghai','seabattle'] else ['.visual-arena','.visual-shell>.scoring'] if game in ['bobs27'] else ['.visual-arena','.graphic-compact-input'] if game in ['cricket','tactics'] else ['#players','.scoring']
       boxes=[page.locator(selector).bounding_box() for selector in pair]
       assert all(boxes),(game,space,width,height,pair)
       a,b=boxes;assert a['x']+a['width']<=b['x']+1 or b['x']+b['width']<=a['x']+1 or a['y']+a['height']<=b['y']+1 or b['y']+b['height']<=a['y']+1,(game,space,width,height,boxes)
