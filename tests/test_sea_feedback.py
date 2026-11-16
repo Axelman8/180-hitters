@@ -109,6 +109,14 @@ with tempfile.TemporaryDirectory() as temp:
      expect(page.locator('#score-celebration .moment-detail')).to_contain_text('BOT 50 #1')
      assert page.locator('#score-celebration').evaluate('e=>getComputedStyle(e).pointerEvents')=='none'
     print('PASS winning moment survives winner screen:',game,flush=True)
+   state=seed('fourinarow');state['fourOwners'][:3]=[0,0,0];post(state)
+   finished=turn(state,[{'cell':3,'mult':3}])
+   for page in [phone,screen]:
+    page.evaluate("state=>document.dispatchEvent(new CustomEvent('online-match-finished',{detail:{state,undo:[]}}))",finished)
+    expect(page.locator('#result-dialog')).to_be_visible()
+    expect(page.locator('#score-celebration.game-moment')).to_be_visible()
+    expect(page.locator('#score-celebration .moment-detail')).to_contain_text('BOT 50 #1')
+   print('PASS online winner announcement retains the final claim impact on both devices',flush=True)
    phone.set_viewport_size({'width':744,'height':900})
    for game in ['cricket','tactics']:
     state=seed(game);phone.wait_for_timeout(200)

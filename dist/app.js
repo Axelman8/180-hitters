@@ -126,6 +126,7 @@ function receive(data){
 document.addEventListener('online-match-finished',event=>{
  const match=event.detail;
  if(!match?.state||match.state.phase!=='won')return;
+ celebrateScore(confirmed,match);
  restore(match);confirmed=match;cache();resetInput();render();
 });
 async function persist(keepModeOverride=false,restoredTurn=null){
