@@ -13,7 +13,7 @@ function visit(state){
  throw Error('BOT could not finish a legal visit');
 }
 assert.deepEqual([boardHit(0,0).label,boardHit(10,0).label,boardHit(0,-103).label,boardHit(0,-166).label,boardHit(0,-180).label],['Bull','25','T20','D20','Mis']);
-for(const game of ['x01','cricket','tactics','fourinarow','scram','killer','bull41','twentyone','121','gotcha','tenlives','bobs27']){
+for(const game of ['x01','cricket','tactics','fourinarow','scram','killer','bull41','twentyone','seabattle','golf','shanghai','121','gotcha','tenlives','bobs27']){
  for(let run=0;run<3;run++){
   let state=newMatch(['A','B','C','D'],game==='gotcha'?301:501,'double',1,{game:game==='121'?'x01':game,training121:game==='121',livesMode:run===1?'triple':'double',botLevels:[40,50,40,50],maxRounds:0});
   assert.deepEqual(state.players.map(p=>p.botLevel),[40,50,40,50]);

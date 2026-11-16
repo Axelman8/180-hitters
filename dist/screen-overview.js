@@ -1,5 +1,9 @@
 const $=id=>document.getElementById(id);
 let row,history,shortcut,lastView;
+export function ensureScreenInputShortcut(){
+ if(!shortcut){shortcut=document.getElementById('screen-input-shortcut')||document.createElement('button');shortcut.id='screen-input-shortcut';shortcut.textContent='Scherminvoer uitklappen';shortcut.onclick=()=>document.getElementById('toggle-input').click();if(!shortcut.isConnected)document.querySelector('header .top-actions').append(shortcut);}
+ return shortcut;
+}
 matchMedia('(max-width:600px)').addEventListener('change',()=>queueMicrotask(()=>{if(lastView)renderScreenOverview(...lastView);}));
 export function renderScreenOverview(state,mode,entry,darts){
  if(!state)return;
@@ -12,7 +16,7 @@ export function renderScreenOverview(state,mode,entry,darts){
   document.querySelector('.play-grid').before(row);
   history=document.createElement('section');history.id='screen-player-history';history.className='panel';
   document.querySelector('.play-grid').after(history);
-  shortcut=document.createElement('button');shortcut.id='screen-input-shortcut';shortcut.textContent='Scherminvoer uitklappen';
+  shortcut=ensureScreenInputShortcut();
   shortcut.onclick=()=>$('toggle-input').click();
   document.querySelector('header .top-actions').append(shortcut);
  }

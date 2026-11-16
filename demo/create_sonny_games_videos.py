@@ -39,9 +39,17 @@ def make_slide(title: str, body: str, screenshot: Path) -> Image.Image:
 
 
 async def speak(text: str, path: Path) -> None:
+    import hashlib, shutil
+    cache = OUT / '.speech-cache'
+    cache.mkdir(exist_ok=True)
+    cached = cache / (hashlib.sha256((VOICE + text).encode()).hexdigest() + '.mp3')
+    if cached.exists() and cached.stat().st_size > 1000:
+        shutil.copy2(cached, path)
+        return
     for attempt in range(4):
         try:
             await edge_tts.Communicate(text, VOICE, rate="-4%").save(str(path))
+            shutil.copy2(path, cached)
             return
         except edge_tts.exceptions.NoAudioReceived:
             path.unlink(missing_ok=True)
@@ -78,17 +86,32 @@ def video(game: str, screenshot: str, slides: list[tuple[str, str, str]], force:
 def main() -> None:
     OUT.mkdir(exist_ok=True)
     games = {
+        "Zeeslag-Darts": ("new-seabattle.png", [
+            ("Zeeslag Darts", "Iedere speler heeft drie verborgen schepen op de getallen 1 tot en met 20.", "Bij Zeeslag Darts speelt iedereen met drie verborgen schepen, met samen veertien levens. Je speelt met twee tot vier spelers, ook met bots of via een online dartbaan."),
+            ("Val alle tegenstanders aan", "Een pijl valt op dat getal alle andere vloten aan. Single doet 1 schade, dubbel en triple maximaal 2 per vak.", "Gooi op een getal om daar alle tegenstanders tegelijk aan te vallen. Een single doet een punt schade. Een dubbel of triple doet maximaal twee punten schade aan een scheepsvak. Water en bull doen geen schade."),
+            ("De laatste vloot wint", "De vlootknoppen wisselen alleen het getoonde bord. De laatste overgebleven speler wint.", "Gebruik de namen boven de zee om een andere vloot te bekijken. Dit verandert niet wie je aanvalt: elke pijl valt alle tegenstanders aan. Vernietig alle scheepsvakken van je tegenstanders. De laatste overgebleven vloot wint direct. Online blijven ongeziene vijandelijke scheepsposities op de server."),
+        ]),
+        "Dartgolf": ("new-golf.png", [
+            ("Dartgolf", "Speel 9 of 18 holes. Hole 1 is getal 1, enzovoort. De minste slagen wint.", "Bij Dartgolf wordt het dartbord een golfbaan. Je kiest negen of achttien holes. Hole een is het getal een, hole twee het getal twee, en zo verder. Iedereen speelt dezelfde hole voordat de volgende begint."),
+            ("Tel je slagen", "Dubbel: 1 slag. Triple: 2. Single: 3. Een ander getal of mis: 5.", "Raak de dubbel van de hole voor een slag, de triple voor twee slagen, of de single voor drie slagen. Raak je een ander getal of mis je, dan telt dat als vijf slagen."),
+            ("Beste of laatste pijl", "Bij beste pijl telt de beste van drie. Bij laatste pijl kun je eerder stoppen met Hole afronden.", "Met beste pijl telt je beste resultaat van de drie pijlen. Met laatste pijl telt je laatst gegooide pijl. Je mag dan na een goede pijl stoppen met de knop Hole afronden. De laagste totaalscore wint. Bij dezelfde eindscore is het gelijkspel."),
+        ]),
+        "Shanghai": ("new-shanghai.png", [
+            ("Shanghai", "Gooi op het rondegetal. Speel de getallen 1 tot 7 of 1 tot 20.", "Bij Shanghai richt iedereen iedere ronde op hetzelfde getal. Kies voor het spel de getallen een tot en met zeven, of een tot en met twintig. Elke speler krijgt per beurt drie pijlen."),
+            ("Punten of Shanghai", "Single, dubbel en triple scoren op het rondegetal. Alle drie in dezelfde beurt wint direct.", "Alleen het rondegetal telt mee. Een single telt een keer, een dubbel twee keer en een triple drie keer dat getal. Raak je een single, dubbel en triple van het rondegetal in dezelfde beurt, dan win je direct met Shanghai."),
+            ("Hoogste score wint", "Zonder Shanghai wint na alle rondes de hoogste score. Ook online voor 2 tot 4 spelers.", "Gooi je geen Shanghai, dan wint na de laatste ronde de speler met de hoogste totaalscore. Bij dezelfde score is het gelijkspel. Je kunt Shanghai lokaal spelen, tegen bots, of online met twee tot vier spelers."),
+        ]),
         "X01": ("screen-fit-x01-False.png", [
             ("X01", "Kies een startscore en speel exact naar nul.", "Bij X nul één kies je een startscore, bijvoorbeeld driehonderdeen of vijfhonderdeen. Het doel is om exact op nul te eindigen."),
             ("Kies jouw regels", "Straight, dubbel of master in en uit. Kies ook legs, sets en de bullwaarde.", "Voor de partij kies je de beginregel, de uitgooiregel, de bullwaarde en of je met legs of sets speelt."),
             ("Voer iedere beurt in", "Gebruik de totaalscore of voer iedere pijl apart in. De app toont een mogelijke finish.", "Voer na iedere beurt de totaalscore in, of registreer de drie pijlen afzonderlijk. De app controleert busts en toont een mogelijke finishroute."),
         ]),
-        "Cricket": ("screen-fit-cricket-False.png", [
+        "Cricket": ("new-cricket.png", [
             ("Cricket", "Sluit 15, 16, 17, 18, 19, 20 en Bull.", "Bij Cricket probeer je de doelen vijftien tot en met twintig en bull elk met drie marks te sluiten."),
             ("Marks en punten", "Single telt 1 mark, dubbel 2 en triple 3.", "Een single telt als één mark, een dubbel als twee en een triple als drie. Extra treffers kunnen punten opleveren zolang een tegenstander het doel nog open heeft."),
             ("Kies de puntentelling", "Speel Standard, Cut Throat of No Score.", "Je kunt Standard spelen voor de hoogste score, Cut Throat voor de laagste score, of No Score waarbij alleen het sluiten van alle doelen telt."),
         ]),
-        "Tactics": ("screen-fit-tactics-False.png", [
+        "Tactics": ("new-tactics.png", [
             ("Tactics", "Sluit alle doelen van 10 tot en met 20 en Bull.", "Tactics werkt als een uitgebreide Cricketvariant. Je sluit de getallen tien tot en met twintig en daarna bull."),
             ("Drie marks per doel", "Single telt 1, dubbel 2 en triple 3 marks.", "Ieder doel heeft drie marks nodig. De invoer toont direct welke getallen open of gesloten zijn voor iedere speler."),
             ("Punten en winnaar", "Extra treffers scoren volgens de gekozen spelvariant.", "Op een gesloten doel kun je punten maken zolang een tegenstander dit nog open heeft. Wie alle doelen sluit en aan de scorevoorwaarde voldoet, wint."),
@@ -98,7 +121,7 @@ def main() -> None:
             ("Drie beurten", "Je krijgt drie bezoeken van maximaal drie pijlen.", "Je hebt maximaal drie beurten van drie pijlen. Met meerdere spelers wisselt de beurt steeds na drie darts en behoudt iedereen zijn eigen poging."),
             ("Niveau stijgt of daalt", "Geslaagd: niveau omhoog. Niet geslaagd: niveau omlaag, minimaal 121.", "Gooi je uit, dan stijgt het volgende niveau met één plus het aantal overgebleven pijlen. Lukt het niet, dan daalt het niveau met één tot minimaal honderdeenentwintig."),
         ]),
-        "Gotcha": ("screen-fit-gotcha-False.png", [
+        "Gotcha": ("new-gotcha.png", [
             ("Gotcha", "Bouw jouw score op tot precies de gekozen doelscore.", "Bij Gotcha begint iedere speler op nul. Tel je worpen op en bereik precies de gekozen doelscore."),
             ("Zet een tegenstander op nul", "Kom exact gelijk met een tegenstander en die verliest zijn score.", "Bereik je precies de actuele score van een tegenstander, dan wordt die speler teruggezet naar nul. Dat is de Gotcha."),
             ("Voorkom een bust", "Te hoog of ongeldig uitgooien maakt de eigen beurt ongeldig.", "Kom je boven de doelscore of voldoe je niet aan de gekozen finishregel, dan is de beurt bust. De eerste speler die correct finisht, wint."),
@@ -108,7 +131,7 @@ def main() -> None:
             ("Bewaar je pogingen", "Een treffer geeft de resterende pijlen plus drie nieuwe pogingen.", "Raak je het doel, dan neem je de resterende pijlen mee en krijg je drie nieuwe pogingen op het volgende doel."),
             ("Bescherm je levens", "Zonder treffer ga je terug; missen op 20 kost een leven.", "Zijn alle pogingen op, dan ga je één doel terug. Op twintig kost dit een leven. Wie bull bereikt voordat de levens op zijn, voltooit de challenge."),
         ]),
-        "Bobs-27": ("screen-fit-bobs27-False.png", [
+        "Bobs-27": ("new-bobs27.png", [
             ("Bob's 27", "Train alle dubbels van D1 tot en met D20 en daarna Bull.", "Bij Bob's zevenentwintig begin je met zevenentwintig punten en gooi je drie pijlen op iedere dubbel, van dubbel één tot dubbel twintig en daarna bull."),
             ("Raak of verlies punten", "Iedere treffer telt de dubbelwaarde erbij. Helemaal missen trekt die waarde af.", "Elke geraakte dubbel telt de dubbelwaarde bij je score op. Raak je met alle drie de pijlen niet, dan wordt die waarde afgetrokken."),
             ("Blijf boven nul", "Bij nul of lager val je af. Voltooi alle 21 rondes met de hoogste score.", "Komt je score op nul of lager, dan val je af. Voltooi je alle eenentwintig rondes, dan wordt jouw eindscore bewaard en vergeleken."),

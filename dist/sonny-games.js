@@ -1,22 +1,25 @@
 import {renderDartSlots} from './dart-editor.js';
 import {renderKillerGame} from './killer-view.js';
-export const sonnyGameIds=['scram','killer','bull41','twentyone'];
-export const sonnyGameNames={scram:'Scram',killer:'Killer',bull41:'Bull / 41',twentyone:'21'};
+import {partyIds,partyNames,initParty,applyPartyTurn,partyAutoCommit} from './party-rules.js';
+import {renderPartyGame} from './party-view.js';
+export const sonnyGameIds=['scram','killer','bull41','twentyone',...partyIds];
+export const sonnyGameNames={scram:'Scram',killer:'Killer',bull41:'Bull / 41',twentyone:'21',...partyNames};
 const symbols=['○','×','△','□'];
 const targetId=number=>number===25?20:number-1;
 const dartScore=hit=>hit.number===25?(hit.mult===2?50:25):hit.number*hit.mult;
 const dartLabel=hit=>hit.number===0?'Mis':hit.number===25?(hit.mult===2?'BB':'sB'):(hit.mult===1?'':hit.mult===2?'D':'T')+hit.number;
 const basePlayer=(name,index)=>({name,sonnySymbol:symbols[index],remaining:0,legs:0,sets:0,setLegs:0,points:0,darts:0,best:0,opened:true,marks:{},cricketPoints:0,totalMarks:0});
 function common(names,game,starter){
- const minimum=game==='twentyone'?1:2;if(names.length<minimum||names.length>4)throw Error(`${sonnyGameNames[game]} wordt met ${minimum} tot 4 spelers gespeeld.`);
+ const minimum=['twentyone','golf','shanghai'].includes(game)?1:2;if(names.length<minimum||names.length>4)throw Error(`${sonnyGameNames[game]} wordt met ${minimum} tot 4 spelers gespeeld.`);
  if(!Number.isInteger(starter)||starter<0||starter>=names.length)starter=0;
  return {version:2,game,start:0,out:'single',inMode:'single',scoring:'standard',matchMode:'off',target:1,legsPerSet:1,bull:'25/50',maxRounds:0,players:names.map(basePlayer),active:starter,starter,leg:1,round:1,turns:0,set:1,history:[],phase:'playing',winner:null,startedAt:Date.now()};
 }
 const opponents=(state,player)=>state.players.map((_,index)=>index).filter(index=>index!==player);
 function beginScramPhase(state){const order=opponents(state,state.scramScorer);state.scramClosed=Array(21).fill(false);state.scramRole='stopper';state.active=order[0];state.scramStopperCursor=order.length>1?1:0;}
 function beginBullPhase(state){const order=opponents(state,state.bull41Scorer);state.bull41Marks=0;state.bull41Role='bull';state.active=order[0];state.bull41ThrowerCursor=order.length>1?1:0;}
-export function newSonnyMatch(names,game,starter=0){
+export function newSonnyMatch(names,game,starter=0,options={}){
  const state=common(names,game,starter);
+ if(partyIds.includes(game))return initParty(state,options);
  if(game==='scram'){state.players.forEach(player=>player.scramScore=0);state.scramPhase=0;state.scramScorer=starter;beginScramPhase(state);}
  if(game==='killer'){state.killerRules='three-hit';state.killerStage='assigning';state.players.forEach(player=>Object.assign(player,{killerNumber:null,killerLetters:0,killerActivated:false,killerLives:3,killerInitial:true,killerEliminated:false}));}
  if(game==='bull41'){state.players.forEach(player=>player.bull41Score=0);state.bull41Phase=0;state.bull41Scorer=starter;beginBullPhase(state);}
@@ -100,8 +103,8 @@ function applyTwentyOne(state,turn){
  if(s.players.every(player=>player.twentyOneFinished)){finishByScore(s,'twentyOneAdjusted',false,'twentyOneTriples');return s;}
  for(let step=1;step<=s.players.length;step++){const index=(actor+step)%s.players.length;if(!s.players[index].twentyOneFinished){s.active=index;break;}}s.round++;return s;
 }
-export function applySonnyTurn(state,turn){if(state.game==='scram')return applyScram(state,turn);if(state.game==='killer')return applyKiller(state,turn);if(state.game==='bull41')return applyBull41(state,turn);if(state.game==='twentyone')return applyTwentyOne(state,turn);throw Error('Onbekend Sonny-spel.');}
-export function sonnyAutoCommit(state,hits){if(state.game==='killer'){if(state.killerStage==='assigning')return hits.length===1;if(state.killerRules==='three-hit'&&hits.length){try{if(applyKiller(state,{hits}).phase==='won')return true;}catch{}}}if(state.game==='twentyone')return hits.length===3||previewTwentyOnePlayer(state.players[state.active],hits).twentyOneFinished;return hits.length===3;}
+export function applySonnyTurn(state,turn){if(partyIds.includes(state.game))return applyPartyTurn(state,turn);if(state.game==='scram')return applyScram(state,turn);if(state.game==='killer')return applyKiller(state,turn);if(state.game==='bull41')return applyBull41(state,turn);if(state.game==='twentyone')return applyTwentyOne(state,turn);throw Error('Onbekend Sonny-spel.');}
+export function sonnyAutoCommit(state,hits){if(partyIds.includes(state.game))return partyAutoCommit(state,hits);if(state.game==='killer'){if(state.killerStage==='assigning')return hits.length===1;if(state.killerRules==='three-hit'&&hits.length){try{if(applyKiller(state,{hits}).phase==='won')return true;}catch{}}}if(state.game==='twentyone')return hits.length===3||previewTwentyOnePlayer(state.players[state.active],hits).twentyOneFinished;return hits.length===3;}
 
 const el=(tag,text,cls)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;};
 function playerStatus(state,player,index){
@@ -111,6 +114,7 @@ function playerStatus(state,player,index){
  return player.twentyOneFinished?`${player.twentyOneAdjusted} pijlen · ${player.twentyOneTriples} triples`:`Doel: ${player.twentyOneTarget===21?'Bull':player.twentyOneTarget}`;
 }
 export function renderSonnyGame(root,state,pending,actions){
+ if(partyIds.includes(state.game)){renderPartyGame(root,state,pending,actions);return;}
  if(state.game==='killer'){renderKillerGame(root,state,pending,actions,applySonnyTurn);return;}
  root.className='';
  root.replaceChildren();const heading=el('div',undefined,'sonny-heading');heading.append(el('h2',sonnyGameNames[state.game]),el('p',state.game==='scram'?`${state.scramRole==='stopper'?'Stopper':'Scoorder'} aan de beurt · ${state.scramClosed.filter(Boolean).length}/21 gestopt`:state.game==='bull41'?`${state.bull41Role==='bull'?'Bullwerper':'Puntengooier'} · ${state.bull41Marks}/25 bullmarks`:state.game==='killer'?(state.killerStage==='assigning'?'Gooi één pijl met je verkeerde hand voor een uniek eigen getal.':'Bouw KILLER op en raak daarna het getal van een tegenstander.'):state.players[state.active].twentyOneFinished?'Klaar':`Raak ${state.players[state.active].twentyOneTarget===21?'Bull':state.players[state.active].twentyOneTarget}. Single +1, dubbel +2, triple +3.`));root.append(heading);

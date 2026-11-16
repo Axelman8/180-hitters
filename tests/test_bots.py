@@ -79,7 +79,7 @@ with tempfile.TemporaryDirectory() as temp:
    # clock only here, while the earlier test checks the actual human pacing.
    screen.close()
    phone.route('**/bot-runner.js',lambda route:route.fulfill(status=200,content_type='text/javascript',body=(root/'dist/bot-runner.js').read_text(encoding='utf-8').replace('await delay(','await fastDelay(').replace(' const timer=setInterval', ' const fastDelay=()=>new Promise(resolve=>setTimeout(resolve,15));\n const timer=setInterval')))
-   for game in ['fourinarow','cricket','tactics','scram','killer','bull41','twentyone','gotcha','tenlives','bobs27','121']:
+   for game in ['fourinarow','cricket','tactics','scram','killer','bull41','twentyone','seabattle','golf','shanghai','gotcha','tenlives','bobs27','121']:
     phone.reload();expect(phone.locator('#header-menu')).to_be_visible()
     sample=phone.evaluate("""async game=>{const e=await import('/engine.js');let s=e.newMatch(['Human','BOT 50'],game==='gotcha'?301:501,'double',1,{game:game==='121'?'x01':game,training121:game==='121',livesMode:'double',maxRounds:0});s.players[s.active].bot=true;s.players[s.active].botLevel=50;if(game==='121'){s.players[s.active].trainingDarts=6;s.trainingDarts=6;s.players[s.active].remaining=501;}return s}""",game)
     assert phone.request.post(url+'/api/state',data={'revision':saved()['revision'],'match':{'state':sample,'undo':[]}}).ok

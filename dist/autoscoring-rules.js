@@ -6,7 +6,7 @@ export function applyCameraEvent(match,draft,event){
  const next=structuredClone(match),state=next?.state;
  if(!state)throw Error('Start eerst een partij.');
  if(state.players[state.active]?.bot)throw Error('De BOT gooit; cameradetectie wacht op de volgende speler.');
- let hits=state.game==='fourinarow'?structuredClone(draft?.hits||[]):(draft?.hits||[]).map(d=>makeDart(d.number,d.mult));
+ let hits=['fourinarow','seabattle'].includes(state.game)?structuredClone(draft?.hits||[]):(draft?.hits||[]).map(d=>makeDart(d.number,d.mult));
  if(event.kind==='removed'){
   if(hits.length)throw Error('Niet alle darts geregistreerd. Vul ontbrekende darts of Mis handmatig in en hervat daarna.');
   return {match:next,hits:[],closed:false};
@@ -14,7 +14,7 @@ export function applyCameraEvent(match,draft,event){
  if(state.phase!=='playing'||next.future?.length||next.editTurn||next.pendingTurns?.length)throw Error('Camera gepauzeerd. Ga naar de actuele partijstand en hervat.');
  if(draft?.entry)throw Error('Rond de handmatige invoer eerst af.');
  if(hits.length>=3)throw Error('Drie darts staan al klaar. Controleer de beurt.');
- const hit=makeDart(event.hit.number,event.hit.mult);
+ const hit={...makeDart(event.hit.number,event.hit.mult),...(state.game==='seabattle'&&Array.isArray(event.hit.seaShips)?{seaShips:event.hit.seaShips}:{})};
  let turn,closed=false;
  if(state.game==='tenlives'){
   const p=state.players[state.active];
@@ -53,5 +53,5 @@ export function applyCameraEvent(match,draft,event){
   next.modeOverride=null;next.editingPending=false;
   hits=[];
  }
- return {match:next,hits:state.game==='fourinarow'?hits:hits.map(({number,mult})=>({number,mult})),closed};
+ return {match:next,hits:['fourinarow','seabattle'].includes(state.game)?hits:hits.map(({number,mult})=>({number,mult})),closed};
 }

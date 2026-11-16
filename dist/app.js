@@ -1,3 +1,4 @@
+import {renderVisualGame} from './visual-games.js';
 import {updateControl,controllerRefreshed,canControl,takeControl} from './controller.js';
 import './dialog-navigation.js';
 import {renderDartSlots} from './dart-editor.js';
@@ -6,11 +7,11 @@ import {cameraControls} from './autoscoring.js';
 import {applyCameraEvent} from './autoscoring-rules.js';
 import './match-transfer.js';
 import './desktop-update.js';
-import {onlineSessionForNewMatch,leaveOnlineForNewMatch} from './online.js';
+import {onlineSessionForNewMatch,leaveOnlineForNewMatch,prepareOnlineDart} from './online.js';
 import {renderLives,renderLivesSummary} from './ten-lives.js';
 import {matchSummary,renderLegTable} from './match-summary.js';
 import {renderGameReport} from './game-reports.js';
-import {renderScreenOverview} from './screen-overview.js';
+import {renderScreenOverview,ensureScreenInputShortcut} from './screen-overview.js';
 import {replayTurns} from './replay.js';
 import {celebrateScore} from './celebration.js';
 import {showWinner} from './winner.js';
@@ -21,6 +22,7 @@ const phoneLayout=matchMedia('(max-width:600px)');
 function mobileLayout(){document.body.classList.toggle('remote-control',!!window.DartsAndroid||new URLSearchParams(location.search).has('android')||new URLSearchParams(location.search).get('remote')==='1'||phoneLayout.matches);}
 phoneLayout.addEventListener('change',mobileLayout);mobileLayout();
 const $=id=>document.getElementById(id),key='oche.match.v1';
+ensureScreenInputShortcut();
 // Gotcha resetknoppen horen bij de hele beurt en blijven daardoor zichtbaar
 // in zowel Beurttotaal als Per pijl.
 $('total-input').before($('gotcha-total-options'));
@@ -72,7 +74,7 @@ const draftOwner=Date.now().toString(36)+Math.random().toString(36).slice(2);
 let sharedDraft=null,draftSequence=0,draftWrites=0;
 async function publishDraft(){
  if(!state||state.phase!=='playing'||!ready||busy)return;
- const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult,cell,label,needsBullCorner})=>({number,mult,cell,label,...(needsBullCorner?{needsBullCorner:true}:{})})),entry:mode==='total'&&!cricket()?entry:'',...(botTicket?{_bot:botTicket}:{})};
+ const payload={revision,owner:draftOwner,seq:++draftSequence,hits:dartList.map(({number,mult,cell,label,needsBullCorner,seaShips})=>({number,mult,cell,label,...(needsBullCorner?{needsBullCorner:true}:{}),...(seaShips?{seaShips}:{})})),entry:mode==='total'&&!cricket()?entry:'',...(botTicket?{_bot:botTicket}:{})};
  document.dispatchEvent(new CustomEvent('dart-draft-changed',{detail:payload}));
  draftWrites++;
  try{const res=await fetch('/api/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(4000)});if(!res.ok&&payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer de stand.');return res.ok;}catch{if(payload.revision===revision)message('Pijlen niet gesynchroniseerd. Controleer je verbinding.');return false;}
@@ -156,7 +158,7 @@ async function synchronize(){
    const hits=draft?draft.hits||[]:editTurn?.hits||[];
    const nextEntry=draft?draft.entry||'':editTurn&&!editTurn.hits?String(editTurn.score??0):'';
    if(entry!==nextEntry){entry=nextEntry;renderInput();}
-   const next=state?.game==='fourinarow'?structuredClone(hits):hits.map(d=>makeDart(d.number,d.mult));
+   const next=['fourinarow','seabattle'].includes(state?.game)?structuredClone(hits):hits.map(d=>makeDart(d.number,d.mult));
    if(JSON.stringify(next)!==JSON.stringify(dartList)){
     sharedDraft=null;dartList=next;multiplier=1;
     if(next.length&&!(cricket()&&mode==='total'))setMode('dart');
@@ -189,6 +191,7 @@ function button(text,handler){const b=document.createElement('button');b.type='b
 function resetInput(){entry='';dartList=[];multiplier=1;selectedDart=null;livesCorrection=[];message();renderInput();}
 function renderInput(){
  paintBot(state,dartList,!!editTurn);
+ renderVisualGame(state,dartList,{hit:number=>{setMode('dart');addDart(number,multiplier);},multiplier,setMultiplier:value=>{multiplier=value;renderInput();},editing:correctingDarts(),selectedDart,select:selectCorrectionDart,reset:resetGotchaOpponent,memberIndex:index=>teamMemberIndex(state,state.players[index])});
  if(state?.game==='tenlives'){renderLivesGame();return;}
  if(state?.game==='fourinarow'){renderFourGame();return;}
  if(sonnyGameIds.includes(state?.game)){renderSonny();return;}
@@ -309,7 +312,9 @@ function renderFourGame(){
  renderFourInRow($('fourinarow-root'),state,dartList,{multiplier,editing:correctingDarts(),selectedDart,select:selectCorrectionDart,hit:addFourDart,miss:()=>addFourDart(null),remove:()=>{dartList.pop();selectedDart=null;renderFourGame();publishDraft();},confirm:()=>commit({hits:[...dartList]}),setMultiplier:value=>{multiplier=value;renderFourGame();}});
 }
 function sonnyDart(number){const mult=number===0?1:number===25?(multiplier===1?1:2):multiplier;return makeDart(number,mult);}
+let seaInputQueue=Promise.resolve();
 function addSonnyDart(number=0){
+ if(state?.game==='seabattle'){const startedAt=state.startedAt,turns=state.turns,hit=sonnyDart(number);seaInputQueue=seaInputQueue.then(async()=>{if(state?.startedAt!==startedAt||state.turns!==turns)return;const dart=await prepareOnlineDart(state,hit,selectedDart??dartList.length);if(state?.startedAt!==startedAt||state.turns!==turns)return;if(replaceCorrectionDart(dart))return;if(dartList.length>=3)return;dartList.push(dart);if(sonnyAutoCommit(state,dartList))await commit({hits:[...dartList]});else{renderSonny();await publishDraft();}}).catch(error=>message(error.message));return;}
  if(replaceCorrectionDart(sonnyDart(number)))return;
  if(dartList.length>=3)return;dartList.push(sonnyDart(number));
  if(sonnyAutoCommit(state,dartList))void commit({hits:[...dartList]});else{renderSonny();publishDraft();}
@@ -418,6 +423,7 @@ function teamMemberIndex(matchState,player){
 }
 function render(){
  paintBot(state,dartList,!!editTurn);
+ renderVisualGame(state,dartList,{hit:number=>{setMode('dart');addDart(number,multiplier);},multiplier,setMultiplier:value=>{multiplier=value;renderInput();},editing:correctingDarts(),selectedDart,select:selectCorrectionDart,reset:resetGotchaOpponent,memberIndex:index=>teamMemberIndex(state,state.players[index])});
  document.body.dataset.game=state?.game||'';
  if((state?.game==='fourinarow'||sonnyGameIds.includes(state?.game))&&document.body.classList.contains('remote-control'))document.dispatchEvent(new Event('four-in-row-menu-compact'));
  $('edit-match').hidden=!state||state.phase==='won';
@@ -599,7 +605,7 @@ $('bust').onclick=()=>commit(cricket()||state?.game==='bobs27'?{hits:[makeDart(0
 function restoreTurnInput(){
  if(!editTurn)return;
  entry=editTurn.hits?'':String(editTurn.score??0);
- dartList=state?.game==='fourinarow'?structuredClone(editTurn.hits||[]):(editTurn.hits||[]).map(d=>makeDart(d.number,d.mult));
+ dartList=['fourinarow','seabattle'].includes(state?.game)?structuredClone(editTurn.hits||[]):(editTurn.hits||[]).map(d=>makeDart(d.number,d.mult));
  livesCorrection=editTurn.trainingResults?[...editTurn.trainingResults]:typeof editTurn.trainingHit==='boolean'?[editTurn.trainingHit]:Array(editTurn.trainingMisses||0).fill(false);
 }
 function recoverTurn(history){
@@ -645,7 +651,7 @@ function showResult(){
  $('result-dialog').querySelector('#game-report')?.remove();
  if(sonnyGameIds.includes(state.game)){
   $('result-title').textContent=state.winner===null?'Gelijkspel':`${state.players[state.winner].name} wint ${sonnyGameNames[state.game]}!`;
-  $('result-text').textContent=state.game==='scram'?state.players.map(player=>`${player.name}: ${player.scramScore} punten`).join(' · '):state.game==='bull41'?state.players.map(player=>`${player.name}: ${player.bull41Score} punten`).join(' · '):state.game==='killer'?'Alle andere spelers zijn uitgeschakeld.':state.players.map(player=>`${player.name}: ${player.twentyOneAdjusted} pijlen, ${player.twentyOneTriples} triples`).join(' · ');
+  $('result-text').textContent=state.game==='scram'?state.players.map(player=>`${player.name}: ${player.scramScore} punten`).join(' · '):state.game==='bull41'?state.players.map(player=>`${player.name}: ${player.bull41Score} punten`).join(' · '):['killer','seabattle'].includes(state.game)?'Alle andere spelers zijn uitgeschakeld.':state.game==='golf'?'De speler met de minste slagen wint.':state.game==='shanghai'?(state.shanghaiFinish?'Shanghai: single, dubbel en triple in dezelfde beurt!':'Hoogste totaalscore wint.'):state.players.map(player=>`${player.name}: ${player.twentyOneAdjusted} pijlen, ${player.twentyOneTriples} triples`).join(' · ');
   renderGameReport(state,$('result-dialog'));$('continue').textContent='Nieuwe partij';$('continue').classList.add('result-local-continue');$('finish-match').hidden=true;if(!$('result-dialog').open)$('result-dialog').showModal();return;
  }
  if(state.game==='fourinarow'){
@@ -728,6 +734,8 @@ function settings(){
  const training=$('game-type').value==='training',gotcha=training&&$('training-type').value==='gotcha',bobs=training&&$('training-type').value==='bobs27',x=$('game-type').value==='x01',four=$('game-type').value==='fourinarow',fourBot=four&&$('four-bot').value==='bot',sonny=sonnyGameIds.includes($('game-type').value),custom=four||sonny;
  if((training||custom)&&$('participant-mode').value==='teams'){$('participant-mode').value='individual';names();}
  $('participant-mode-label').hidden=training||custom;
+ $('golf-holes-label').hidden=$('golf-scoring-label').hidden=$('game-type').value!=='golf';
+ $('shanghai-rounds-label').hidden=$('game-type').value!=='shanghai';
  $('count-label').textContent=teamMode()?'Aantal teams':'Aantal spelers';
  document.querySelectorAll('[data-x01]').forEach(el=>el.hidden=!x);
  $('game-type').closest('label').hidden=training;
@@ -737,7 +745,7 @@ function settings(){
  $('gotcha-target-label').hidden=!gotcha;$('gotcha-out-label').hidden=!gotcha;
  $('training-label').hidden=!training;$('training-help').hidden=!training;
  $('training-help').textContent=training&&$('training-type').value==='tenlives'?'Hitters Challenge: Doubles of Triples van 20 t/m 10, daarna Bull (50). Raak: resterende pogingen plus 3. Mis je alle pogingen, dan ??n doel terug of op 20 ??n leven kwijt; daarna de volgende speler.':gotcha?'Gotcha: 2 tot 4 spelers beginnen op 0. Tel per pijl op naar de gekozen doelscore. Kies Straight-out, Double-out of Master-out. Gelijk aan een tegenstander? Die gaat naar 0. Te hoog, een ongeldige finish of 1 punt over bij Double/Master-out is bust: je eigen score gaat terug naar het begin van de beurt; eerdere Gotcha-treffers blijven staan.':bobs?"Bob's 27: 1 tot 4 spelers. Iedereen gooit drie pijlen op D1 t/m D20 en daarna Bull. Iedere treffer telt de dubbelwaarde erbij. Geen treffer trekt die waarde af. Bij 0 of lager valt die speler af.":'121: 1 tot 4 spelers, elk met een eigen niveau. Bij meerdere spelers wisselt de beurt na iedere drie darts; iedereen behoudt zijn eigen poging van maximaal negen darts. Dubbel-uit. Gelukt: +1 plus overgebleven darts. Niet gelukt: -1, minimaal 121. Een bust verbruikt de rest van je beurt.';
- $('count').querySelector('option[value="1"], option:first-child').disabled=gotcha||teamMode()||(four&&!fourBot)||(sonny&&$('game-type').value!=='twentyone');
+ $('count').querySelector('option[value="1"], option:first-child').disabled=gotcha||teamMode()||(four&&!fourBot)||(sonny&&!['twentyone','golf','shanghai'].includes($('game-type').value));
  for(const id of ['match-mode','max-rounds','count','starter'])$(id).closest('label').hidden=(training||custom)&&!['count','starter'].includes(id);
  document.querySelector('.setup-help:not(#training-help)').hidden=training||custom;
  $('set-legs-label').hidden=training||custom||$('match-mode').value!=='sets';
@@ -745,7 +753,7 @@ function settings(){
  $('target-text').textContent=$('match-mode').value==='sets'?'Sets nodig om te winnen':'Legs nodig om te winnen';
  if((gotcha||teamMode())&&Number($('count').value)<2){$('count').value='2';names();}
  if(four&&Number($('count').value)<2){$('count').value='2';names();}
- if(sonny&&$('game-type').value!=='twentyone'&&Number($('count').value)<2){$('count').value='2';names();}
+ if(sonny&&!['twentyone','golf','shanghai'].includes($('game-type').value)&&Number($('count').value)<2){$('count').value='2';names();}
 
 }
 
@@ -799,6 +807,7 @@ function editCurrentMatch(){
  const training=!!state.training121||['gotcha','bobs27','tenlives'].includes(state.game);
  $('game-type').value=training?'training':state.game;
  if(training)$('training-type').value=state.training121?'121':state.game==='tenlives'?'tenlives':state.game;
+ selectValue('golf-holes',state.golfHoles||9);$('golf-scoring').value=state.golfScoring||'best';selectValue('shanghai-rounds',state.shanghaiRounds||7);
  selectValue('start',state.start);selectValue('gotcha-target',state.start);
  $('in-mode').value=state.inMode||'single';$('out').value=state.out||'double';$('gotcha-out').value=state.out||'single';
  $('bull-mode').value=state.bull||'25/50';$('scoring').value=state.scoring||'standard';
@@ -876,7 +885,7 @@ $('setup-form').onsubmit=async e=>{
   training121:$('game-type').value==='training'&&$('training-type').value==='121',livesMode:$('lives-mode').value,
   fourSymbols:four?participantNameInputs().map((input,index)=>input.dataset.fourSymbol||fourPlayerSymbols[index]):null,previousFourBoard,
   game:$('game-type').value==='training'?($('training-type').value==='tenlives'?'tenlives':gotcha?'gotcha':bobs?'bobs27':'x01'):$('game-type').value,
-  inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)
+  golfHoles:Number($('golf-holes').value),golfScoring:$('golf-scoring').value,shanghaiRounds:Number($('shanghai-rounds').value),inMode:$('in-mode').value,scoring:$('scoring').value,matchMode:$('match-mode').value,legsPerSet:Number($('set-legs').value),bull:$('bull-mode').value,maxRounds:Number($('max-rounds').value),starter:Number($('starter').value)
  });
  if(four)try{localStorage.setItem('180hitters.lastFourBoard',JSON.stringify(proposed.fourBoard));}catch{}
  proposed.teamMode=teamMode();if(proposed.teamMode)proposed.players=proposed.players.map((player,index)=>({...player,members:teams[index].members}));
@@ -927,9 +936,10 @@ cameraControls(async event=>{
   // Darts 2 and 3 keep scoring immediately while bull choices are pending.
   // Only a removal receipt waits until those choices complete the visit.
   if(event.kind==='removed'&&base.match?.state?.game==='fourinarow'&&(inputDraft?.hits?.some(hit=>hit.needsBullCorner)||inputDraft?.hits?.length===3))return;
+  if(event.kind==='dart'&&base.match?.state?.game==='seabattle')event={...event,hit:await prepareOnlineDart(base.match.state,event.hit,(inputDraft?.hits||[]).length)};
   const result=applyCameraEvent(base.match,inputDraft,event),expectedHits=structuredClone(result.hits||[]);
   const res=await fetch('/api/autoscoring/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:base.revision,event:event.id,...result}),signal:AbortSignal.timeout(5000)});
-  if(res.ok){const data=await res.json();receive(data);const receivedHits=data.draft?.hits||[],stableHits=!result.closed&&expectedHits.length>receivedHits.length?expectedHits:receivedHits;dartList=state?.game==='fourinarow'?structuredClone(stableHits):stableHits.map(d=>makeDart(d.number,d.mult));if(dartList.length)setMode('dart');const liveDraft=dartList.length?{...(data.draft||{}),hits:structuredClone(dartList)}:null;document.dispatchEvent(new CustomEvent('dart-draft-observed',{detail:liveDraft}));if(state?.game==='fourinarow')renderFourGame();else renderInput();}
+  if(res.ok){const data=await res.json();receive(data);const receivedHits=data.draft?.hits||[],stableHits=!result.closed&&expectedHits.length>receivedHits.length?expectedHits:receivedHits;dartList=['fourinarow','seabattle'].includes(state?.game)?structuredClone(stableHits):stableHits.map(d=>makeDart(d.number,d.mult));if(dartList.length)setMode('dart');const liveDraft=dartList.length?{...(data.draft||{}),hits:structuredClone(dartList)}:null;document.dispatchEvent(new CustomEvent('dart-draft-observed',{detail:liveDraft}));if(state?.game==='fourinarow')renderFourGame();else renderInput();}
   else if(![409,423].includes(res.status)){const data=await res.json();throw Error(data.error||'Cameraworp niet opgeslagen. Controleer de beurt.');}
  }catch(e){
   // A lost response is retried through the server receipt, never guessed locally.

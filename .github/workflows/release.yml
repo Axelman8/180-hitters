@@ -50,6 +50,7 @@ jobs:
           node tests/solo-scoring.mjs
           node tests/camera-game-rules.mjs
           node tests/killer-rules.mjs
+          node tests/party-games.mjs
           python3 tests/test_camera_bull_choice.py
           node tests/lives-correction.mjs
           node tests/training-bot-darts.mjs
@@ -59,6 +60,7 @@ jobs:
           python3 tests/test_legacy_migration.py
           python3 tests/test_server_version.py
           python3 tests/test_nuc_keyboard.py
+          python3 tests/test_online_persistence.py
 
       - name: Set up Java 17
         uses: actions/setup-java@v6
@@ -169,6 +171,9 @@ jobs:
           demo/180-Hitters-4-op-een-rij-uitleg.mp4
           demo/180-Hitters-Scram-uitleg.mp4
           demo/180-Hitters-Killer-uitleg.mp4
+          demo/180-Hitters-Zeeslag-Darts-uitleg.mp4
+          demo/180-Hitters-Dartgolf-uitleg.mp4
+          demo/180-Hitters-Shanghai-uitleg.mp4
           demo/180-Hitters-Bull-41-uitleg.mp4
           demo/180-Hitters-21-uitleg.mp4
           demo/180-Hitters-121-uitleg.mp4

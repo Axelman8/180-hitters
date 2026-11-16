@@ -1,7 +1,7 @@
 # 180 Hitters Online
 
 This Cloudflare Worker provides private, temporary online dart lanes for the
-180 Hitters Four in a Row and Killer games. Each lane is backed by a SQLite Durable Object,
+180 Hitters Four in a Row, Killer, Zeeslag Darts, Dartgolf and Shanghai games. Each lane is backed by a SQLite Durable Object,
 uses unguessable player keys, validates turn ownership on the server and
 broadcasts state changes through hibernatable WebSockets.
 
@@ -45,6 +45,7 @@ Use an isolated local Wrangler instance without production club secrets. The def
 python test/integration.py
 node test/websocket.mjs
 node test/killer.mjs
+node test/party.mjs
 ```
 
 The tests cover two-to-four-player lane creation, capacity enforcement, turn
@@ -55,3 +56,12 @@ by manual entry, AutoDarts and bots. Tests cover agreed starters, unique number
 assignment, per-dart drafts, eliminated-player skipping and the final winning dart.
 Existing six-letter saved matches remain compatible; new matches use three-hit
 activation and three lives. Joining Killer requires an updated client.
+
+The three new games require version 1.9.40 or newer. Visits are replayed with
+the shared game engine. Zeeslag fleets are generated and stored on the relay:
+each player receives only their own fleet and previously struck enemy cells.
+The active player's per-dart reveal request is validated against the current
+visit, dart slot and hidden fleet; repeated requests are idempotent. Full fleets
+are revealed after the match ends. WebSocket messages are filtered for each
+player role, and tests cover privacy, per-dart updates and complete games with
+two, three and four players.

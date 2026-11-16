@@ -1,3 +1,4 @@
+import {previewParty,golfStroke} from './party-rules.js';
 // Original 180 Hitters bot. Aiming and physical accuracy are deliberately separate:
 // the same player misses into neighbouring segments in every game.
 import {makeDart,checkout,previewTurn,previewCricket,previewGotcha,applyTurn} from './engine.js';
@@ -137,6 +138,24 @@ export function gotchaPlan(state,hits=[]){
 }
 export function chooseBotTarget(state,hits=[]){
  const p=state.players[state.active],left=3-hits.length;
+ if(state.game==='golf')return aim(state.partyTarget,2);
+ if(state.game==='shanghai')return aim(state.partyTarget,[3,2,1].find(mult=>!hits.some(h=>h.number===state.partyTarget&&h.mult===mult))||3);
+ if(state.game==='seabattle'){
+  const live=previewParty(state,hits),own=live.players[state.active],enemies=live.players.filter((p,i)=>i!==state.active&&!p.seaEliminated);
+  // The BOT uses only observed shots, never the unhit positions in a fleet.
+  let best=1,value=-Infinity;
+  for(let cell=0;cell<20;cell++){
+   let weight=0;
+   for(const enemy of enemies){
+    if(enemy.seaShots[cell]>0){if(enemy.seaFleet[cell]&&enemy.seaHull[cell]<2)weight+=12;else weight-=4;}
+    else{
+     weight+=2;
+     for(const neighbour of [cell-5,cell+5,...(cell%5?[cell-1]:[]),...(cell%5<4?[cell+1]:[])])if(neighbour>=0&&neighbour<20&&enemy.seaShots[neighbour]>0&&enemy.seaFleet[neighbour])weight+=3;
+    }
+   }
+   weight-=own.seaFired[cell]*.1;if(weight>value){value=weight;best=cell+1;}
+  }return aim(best,2);
+ }
  if(state.game==='fourinarow')return fourTarget(state,hits);
  if(state.game==='tenlives')return aim(p.livesTarget,p.livesTarget===25?2:state.livesMode==='triple'?3:2);
  if(state.game==='bobs27')return aim(state.bobsTarget,2);
@@ -170,6 +189,7 @@ export function botDart(state,hits=[],random=Math.random){
  return {...hit,cell,label:hit.number===25?(hit.mult===2?'BB':'sB'):hit.label};
 }
 export function botVisit(state,hits){
+ if(state.game==='golf'&&state.golfScoring==='last'&&hits.length<3&&golfStroke(hits[hits.length-1],state.partyTarget)>1)return null;
  if(state.game==='tenlives'){const hit=hits.at(-1),p=state.players[state.active];return {trainingHit:hit.number===p.livesTarget&&hit.mult===(p.livesTarget===25?2:state.livesMode==='triple'?3:2),botDart:hit};}
  if(state.game==='killer'&&state.killerStage==='assigning'){
   const hit=hits[0];if(hit.number<1||hit.number>20||state.players.some(p=>p.killerNumber===hit.number))return null;

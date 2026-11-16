@@ -43,7 +43,7 @@ export function setupShot(score,out='double',n=1,bull='25/50'){
 }
 export function newMatch(names,start=501,out='double',legs=3,options={}){
  const bots=players=>players.map((player,index)=>({...player,bot:[40,50].includes(Number(options.botLevels?.[index]))||!!(options.fourBot&&index===1),botLevel:[40,50].includes(Number(options.botLevels?.[index]))?Number(options.botLevels[index]):options.fourBot&&index===1?50:0}));
- if(sonnyGameIds.includes(options.game)){const state=newSonnyMatch(names,options.game,Number(options.starter)||0);state.players=bots(state.players);return state;}
+ if(sonnyGameIds.includes(options.game)){const state=newSonnyMatch(names,options.game,Number(options.starter)||0,options);state.players=bots(state.players);return state;}
  if(options.game==='fourinarow'){
   if(options.fourBot){if(names.length!==1)throw Error('Kies één speler voor een partij tegen de BOT.');names=[...names,'BOT'];}
   else if(names.length<2||names.length>4)throw Error('Kies 2 tot 4 spelers voor 4 op een rij.');

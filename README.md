@@ -2,7 +2,7 @@
 
 Offline darts scoring and training for Android phones, Android tablets, Linux NUC displays and Windows. Developed by [Axelman8](https://github.com/axelman8).
 
-Play independently on your device or control a shared Linux NUC over Bluetooth. Local play needs no account, subscription, internet connection or cameras. Optional AutoDarts camera scoring and private online **4 in a Row** and **Killer** lanes are available. The app interface and narrated tutorial videos are currently in Dutch; repository documentation is in English.
+Play independently on your device or control a shared Linux NUC over Bluetooth. Local play needs no account, subscription, internet connection or cameras. Optional AutoDarts camera scoring and private online lanes for **4 in a Row, Killer, Zeeslag Darts, Dartgolf and Shanghai** are available. The app interface and narrated tutorial videos are currently in Dutch; repository documentation is in English.
 
 ## Downloads
 
@@ -22,7 +22,7 @@ Advanced packages: `180-Hitters-Linux-x64.tar.gz` and `180-Hitters-Windows-x64.z
 
 The app starts at its main menu while keeping the current match. The version is centered in the top bar. **TERUG** (Back) is at the top of app menus, dialogs and the match wizard, including long reports. Back restores the immediately preceding menu, including its section and scroll position. Nested dialogs return one level at a time. Android Back follows the same app navigation on modern phones; the legacy tablet uses the same behavior for its on-screen and touch controls. Back returns to the immediately preceding screen or menu section, preserving its scroll position and form state. Nested access screens and Android Bluetooth pickers return one level at a time; Android Back and Escape follow the same navigation where available.
 
-Every human player has a name field and a player-list selector directly inside their player card, including when another player is a BOT. Choose a NUC player, a player saved on the current phone/tablet, or an approved online friend, or type a name for the match. List synchronization preserves typing focus and the on-screen keyboard. This applies to all twelve games and the selected members of teams.
+Every human player has a name field and a player-list selector directly inside their player card, including when another player is a BOT. Choose a NUC player, a player saved on the current phone/tablet, or an approved online friend, or type a name for the match. List synchronization preserves typing focus and the on-screen keyboard. This applies to all fifteen games and the selected members of teams.
 
 | App menu | Contents |
 | --- | --- |
@@ -42,15 +42,27 @@ NUC-only controls appear when connected. The connection indicator shows whether 
 
 On connected phones and tablets, **Camera aan / herstart** and **Camera uit** appear as two direct controls beside **Menu** in the top bar. They are hidden during local play and when the Bluetooth connection is lost. The NUC display keeps its camera controls under **NUC & verbinding**. If the connection is lost or another device has control, a recovery button reconnects to the selected NUC, takes control and confirms the current match before scoring resumes. Recovery never discards a match. Starting a new match from a connected device also acquires control before opening the setup wizard. If an online dart lane is still active, **Nieuwe partij** explains this and offers to leave it before opening game selection. An unavailable online relay cannot trap the player; the NUC connection stays available and the previous match is preserved until a new match is started. The NUC display and its controllers refresh their shared online status so leaving on one device releases the controls on the others.
 
+## Graphical games and online game discovery
+
+Gotcha now puts each player's coloured race track and reset action in their score card. Cricket and Tactics show a dartboard with closure indicators and a player-coloured marks table. Phones start with the readable table and compact dart controls; the board button switches views, and expanded turn controls retain correction and total-entry options. Bob's 27 highlights the current double and shows progress through D1-D20 and bull. Existing scoring variants, team members, bots and correction rules remain available.
+
+Three new games support up to four players, BOT 40/50, camera scoring, saved reports and sharing:
+
+- **Zeeslag Darts (Sea Battle)** is an original variant. Each player has randomly placed ships of 3, 2 and 2 cells on the numbers 1-20. Each ship cell has two life points. A single inflicts one damage and a double or triple up to two on that cell; bull and water do no damage. A shot attacks all opponents on the same number, while fleet tabs only change the view. Eliminated players are skipped and the final sinking dart ends the game immediately. For online play, unhit enemy positions remain on the relay; only the struck cells are revealed.
+- **Dartgolf** offers 9 or 18 holes. Double = 1 stroke, triple = 2, single = 3, other number/miss = 5. Choose best of three or last dart; with last dart, use **Hole afronden** to stop early. Fewest total strokes wins; equal totals are a draw. This is the [best/last-dart golf variant](https://thedarts.app/guides/golf-darts).
+- **Shanghai** offers rounds 1-7 or 1-20. Only the round's target scores. A single, double and triple of that target in one visit wins immediately; otherwise the highest total after all rounds wins. Equal totals are a draw. See [AutoDarts' Shanghai rules](https://docs.autodarts.com/game-modes/party/shanghai/).
+
+The game picker labels the five supported online games **Online mogelijk**, and their settings screen includes **Online dartbaan maken**. That opens lane creation with the chosen game and settings; it does not create or invite anyone automatically. Online play needs internet and approved access. Local play and Bluetooth NUC control remain available without internet.
+
 ## Killer: a board built for four players
 
 Killer now has a responsive, original SVG dartboard with each player's number in their own colour. Four player cards show names, target numbers, three-hit KILLER progress and three lives. The active player and target are highlighted, and each pending dart previews its effect. On phones, the board uses the space left after the player cards and touch controls, keeping entry separate from the board. Larger NUC screens show a bigger board with player cards beside it. New matches use three hits to become Killer and three lives per player. Singles count once, doubles twice and triples three times. The winning dart ends play immediately. Saved six-letter matches retain their original rules.
 
-When creating an online dart lane, choose **4 in a Row** or **Killer**, with two to four players. Invitations, the public lane list and the agreed starting player work for both games. Killer synchronizes the initial number selection and each dart, skips eliminated players and shows the winner on every device. All participants need version 1.9.39 or newer to join a Killer lane. Existing 4 in a Row lanes remain compatible.
+When creating an online dart lane, choose **4 in a Row**, **Killer**, **Zeeslag Darts**, **Dartgolf** or **Shanghai**, with two to four players. Invitations, the public lane list and the agreed starting player work for all five games. Killer synchronizes the initial number selection and each dart, skips eliminated players and shows the winner on every device. All participants need version 1.9.39 or newer to join Killer, and 1.9.40 or newer for the three new games. Existing 4 in a Row lanes remain compatible.
 
 ## All games and tutorial videos
 
-All twelve games support up to four player seats, including **BOT 40** and **BOT 50**. Games that require opponents need at least two participants; a bot can fill a seat. Supported match games also offer temporary teams with up to five members each.
+All fifteen games support up to four player seats, including **BOT 40** and **BOT 50**. Games that require opponents need at least two participants; a bot can fill a seat. Supported match games also offer temporary teams with up to five members each.
 
 Every game has a written explanation and **Bekijk uitlegvideo** (Watch tutorial) in the new-match wizard. The player streams the Dutch narrated MP4 directly from GitHub, without first saving it to Downloads. Streaming needs internet access.
 
@@ -64,6 +76,9 @@ Every game has a written explanation and **Bekijk uitlegvideo** (Watch tutorial)
 | Bob's 27 | Doubles training from D1 through D20 and bull, starting at 27. | [Bob's 27](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Bobs-27-uitleg.mp4) |
 | Hitters Challenge | Progress through double or triple targets while managing lives and attempts. | [Hitters Challenge](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Hitters-Challenge-uitleg.mp4) |
 | 4 in a Row | Claim cells on a randomized 5x5 dartboard grid and connect four. | [4 in a Row](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-4-op-een-rij-uitleg.mp4) |
+| Zeeslag Darts | Sink opposing fleets on a numbered ocean grid. | [Zeeslag Darts](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Zeeslag-Darts-uitleg.mp4) |
+| Dartgolf | Score the fewest strokes over 9 or 18 numbered holes. | [Dartgolf](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Dartgolf-uitleg.mp4) |
+| Shanghai | Score on the round target or finish with its single-double-triple combination. | [Shanghai](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Shanghai-uitleg.mp4) |
 | Scram | Alternate stopping numbers and scoring on those still open. | [Scram](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Scram-uitleg.mp4) |
 | Killer | Choose unique numbers, build KILLER and eliminate opponents. | [Killer](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Killer-uitleg.mp4) |
 | Bull / 41 | Alternate bull marks and scoring the part of a visit above 41. | [Bull / 41](https://github.com/Axelman8/180-hitters/releases/latest/download/180-Hitters-Bull-41-uitleg.mp4) |

@@ -23,3 +23,20 @@ document.getElementById('club-wifi')?.remove();
 document.querySelector('#mobile-dock .mobile-dock-copy')?.remove();
 document.getElementById('mobile-qr-link')?.remove();
 document.getElementById('mobile-dock')?.classList.add('bluetooth-only');
+
+// Keep the installation shortcut accessible without covering a graphical board.
+const dock = document.getElementById('mobile-dock');
+if (dock && install) {
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.id = 'install-app-toggle';
+  toggle.textContent = 'App installeren';
+  toggle.setAttribute('aria-controls', 'install-app');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.onclick = () => {
+    const open = dock.classList.toggle('install-expanded');
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.textContent = open ? 'QR-code sluiten' : 'App installeren';
+  };
+  dock.prepend(toggle);
+}

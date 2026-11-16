@@ -6,7 +6,7 @@ function annotatedTurns(state){
  return state.history.map((turn,historyIndex)=>{let index;if(Number.isInteger(turn.player))index=turn.player;else if(state.game==='bobs27'||state.training121)index=state.players.findIndex(player=>player.name===turn.name);else{const leg=turn.leg||1,visit=visits.get(leg)||0;index=mod(initialStarter+leg-1+visit,count);visits.set(leg,visit+1);}if(index<0)index=mod(initialStarter+(turn.leg||1)-1,count);return {...turn,playerIndex:index,historyIndex};});
 }
 const turnsByPlayer=(state,index)=>annotatedTurns(state).filter(turn=>turn.playerIndex===index);
-const gameName=state=>state.training121?'121':({x01:'X01',cricket:'Cricket',tactics:'Tactics',gotcha:'Gotcha',bobs27:"Bob's 27",fourinarow:'4 op een rij',scram:'Scram',killer:'Killer',bull41:'Bull / 41',twentyone:'21'})[state.game]||'Partij';
+const gameName=state=>state.training121?'121':({x01:'X01',cricket:'Cricket',tactics:'Tactics',gotcha:'Gotcha',bobs27:"Bob's 27",fourinarow:'4 op een rij',scram:'Scram',killer:'Killer',bull41:'Bull / 41',twentyone:'21',seabattle:'Zeeslag Darts',golf:'Dartgolf',shanghai:'Shanghai'})[state.game]||'Partij';
 const time=value=>new Date(value||Date.now()).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
 const targetLabel=target=>target===25?'Bull':String(target);
 
@@ -71,8 +71,14 @@ function sonnyReport(state){
  return {title:`${gameName(state)}-overzicht`,subtitle:'Resultaat en alle gespeelde beurten',players,bars:[{title:'Resultaat per speler',items:players.map((player,index)=>({label:player.name,value:value(state.players[index]),display:player.stats[0][1]}))}],headers:['Beurt','Speler','Rol','Gegooid','Score','Darts'],rows};
 }
 
+function partyReport(state){
+ const golf=state.game==='golf',sea=state.game==='seabattle',field=golf?'golfStrokes':sea?'seaDamage':'shanghaiPoints';
+ const players=state.players.map((p,i)=>({name:p.name,stats:[[golf?'Slagen totaal':sea?'Schade toegebracht':'Eindscore',String(p[field]||0)],...(sea?[['Vlootlevens over',String(p.seaRemaining)]]:[]),['Status',i===state.winner?'Winnaar':state.phase==='won'&&state.winner===null?'Gelijkspel':p.seaEliminated?'Uitgeschakeld':'Gespeeld'],['Darts totaal',String(p.darts)]]}));
+ return {title:gameName(state)+'-overzicht',subtitle:golf?'De minste slagen wint':sea?'Vloten, schade en alle aanvallen':'Scores per ronde en Shanghai-combinaties',players,bars:[{title:golf?'Slagen per speler (lager is beter)':sea?'Schade toegebracht':'Punten per speler',items:state.players.map(p=>({label:p.name,value:p[field]||0,display:String(p[field]||0)}))}],headers:['Beurt',golf?'Hole':'Doel','Speler','Gegooid',golf?'Slagen':'Punten','Darts'],rows:state.history.map((turn,i)=>[String(i+1),String(turn.target??'?'),turn.name,turn.labels||'?',String(turn.score||0),String(turn.darts||0)])};
+}
+
 export function buildGameReport(state){
- const report=state.training121?training121Report(state):state.game==='bobs27'?bobsReport(state):state.game==='gotcha'?gotchaReport(state):state.game==='fourinarow'?fourInRowReport(state):['scram','killer','bull41','twentyone'].includes(state.game)?sonnyReport(state):['cricket','tactics'].includes(state.game)?cricketReport(state):x01Report(state);
+ const report=['seabattle','golf','shanghai'].includes(state.game)?partyReport(state):state.training121?training121Report(state):state.game==='bobs27'?bobsReport(state):state.game==='gotcha'?gotchaReport(state):state.game==='fourinarow'?fourInRowReport(state):['scram','killer','bull41','twentyone'].includes(state.game)?sonnyReport(state):['cricket','tactics'].includes(state.game)?cricketReport(state):x01Report(state);
  return {...report,started:time(state.startedAt),ended:time(state.completedAt||Date.now()),totalDarts:state.history.reduce((n,turn)=>n+(turn.darts||0),0),game:gameName(state)};
 }
 

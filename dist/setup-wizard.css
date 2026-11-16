@@ -71,3 +71,5 @@ body:not(.remote-control) .wizard-symbol-player{grid-template-columns:minmax(180
 body:not(.remote-control) .wizard-roster button{min-height:58px;font-size:20px}
 body:not(.remote-control) .wizard-actions button{min-height:68px;font-size:23px}
 body:not(.remote-control) .wizard-summary p{font-size:18px}
+
+.wizard-game .wizard-online-badge{display:inline-flex;align-self:start;justify-self:start;padding:4px 9px;border:1px solid #7eab56;border-radius:20px;color:#c8f56a;background:#233c2d;font-size:11px;font-weight:850}.wizard-online-start{width:100%;min-height:48px;color:#c8f56a;border-color:#7eab56;background:#233c2d}.wizard-online-note{font-size:12px;color:#acc0b6;margin:6px 0 14px}

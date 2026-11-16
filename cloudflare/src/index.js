@@ -1,4 +1,5 @@
 import {applySonnyTurn} from '../../dist/sonny-games.js';
+import {partyIds,seaPublicMatch,resetSeaFleets,seaCell} from '../../dist/party-rules.js';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_AGE = 8 * 60 * 60 * 1000;
 const FOUR_SYMBOLS = ['○', '×', '△', '□'];
@@ -23,10 +24,10 @@ function cleanMatch(value, allowFinished = true) {
   const phases = allowFinished ? ['playing', 'won'] : ['playing'];
   const state = value?.state;
   if (!value || typeof value !== 'object' || !Array.isArray(value.undo) || state?.version !== 2 ||
-      !['fourinarow', 'killer'].includes(state.game) || !Array.isArray(state.players) || state.players.length < 2 ||
+      !['fourinarow', 'killer', ...partyIds].includes(state.game) || !Array.isArray(state.players) || state.players.length < 2 ||
       state.players.length > 4 || !phases.includes(state.phase) || !Array.isArray(state.history) ||
       new TextEncoder().encode(JSON.stringify(value)).length > 2_000_000) {
-    throw new Error('Ongeldige online partij (4 op een rij of Killer, 2 tot 4 spelers).');
+    throw new Error('Ongeldige online partij (kies een ondersteund spel met 2 tot 4 spelers).');
   }
   if (state.game === 'killer' && (!['assigning', 'playing'].includes(state.killerStage) ||
       !Number.isInteger(state.starter) || state.starter < 0 || state.starter >= state.players.length ||
@@ -34,9 +35,10 @@ function cleanMatch(value, allowFinished = true) {
   return structuredClone(value);
 }
 
-const symbolField = state => state.game === 'killer' ? 'sonnySymbol' : 'fourSymbol';
+const symbolField = state => state.game === 'fourinarow' ? 'fourSymbol' : 'sonnySymbol';
 
 function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+const playerRole = (room, key) => typeof key === 'string' && key ? room.keys.indexOf(key) : -1;
 
 async function registry(env, path, value = {}, request = null) {
   if (!env.CLUB_CODE || !env.ADMIN_SETUP_CODE) return path === '/authorize' ? { approved: true, name: value.name || '' } : null;
@@ -87,7 +89,7 @@ export default {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(incoming)
       }));
     }
-    const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|leave|starter|draft|state|socket|close))?$/i);
+    const match = url.pathname.match(/^\/rooms\/([A-Z2-9]{6})(\/(join|leave|starter|draft|state|socket|close|reveal))?$/i);
     if (!match) return response({ error: 'Onbekend verzoek.' }, 404);
     const roomCode = match[1].toUpperCase();
     const id = env.ROOMS.idFromName(roomCode);
@@ -112,8 +114,8 @@ export class DartRoom {
     await this.state.storage.put('room', room);
     await this.state.storage.setAlarm(room.updated + MAX_AGE);
   }
-  public(room) {
-    return { code: room.code, revision: room.revision, match: room.match,
+  public(room, role = -1) {
+    return { code: room.code, revision: room.revision, match: seaPublicMatch(room.match, role),
       joined: room.keys.filter(Boolean).length, capacity: room.keys.length, updated: room.updated,
       public: room.public !== false, starter: Number.isInteger(room.starter) ? room.starter : null,
       starterPending: !room.started && room.keys.every(Boolean), draft: room.draft || null };
@@ -126,9 +128,8 @@ export class DartRoom {
         capacity: room.keys.length, game: room.match.state.game, updated: room.updated, public: room.public !== false }) });
   }
   async broadcast(room) {
-    const message = JSON.stringify(this.public(room));
     for (const socket of this.state.getWebSockets()) {
-      try { socket.send(message); } catch { try { socket.close(1011, 'Opnieuw verbinden'); } catch {} }
+      try { socket.send(JSON.stringify(this.public(room, room.keys.indexOf(this.state.getTags(socket)[0])))); } catch { try { socket.close(1011, 'Opnieuw verbinden'); } catch {} }
     }
   }
 
@@ -141,6 +142,7 @@ export class DartRoom {
         const name = String(incoming.name || '').trim().slice(0, 24);
         if (!name) throw new Error('Vul jouw naam in.');
         const match = cleanMatch(incoming.match, false);
+        if (match.state.game === 'seabattle') resetSeaFleets(match.state);
         if (match.state.history.length || match.state.game === 'killer' && (match.state.killerStage !== 'assigning' || match.state.players.some(player => player.killerNumber !== null))) throw new Error('Maak een nieuwe partij voor deze dartbaan.');
         match.state.players[0].name = name;
         const field = symbolField(match.state);
@@ -152,7 +154,7 @@ export class DartRoom {
           updated: Date.now(), public: incoming.public !== false, started: false, starter: null, draft: null };
         await this.save(room);
         await this.updateLobby(room);
-        return response({ ...this.public(room), key: keys[0], role: 0 }, 201);
+        return response({ ...this.public(room, 0), key: keys[0], role: 0 }, 201);
       }
 
       const room = await this.load();
@@ -160,22 +162,22 @@ export class DartRoom {
       const key = url.searchParams.get('key');
 
       if (request.method === 'GET' && url.pathname === '/room') {
-        if (!room.keys.includes(key)) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
-        return response(this.public(room));
+        if (playerRole(room, key) < 0) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
+        return response(this.public(room, room.keys.indexOf(key)));
       }
       if (request.method === 'GET' && url.pathname === '/socket') {
-        if (!room.keys.includes(key)) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
+        if (playerRole(room, key) < 0) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
         const pair = new WebSocketPair();
         const [client, server] = Object.values(pair);
         this.state.acceptWebSocket(server, [key]);
-        server.send(JSON.stringify(this.public(room)));
+        server.send(JSON.stringify(this.public(room, room.keys.indexOf(key))));
         return new Response(null, { status: 101, webSocket: client, headers: cors });
       }
       if (request.method === 'POST' && url.pathname === '/join') {
         const incoming = await request.json();
         const name = String(incoming.name || '').trim().slice(0, 24);
         if (!name) throw new Error('Vul jouw naam in.');
-        if (room.match.state.game === 'killer' && !incoming.supportedGames?.includes('killer')) return response({ error: 'Werk 180 Hitters bij om online Killer te spelen.' }, 409);
+        if (room.match.state.game !== 'fourinarow' && !incoming.supportedGames?.includes(room.match.state.game)) return response({ error: 'Werk 180 Hitters bij om dit spel online te spelen.' }, 409);
         const role = room.keys.indexOf(null);
         if (role < 0) return response({ error: 'Deze dartbaan is al vol.' }, 409);
         const field = symbolField(room.match.state);
@@ -187,11 +189,11 @@ export class DartRoom {
         room.match.state.players[role][field] = symbol;
         room.revision++;
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
-        return response({ ...this.public(room), key: room.keys[role], role });
+        return response({ ...this.public(room, role), key: room.keys[role], role });
       }
       if (request.method === 'POST' && url.pathname === '/starter') {
         const incoming = await request.json();
-        if (!room.keys.includes(incoming.key)) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
+        if (playerRole(room, incoming.key) < 0) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
         if (room.started) return response({ error: 'De startspeler is al gekozen.' }, 409);
         if (!room.keys.every(Boolean)) return response({ error: 'Wacht tot alle spelers aanwezig zijn.' }, 409);
         const starter = incoming.starter;
@@ -204,32 +206,52 @@ export class DartRoom {
         room.draft = null;
         room.revision++;
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
-        return response(this.public(room));
+        return response(this.public(room, playerRole(room, incoming.key)));
+      }
+      if (request.method === 'POST' && url.pathname === '/reveal') {
+        const incoming = await request.json(), role = playerRole(room, incoming.key), state = room.match.state;
+        if (role < 0) return response({ error: 'Ongeldige sleutel.' }, 404);
+        if (!room.started || state.game !== 'seabattle' || state.phase !== 'playing' || state.active !== role) return response({ error: 'Wacht op jouw beurt.' }, 403);
+        if (incoming.turns !== state.turns || !Number.isInteger(incoming.number) || incoming.number < 1 || incoming.number > 20 || !Number.isInteger(incoming.slot) || incoming.slot < 0 || incoming.slot > 2) throw Error('Ongeldige zeeslagpijl.');
+        // Retry the same physical dart without permitting a fourth scouting shot.
+        room.seaReveals ||= {};
+        const previous = room.seaReveals[incoming.slot];
+        if (previous && previous.number !== incoming.number) throw Error('Deze pijl is al vastgelegd. Wis de pijl voordat je een andere invoert.');
+        const seaShips = state.players.map((p, index) => index === role ? null : p.seaFleet[incoming.number - 1]);
+        room.seaReveals[incoming.slot] = { number: incoming.number, seaShips };
+        await this.save(room);
+        return response({ seaShips });
       }
       if (request.method === 'POST' && url.pathname === '/draft') {
         const incoming = await request.json();
-        const role = room.keys.indexOf(incoming.key);
+        const role = playerRole(room, incoming.key);
         if (role < 0) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
         if (!room.started || !room.keys.every(Boolean)) return response({ error: 'De partij is nog niet gestart.' }, 409);
         if (room.match.state.phase !== 'playing') return response({ error: 'De partij is afgelopen.' }, 409);
         if (room.match.state.active !== role) return response({ error: 'De tegenstander is aan de beurt.' }, 403);
         const seq = incoming.seq, hits = incoming.hits;
         if (!Number.isSafeInteger(seq) || seq < 0 || !Array.isArray(hits) || hits.length > 3) throw new Error('Ongeldige live worp.');
-        const cleanHits = hits.map(hit => {
+        const cleanHits = hits.map((hit, index) => {
           const number = hit?.number, mult = hit?.mult, cell = hit?.cell ?? null;
           if (!Number.isInteger(number) || ![0, ...Array.from({ length: 20 }, (_, index) => index + 1), 25].includes(number) ||
               ![1, 2, 3].includes(mult) || (number === 25 && mult === 3) ||
               !(cell === null || Number.isInteger(cell) && cell >= 0 && cell < 25)) throw new Error('Ongeldige pijl in live worp.');
-          return { number, mult, cell: cell ?? null, label: String(hit.label || '').slice(0, 20) };
+          let seaShips;
+          if (room.match.state.game === 'seabattle' && number >= 1 && number <= 20) {
+            seaShips = room.match.state.players.map((p, i) => i === role ? null : p.seaFleet[number - 1]);
+            if (!same(seaShips, hit.seaShips) || room.seaReveals?.[index]?.number !== number) throw Error('De zeeslagpijl is nog niet bevestigd.');
+          }
+          return { number, mult, cell: cell ?? null, label: String(hit.label || '').slice(0, 20), ...(seaShips ? { seaShips } : {}) };
         });
-        if (room.draft?.role === role && seq <= room.draft.seq) return response(this.public(room));
+        if (room.draft?.role === role && seq <= room.draft.seq) return response(this.public(room, role));
+        if (room.match.state.game === 'seabattle') for (const slot of Object.keys(room.seaReveals || {})) if (Number(slot) >= hits.length) delete room.seaReveals[slot];
         room.draft = { role, seq, hits: cleanHits };
         await this.save(room); await this.broadcast(room);
-        return response(this.public(room));
+        return response(this.public(room, role));
       }
       if (request.method === 'POST' && url.pathname === '/leave') {
         const incoming = await request.json();
-        const role = room.keys.indexOf(incoming.key);
+        const role = playerRole(room, incoming.key);
         if (role < 0) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
         if (role === 0) return await this.close(room);
         room.keys[role] = null;
@@ -240,10 +262,10 @@ export class DartRoom {
       }
       if (request.method === 'POST' && url.pathname === '/state') {
         const incoming = await request.json();
-        const role = room.keys.indexOf(incoming.key);
+        const role = playerRole(room, incoming.key);
         if (role < 0) return response({ error: 'Partijcode of sleutel is ongeldig.' }, 404);
         if (!room.started || !room.keys.every(Boolean)) return response({ error: 'Wacht tot alle spelers aanwezig zijn en de startspeler is gekozen.' }, 409);
-        if (incoming.revision !== room.revision) return response(this.public(room), 409);
+        if (incoming.revision !== room.revision) return response(this.public(room, role), 409);
         const next = cleanMatch(incoming.match), old = room.match.state, state = next.state;
         if (old.active !== role) return response({ error: 'De tegenstander is aan de beurt.' }, 403);
         if (state.game !== old.game || state.players.length !== old.players.length) throw new Error('Spel en spelersaantal mogen tijdens de partij niet wijzigen.');
@@ -252,18 +274,26 @@ export class DartRoom {
             !same(state.players.map(player => player.name), old.players.map(player => player.name))) {
           throw new Error('Alleen één nieuwe eigen beurt mag worden verzonden.');
         }
-        if (old.game === 'killer') {
+        if (old.game === 'killer' || partyIds.includes(old.game)) {
           const expected = applySonnyTurn(old, state.history.at(-1)?.input || {});
-          if (expected.phase === 'won' && Number.isSafeInteger(state.completedAt) && state.completedAt >= old.startedAt && state.completedAt <= Date.now() + 60_000) expected.completedAt = state.completedAt;
-          if (!same(expected, state)) throw new Error('De Killer-beurt komt niet overeen met de spelregels.');
+          if (expected.phase === 'won' && Number.isSafeInteger(state.completedAt) && state.completedAt > 0) expected.completedAt = state.completedAt;
+          if (old.game === 'seabattle') {
+            for (const [slot, hit] of state.history.at(-1).input.hits.entries()) {
+              if (seaCell(hit) < 0) continue;
+              const actual = old.players.map((p, i) => i === role ? null : p.seaFleet[seaCell(hit)]);
+              if (!same(actual, hit.seaShips) || room.seaReveals?.[slot]?.number !== hit.number) throw Error('De zeeslagpijl komt niet overeen met de uitkomst.');
+            }
+          }
+          if (!same(seaPublicMatch({ state: expected, undo: [] }, role, false).state, state)) throw new Error('De beurt komt niet overeen met de spelregels.');
+          next.state = expected; next.undo = [];
         } else {
           const expectedActive = (role + 1) % room.keys.length;
           if (state.phase === 'playing' && state.active !== expectedActive) throw new Error('Na de beurt moet de volgende speler aan de beurt zijn.');
           if (state.phase === 'won' && (![role, null].includes(state.winner) || state.active !== role)) throw new Error('De winnaar en actieve speler komen niet overeen.');
         }
-        room.match = next; room.draft = null; room.revision++;
+        room.match = next; room.draft = null; room.seaReveals = {}; room.revision++;
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
-        return response(this.public(room));
+        return response(this.public(room, role));
       }
       if (request.method === 'POST' && url.pathname === '/close') {
         const incoming = await request.json();
@@ -306,7 +336,7 @@ export class Lobby {
       if (!/^[A-Z2-9]{6}$/.test(incoming.code || '')) return response({ error: 'Ongeldige dartbaan.' }, 400);
       if (incoming.action === 'remove' || incoming.public === false) delete rooms[incoming.code];
       else rooms[incoming.code] = { code: incoming.code, host: String(incoming.host || 'Onbekend').slice(0, 24),
-        joined: Number(incoming.joined) || 0, capacity: Number(incoming.capacity) || 2, game: incoming.game === 'killer' ? 'killer' : 'fourinarow', updated: now };
+        joined: Number(incoming.joined) || 0, capacity: Number(incoming.capacity) || 2, game: ['killer', ...partyIds].includes(incoming.game) ? incoming.game : 'fourinarow', updated: now };
       await this.state.storage.put('rooms', rooms);
       return response({ ok: true });
     }

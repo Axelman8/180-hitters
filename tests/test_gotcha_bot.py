@@ -28,8 +28,8 @@ with tempfile.TemporaryDirectory() as folder:
      assert phone.evaluate('document.documentElement.scrollWidth<=innerWidth')
     phone.set_viewport_size({'width':393,'height':852})
     phone.locator('#navigation-close').click();screen.locator('#navigation-close').click()
-    expect(phone.locator('#players>.player').nth(1).locator('.remaining')).to_have_text('0',timeout=10000)
-    expect(screen.locator('#players>.player').nth(1).locator('.remaining')).to_have_text('0',timeout=10000)
+    expect(phone.locator('.visual-player').nth(1).locator('.visual-score')).to_have_text('0',timeout=10000)
+    expect(screen.locator('.visual-player').nth(1).locator('.visual-score')).to_have_text('0',timeout=10000)
     deadline=time.monotonic()+10
     while len(saved()['match']['state']['history'])!=1 and time.monotonic()<deadline:phone.wait_for_timeout(100)
     result=saved()['match']['state'];assert result['players'][1]['remaining']==0

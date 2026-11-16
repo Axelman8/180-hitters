@@ -6,6 +6,9 @@ const games=[
  ['cricket','Cricket','Sluit 15 t/m 20 en bull.','Wedstrijd','Raak 15, 16, 17, 18, 19, 20 en bull elk drie keer. Op een gesloten doel scoor je punten zolang een tegenstander dat doel nog niet heeft gesloten. Solo leveren extra treffers na het sluiten punten voor jezelf op, ook bij Cut Throat. Met No Score tel je alleen marks.'],
  ['tactics','Tactics','Sluit 10 t/m 20 en bull.','Wedstrijd','Raak 10 tot en met 20 en bull elk drie keer. Op een gesloten doel scoor je punten zolang een tegenstander dat doel nog niet heeft gesloten. Solo leveren extra treffers na het sluiten punten voor jezelf op, ook bij Cut Throat. Met No Score tel je alleen marks.'],
  ['fourinarow','4 op een rij','Verover vier vakken op rij.','Wedstrijd','Verover een getalvak met drie marks binnen dezelfde beurt: single telt 1, dubbel 2 en triple 3. Losse marks vervallen na de beurt. sB en BB claim je met één raak pijl. Maak als eerste vier vakken horizontaal, verticaal of diagonaal.'],
+ ['seabattle','Zeeslag Darts','Breng de verborgen vloten tot zinken.','Wedstrijd','Iedere speler heeft drie verborgen schepen met samen 14 levens op een raster van 1 tot 20. Elke pijl op een getal valt alle tegenstanders aan. Single doet 1 schade; dubbel en triple doen maximaal 2 schade aan een scheepsvak. Water en bull geven geen schade. De laatste vloot wint. De vlootknoppen bepalen alleen welk bord je bekijkt.'],
+ ['golf','Dartgolf','Zo weinig mogelijk slagen op 9 of 18 holes.','Wedstrijd','Hole 1 is getal 1, enzovoort. Dubbel telt als 1 slag, triple als 2, single als 3 en een ander getal als 5. Kies beste pijl of laatste pijl. Bij laatste pijl mag je eerder stoppen. De laagste totaalscore wint; een gelijke stand blijft gelijkspel.'],
+ ['shanghai','Shanghai','Scoor op het rondegetal of gooi Shanghai.','Wedstrijd','Iedere ronde richt iedereen op hetzelfde getal: 1 tot en met 7 of 20. Alleen dat getal scoort: single een keer, dubbel twee keer en triple drie keer. Single, dubbel en triple van het doel in dezelfde beurt wint direct. Anders wint de hoogste totaalscore; gelijkspel is mogelijk.'],
  ['scram','Scram','Stop doelen of scoor op open vakken.','Wedstrijd','Iedere speler krijgt een scoringsfase. De andere spelers stoppen om beurten doelen van 1 tot en met 20 en Bull; de scoorder krijgt alleen punten op doelen die nog open zijn. Hoogste totaalscore wint.'],
  ['killer','Killer','Word KILLER en schakel tegenstanders uit.','Wedstrijd','Kies eerst met één pijl een uniek eigen getal. Drie treffers op jouw getal maken je KILLER. Single telt 1, dubbel 2 en triple 3. Daarna ontneem je tegenstanders hun drie levens door hun getal te raken. De laatste speler wint direct.'],
  ['bull41','Bull / 41','Bullmarks tegen punten boven 41.','Wedstrijd','Iedere speler krijgt een puntenscoringsfase. De anderen gooien om beurten op Bull tot 25 bullmarks; de scoorder krijgt per beurt alleen het gedeelte boven 41 als punten. Hoogste totaal wint.'],
@@ -15,7 +18,9 @@ const games=[
  ['tenlives','Hitters Challenge','20 t/m 10 en Bull. Bewaar je levens.','Training','Speel Doubles of Triples van 20 naar 10 en daarna Bull. Een treffer geeft extra pogingen; mis je het doel, dan ga je terug of verlies je een leven.'],
  ['bobs27',"Bob's 27",'Alle dubbels onder druk trainen.','Training','Start op 27 en gooi drie pijlen op iedere dubbel van D1 tot en met D20 en daarna Bull. Treffers tellen erbij; volledig missen trekt de dubbelwaarde af.']
 ];
+const onlineGames=new Set(['fourinarow','killer','seabattle','golf','shanghai']);
 const gameVideos={
+ seabattle:'180-Hitters-Zeeslag-Darts-uitleg.mp4',golf:'180-Hitters-Dartgolf-uitleg.mp4',shanghai:'180-Hitters-Shanghai-uitleg.mp4',
  x01:'180-Hitters-X01-uitleg.mp4',
  cricket:'180-Hitters-Cricket-uitleg.mp4',
  tactics:'180-Hitters-Tactics-uitleg.mp4',
@@ -29,7 +34,7 @@ const gameVideos={
  tenlives:'180-Hitters-Hitters-Challenge-uitleg.mp4',
  bobs27:'180-Hitters-Bobs-27-uitleg.mp4'
 };
-const fields=['lives-mode','four-bot','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','participant-mode','count'];
+const fields=['golf-holes','golf-scoring','shanghai-rounds','lives-mode','four-bot','start','in-mode','out','bull-mode','scoring','match-mode','legs','set-legs','max-rounds','gotcha-target','gotcha-out','participant-mode','count'];
 let step=0,slot=0,teamSlot=0,memberSlot=0,venueRoster=[],mobileRoster=[],selected='x01',fourSymbolChoices=[...fourSymbols];
 const venueLabel=nucRosterLabel;
 let applying=false,sendTimer,sendBusy=false,pendingSetup=undefined,seenVersion=-1,mirroring=false,localSetupOwner=false;
@@ -42,7 +47,7 @@ function openGameVideo(url,title){
  dialog.querySelector('h2').textContent=`Uitleg: ${title}`;const video=dialog.querySelector('video');video.src=url;dialog.showModal();video.play().catch(()=>{});
 }
 function change(id,value){$(id).value=String(value);$(id).dispatchEvent(new Event('change',{bubbles:true}));}
-function isTeams(){return $('participant-mode').value==='teams'&&!['121','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone'].includes(selected);}
+function isTeams(){return $('participant-mode').value==='teams'&&!['121','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone','seabattle','golf','shanghai'].includes(selected);}
 function teamEditors(){return [...$('names').querySelectorAll('.team-editor')];}
 function names(){return isTeams()?[...$('names').querySelectorAll('input[data-team-name]')]:[...$('names').children].filter(node=>node.tagName==='LABEL').map(label=>label.querySelector('input'));}
 function memberInputs(index=teamSlot){return [...(teamEditors()[index]?.querySelectorAll('input[data-member-name]')||[])];}
@@ -179,28 +184,31 @@ function render(){
  if(step===0){
   content.append(el('p','Kies een spel om te beginnen.','wizard-hint'));
   if(document.body.classList.contains('editing-current-match'))content.append(el('p','Je past de huidige partij aan. De app behoudt de stand waar dat technisch mogelijk is en waarschuwt vóór een wijziging waarvoor de score opnieuw moet beginnen.','wizard-info'));
-  for(const category of ['Wedstrijd','Training']){content.append(el('h2',category));const tiles=el('div',undefined,'wizard-games');for(const [id,name,description,cat] of games.filter(game=>game[3]===category)){const tile=button('',()=>{chooseGame(id);move(1);},'wizard-game');tile.setAttribute('aria-pressed',String(selected===id));tile.append(el('strong',name),el('span',description),el('small','Kiezen →'));tiles.append(tile);}content.append(tiles);}
+  for(const category of ['Wedstrijd','Training']){content.append(el('h2',category));const tiles=el('div',undefined,'wizard-games');for(const [id,name,description,cat] of games.filter(game=>game[3]===category)){const tile=button('',()=>{chooseGame(id);move(1);},'wizard-game');tile.setAttribute('aria-pressed',String(selected===id));tile.append(el('strong',name),el('span',description),el('small','Kiezen →'));if(onlineGames.has(id))tile.append(el('span','Online mogelijk','wizard-online-badge'));tiles.append(tile);}content.append(tiles);}
  }else if(step===1){
   const game=games.find(item=>item[0]===selected);
   content.append(el('p',game?.[4]||'','wizard-info wizard-game-description'));
+  if(onlineGames.has(selected)){
+   const online=button('Online dartbaan maken',()=>document.dispatchEvent(new CustomEvent('open-online-for-game',{detail:{game:selected,options:{golfHoles:Number($('golf-holes').value),golfScoring:$('golf-scoring').value,shanghaiRounds:Number($('shanghai-rounds').value)}}})),'wizard-online-start');online.id='wizard-online-start';content.append(online,el('p','Speel samen op afstand. Maak een dartbaan en nodig online vrienden uit.','wizard-online-note'));
+  }
   if(gameVideos[selected]){
    const video=el('a','▶ Bekijk uitlegvideo','wizard-video-link');
    video.href=`https://github.com/Axelman8/180-hitters/releases/latest/download/${gameVideos[selected]}`;
    video.onclick=event=>{event.preventDefault();openGameVideo(video.href,game?.[1]||selected);};content.append(video);
   }
   content.append(el('p',games.find(game=>game[0]===selected)?.[1]+' · tik op een tegel om te kiezen','wizard-hint'));
-  const main=[['lives-mode','Doubles of Triples'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
+  const main=[['golf-holes','Aantal holes'],['golf-scoring','Puntentelling'],['shanghai-rounds','Aantal rondes'],['lives-mode','Doubles of Triples'],['start','Startscore'],['in-mode','Beginnen'],['out','Uitgooien'],['bull-mode','Bullwaarde'],['gotcha-target','Doelscore'],['gotcha-out','Uitgooien'],['scoring','Puntentelling'],['match-mode','Partijvorm'],['legs',$('target-text').textContent],['set-legs','Legs per set'],['max-rounds','Maximaal aantal rondes']];
   for(const [id,title] of main){const group=options(id,title);if(group)content.append(group);}
   if(selected==='tenlives')content.append(el('p','Iedereen begint met 10 levens en 3 pogingen op 20. Raak: resterende pijlen + 3 naar het volgende doel. Pogingen op: één doel terug; alleen op 20 kost dit een leven. Dan wisselt de speler. Bull (50) wint.','wizard-info'));
   if(selected==='121')content.append(el('p','Negen darts om uit te gooien. Je niveau begint bij 121.','wizard-info'));
   if(selected==='bobs27')content.append(el('p',"Start op 27. Gooi drie pijlen op D1 t/m D20 en daarna bull. Treffer: punten erbij; volledig missen: punten eraf.",'wizard-info'));
  }else{
-  if(!['121','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone'].includes(selected)){const mode=options('participant-mode','Spelers of teams');if(mode)content.append(mode);}
+  if(!['121','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone','seabattle','golf','shanghai'].includes(selected)){const mode=options('participant-mode','Spelers of teams');if(mode)content.append(mode);}
   const count=options('count',isTeams()?'Aantal teams':'Aantal spelers');if(count)content.append(count);
   if(isTeams())renderTeams(content);else renderIndividuals(content);
   const starter=options('starter','Wie begint?');if(starter)content.append(starter);
   const summary=el('div',undefined,'wizard-summary');summary.append(el('strong',games.find(game=>game[0]===selected)?.[1]));
-  const ids=selected==='tenlives'?['lives-mode']:selected==='fourinarow'?['four-bot']:['scram','killer','bull41','twentyone'].includes(selected)?[]:selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:selected==='bobs27'?[]:['scoring','match-mode','legs'];
+  const ids=selected==='golf'?['golf-holes','golf-scoring']:selected==='shanghai'?['shanghai-rounds']:selected==='tenlives'?['lives-mode']:selected==='fourinarow'?['four-bot']:['scram','killer','bull41','twentyone','seabattle','golf','shanghai'].includes(selected)?[]:selected==='x01'?['start','in-mode','out','match-mode','legs']:selected==='gotcha'?['gotcha-target','gotcha-out']:selected==='bobs27'?[]:['scoring','match-mode','legs'];
   summary.append(el('p',ids.filter(id=>!$(id).closest('label').hidden).map(id=>id==='legs'?`Eerste tot ${$(id).value} ${$('match-mode').value==='sets'?'sets':'legs'}`:$(id).selectedOptions[0]?.textContent).join(' · ')),el('p',isTeams()?teamDraft().map(team=>`${team.name}: ${team.members.filter(Boolean).join(', ')}`).join(' | '):names().map(input=>input.value).join(' → ')));content.append(summary);
  }
  const actions=el('div',undefined,'wizard-actions');

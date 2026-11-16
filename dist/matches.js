@@ -13,7 +13,7 @@ dialog.innerHTML=`<button id="matches-close" class="wide" type="button">TERUG</b
  `;
 document.body.append(dialog);
 const report=document.createElement('dialog');report.id='matches-report-dialog';report.innerHTML='<h2 id="result-title">Partijrapport</h2><p id="matches-report-date"></p><button id="matches-report-close" class="wide" type="button">TERUG naar mijn partijen</button>';document.body.append(report);
-const names={x01:'X01',cricket:'Cricket',tactics:'Tactics',gotcha:'Gotcha',bobs27:"Bob’s 27",tenlives:'Hitters Challenge',fourinarow:'4 op een rij',scram:'Scram',killer:'Killer',bull41:'Bull / 41',twentyone:'21'};
+const names={x01:'X01',cricket:'Cricket',tactics:'Tactics',gotcha:'Gotcha',bobs27:"Bob’s 27",tenlives:'Hitters Challenge',fourinarow:'4 op een rij',scram:'Scram',killer:'Killer',bull41:'Bull / 41',twentyone:'21',seabattle:'Zeeslag Darts',golf:'Dartgolf',shanghai:'Shanghai'};
 const date=value=>new Date(value*1000).toLocaleString('nl-NL',{dateStyle:'medium',timeStyle:'short'});
 const game=item=>item.training121?'121':names[item.game]||item.game;
 const source=()=>window.DartsAndroid?.isLocalMode?.()===true?'op dit apparaat':'op de NUC';

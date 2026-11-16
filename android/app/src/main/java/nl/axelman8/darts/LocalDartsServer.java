@@ -213,6 +213,7 @@ final class LocalDartsServer extends NanoHTTPD {
                 try{saved=library.get(incoming.optString("id"));}catch(Exception e){return json(Response.Status.NOT_FOUND,new JSONObject().put("error","Partij niet gevonden."));}
                 JSONObject match=saved.getJSONObject("match");
                 if("won".equals(match.getJSONObject("state").optString("phase")))return json(Response.Status.BAD_REQUEST,new JSONObject().put("error","Deze partij is afgerond. Je kunt het rapport bekijken."));
+                if(match.getJSONObject("state").optBoolean("seaFog")&&!online.optBoolean("active"))return json(Response.Status.CONFLICT,new JSONObject().put("error","Open de actieve online dartbaan om deze Zeeslag-partij te vervolgen. Het rapport blijft beschikbaar."));
                 boolean same=incoming.optString("id").equals(GameLibrary.identity(state.optJSONObject("match")));
                 if(online.optBoolean("active")&&!same)return json(Response.Status.CONFLICT,new JSONObject().put("error","Verlaat eerst de online dartbaan om een andere partij te openen."));
                 if(same)return json(Response.Status.OK,new JSONObject(state.toString()).put("draft",draft==null?JSONObject.NULL:draft));

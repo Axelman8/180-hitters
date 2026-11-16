@@ -473,6 +473,16 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
     control = {'owner': None, 'epoch': 0}
     online = {'status':'stopped','url':'','error':'','relay':None,'tunnel':None}
     online_local = {'active':False,'ready':False,'role':None,'code':'','base':'','key':'','remoteRevision':0}
+    online_path = path.with_name(path.stem + '-online.json')
+    try:
+        saved_online = json.loads(online_path.read_text(encoding='utf-8'))
+        if (saved_online.get('active') is True and type(saved_online.get('role')) is int and 0 <= saved_online['role'] <= 3
+                and re.fullmatch(r'[A-Z2-9]{6}', saved_online.get('code', ''))
+                and re.fullmatch(r'https://(?:[a-z0-9-]+\.trycloudflare\.com|180-hitters-online\.180-hitters-online\.workers\.dev)', saved_online.get('base', ''))
+                and isinstance(saved_online.get('key'), str) and 20 <= len(saved_online['key']) <= 100):
+            online_local.update({key: saved_online[key] for key in online_local if key in saved_online})
+    except (OSError, ValueError, TypeError): pass
+
     storage = {'checked': 0, 'free': STORAGE_RESERVE * 2}
     backups = path.with_name(path.stem + '-backups')
     library = MatchLibrary(path.with_name(path.stem + '-games'))
@@ -570,7 +580,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             raise ValueError('Ongeldige partij')
         if library.is_deleted(library.identity(match)): raise ValueError('Deze partij is verwijderd.')
         state = match.get('state')
-        if not isinstance(state, dict) or state.get('version') != 2 or state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone'):
+        if not isinstance(state, dict) or state.get('version') != 2 or state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone','seabattle','golf','shanghai'):
             raise ValueError('Ongeldig spel')
         players = state.get('players')
         if not isinstance(players, list) or not 1 <= len(players) <= 4 or any(not isinstance(p, dict) or not isinstance(p.get('name'), str) for p in players):
@@ -893,6 +903,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                     if active and (not allowed_base or not re.fullmatch(r'[A-Z2-9]{6}',code) or len(key)<20):raise ValueError()
                     with lock:
                         online_local.update(active=active,ready=ready if active else False,role=role if active else None,code=code if active else '',base=base if active else '',key=key if active else '',remoteRevision=remote_revision if active else 0)
+                        durable_json(online_path, dict(online_local))
                         follow_camera()
                     return self.reply(200,dict(online_local))
                 if self.path == '/api/matches/delete':
@@ -941,6 +952,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         match, pending = transfer_match(source)
                         if match['state'].get('phase') == 'won':
                             return self.reply(400, {'error': 'Deze partij is afgerond. Je kunt het rapport bekijken.'})
+                        if match['state'].get('seaFog') and not online_local['active']:
+                            return self.reply(409, {'error': 'Deze Zeeslag-partij hoort bij een online dartbaan. Open de actieve dartbaan om verder te spelen; het rapport blijft beschikbaar.'})
                         same_game = library.identity(current.get('match')) == incoming.get('id')
                         if online_local['active'] and not same_game:
                             return self.reply(409, {'error': 'Verlaat eerst de online dartbaan om een andere partij te openen.'})
@@ -1108,7 +1121,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if self.path == '/api/setup':
                     value = incoming.get('value')
                     if value is not None:
-                        if not isinstance(value, dict) or value.get('selected') not in ('x01','cricket','tactics','121','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone') or type(value.get('step')) is not int or not 0 <= value['step'] <= 2:
+                        if not isinstance(value, dict) or value.get('selected') not in ('x01','cricket','tactics','121','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone','seabattle','golf','shanghai') or type(value.get('step')) is not int or not 0 <= value['step'] <= 2:
                             raise ValueError()
                         if not isinstance(value.get('names'), list) or not 1 <= len(value['names']) <= 4 or any(not isinstance(n, str) or len(n) > 24 for n in value['names']):
                             raise ValueError()
@@ -1292,7 +1305,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                                 return self.reply(409, {**current, 'draft': draft['value']})
                         elif incoming['revision'] != current['revision']:
                             return self.reply(409, current)
-                        if state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone') or state.get('phase') != 'playing':
+                        if state.get('game') not in ('x01','cricket','tactics','gotcha','bobs27','tenlives','fourinarow','scram','killer','bull41','twentyone','seabattle','golf','shanghai') or state.get('phase') != 'playing':
                             return self.reply(409, current)
                         if seq <= sequences.get(owner, -1):
                             return self.reply(200, {**current, 'draft': draft['value']} if choice is not None else {'ok': True})
