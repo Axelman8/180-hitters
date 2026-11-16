@@ -73,3 +73,17 @@ body:not(.remote-control) .wizard-actions button{min-height:68px;font-size:23px}
 body:not(.remote-control) .wizard-summary p{font-size:18px}
 
 .wizard-game .wizard-online-badge{display:inline-flex;align-self:start;justify-self:start;padding:4px 9px;border:1px solid #7eab56;border-radius:20px;color:#c8f56a;background:#233c2d;font-size:11px;font-weight:850}.wizard-online-start{width:100%;min-height:48px;color:#c8f56a;border-color:#7eab56;background:#233c2d}.wizard-online-note{font-size:12px;color:#acc0b6;margin:6px 0 14px}
+/* Original game emblems share the arcade feel of the graphical game boards. */
+.wizard-game{position:relative;overflow:hidden;gap:8px;border-radius:16px}
+.wizard-game .game-emblem{display:block;width:88px;height:88px;max-width:100%;flex:none;align-self:flex-start;filter:drop-shadow(0 3px 7px #0008)}
+.wizard-game strong{font-size:24px;line-height:1.15;overflow-wrap:anywhere}
+.wizard-game span{line-height:1.35}
+.wizard-game:focus-visible .game-emblem,.wizard-game:hover .game-emblem{filter:drop-shadow(0 0 9px #5ce0ed55)}
+body:not(.remote-control) .wizard-game .game-emblem{width:106px;height:106px}
+body:not(.remote-control) .wizard-game strong{font-size:32px}
+#setup-wizard{position:relative;isolation:isolate}
+#setup-wizard>.wizard-game-backdrop{position:absolute;inset:100px 0 0;z-index:2;pointer-events:none;overflow:hidden;border-radius:20px}
+.wizard-game-backdrop .game-emblem{position:absolute;top:35px;right:-7%;width:85%;max-width:570px;height:auto;opacity:.085;transform:rotate(-9deg);filter:none}
+#setup-wizard>:not(.wizard-game-backdrop){position:relative;z-index:1}
+@media(max-width:420px){.wizard-game{padding:13px;gap:7px}.wizard-game .game-emblem{width:76px;height:76px}.wizard-game strong{font-size:21px}.wizard-game .wizard-online-badge{font-size:10px;padding:4px 7px}.wizard-game-backdrop .game-emblem{top:50px;width:105%;right:-22%;opacity:.07}}
+@media(forced-colors:active){.wizard-game-backdrop{display:none}}

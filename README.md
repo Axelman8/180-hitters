@@ -44,6 +44,8 @@ On connected phones and tablets, **Camera aan / herstart** and **Camera uit** ap
 
 ## Graphical games and online game discovery
 
+All fifteen game-selection cards have original arcade emblems: a skull for Killer, a ship for Sea Battle, connected tokens for Four in a Row, and distinct symbols for every scoring game and drill. The selected emblem also appears as a subtle, non-interactive watermark behind settings and player selection. Inline SVG keeps the artwork sharp and available offline on phones, tablets and NUC displays without emoji fonts or image downloads.
+
 **App-instellingen > Weergave > Weergave aanpassen** provides device-local presentation controls with a live preview and **Standaard herstellen**. Choose automatic layout, compact controls for more board space, or larger touch controls. Pick which relevant supplementary statistics appear on player cards: average/MPR, legs/sets, best visit, darts thrown and the last visit. Current scores, targets, lives and the 121 training level remain available.
 
 Player recognition offers custom colours for four seats, optional shape/number markers and stronger active-player emphasis. Four in a Row keeps the match's actual symbols so names and claimed cells agree. Round dartboards offer the current theme, classic colours or a calm style. **Rustig speelscherm** hides descriptive text and optional clutter during play while retaining Menu, connection recovery and scoring controls. Explicitly selected scoreboard data remains visible.

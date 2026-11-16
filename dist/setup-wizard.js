@@ -1,4 +1,5 @@
 import {fourSymbols} from './four-in-row.js';
+import {gameIcon} from './game-icons.js';
 import {onlineFriendsState,refreshOnlineFriends,nucRosterLabel} from './player-rosters.js';
 const $=id=>document.getElementById(id);
 const games=[
@@ -176,6 +177,8 @@ function renderTeams(content){
 }
 function render(){
  root.replaceChildren();
+ root.dataset.game=selected;
+ if(step>0){const backdrop=el('div',undefined,'wizard-game-backdrop');backdrop.setAttribute('aria-hidden','true');backdrop.append(gameIcon(selected));root.append(backdrop);}
  const topbar=el('div',undefined,'wizard-topbar');topbar.append(button('TERUG',()=>{if(step)move(step-1);else if(!$('cancel').hidden)$('cancel').click();else document.dispatchEvent(new Event('open-play-menu'));},'wizard-back'));root.append(topbar);
  const nav=el('nav',undefined,'wizard-steps');nav.setAttribute('aria-label','Partij instellen');
  ['Spel','Instellingen','Spelers'].forEach((name,i)=>{const b=button(`${i+1} ${name}`,()=>move(i));b.disabled=i>step;b.setAttribute('aria-current',i===step?'step':'false');nav.append(b);});root.append(nav);
@@ -184,7 +187,7 @@ function render(){
  if(step===0){
   content.append(el('p','Kies een spel om te beginnen.','wizard-hint'));
   if(document.body.classList.contains('editing-current-match'))content.append(el('p','Je past de huidige partij aan. De app behoudt de stand waar dat technisch mogelijk is en waarschuwt vóór een wijziging waarvoor de score opnieuw moet beginnen.','wizard-info'));
-  for(const category of ['Wedstrijd','Training']){content.append(el('h2',category));const tiles=el('div',undefined,'wizard-games');for(const [id,name,description,cat] of games.filter(game=>game[3]===category)){const tile=button('',()=>{chooseGame(id);move(1);},'wizard-game');tile.setAttribute('aria-pressed',String(selected===id));tile.append(el('strong',name),el('span',description),el('small','Kiezen →'));if(onlineGames.has(id))tile.append(el('span','Online mogelijk','wizard-online-badge'));tiles.append(tile);}content.append(tiles);}
+  for(const category of ['Wedstrijd','Training']){content.append(el('h2',category));const tiles=el('div',undefined,'wizard-games');for(const [id,name,description,cat] of games.filter(game=>game[3]===category)){const tile=button('',()=>{chooseGame(id);move(1);},'wizard-game');tile.setAttribute('aria-pressed',String(selected===id));tile.dataset.game=id;tile.append(gameIcon(id),el('strong',name),el('span',description),el('small','Kiezen →'));if(onlineGames.has(id))tile.append(el('span','Online mogelijk','wizard-online-badge'));tiles.append(tile);}content.append(tiles);}
  }else if(step===1){
   const game=games.find(item=>item[0]===selected);
   content.append(el('p',game?.[4]||'','wizard-info wizard-game-description'));
