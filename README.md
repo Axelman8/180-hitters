@@ -2,7 +2,7 @@
 
 Offline darts scoring and training for Android phones, Android tablets, Linux NUC displays and Windows. Developed by [Axelman8](https://github.com/axelman8).
 
-Play independently on your device or control a shared Linux NUC over Bluetooth. Local play needs no account, subscription, internet connection or cameras. Optional AutoDarts camera scoring and private online **4 in a Row** lanes are available. The app interface and narrated tutorial videos are currently in Dutch; repository documentation is in English.
+Play independently on your device or control a shared Linux NUC over Bluetooth. Local play needs no account, subscription, internet connection or cameras. Optional AutoDarts camera scoring and private online **4 in a Row** and **Killer** lanes are available. The app interface and narrated tutorial videos are currently in Dutch; repository documentation is in English.
 
 ## Downloads
 
@@ -41,6 +41,12 @@ The NUC connection, diagnostics, mouse, display and management screens share the
 NUC-only controls appear when connected. The connection indicator shows whether the device controls the NUC. Android system settings and installer screens use Android's own navigation.
 
 On connected phones and tablets, **Camera aan / herstart** and **Camera uit** appear as two direct controls beside **Menu** in the top bar. They are hidden during local play and when the Bluetooth connection is lost. The NUC display keeps its camera controls under **NUC & verbinding**. If the connection is lost or another device has control, a recovery button reconnects to the selected NUC, takes control and confirms the current match before scoring resumes. Recovery never discards a match. Starting a new match from a connected device also acquires control before opening the setup wizard. If an online dart lane is still active, **Nieuwe partij** explains this and offers to leave it before opening game selection. An unavailable online relay cannot trap the player; the NUC connection stays available and the previous match is preserved until a new match is started. The NUC display and its controllers refresh their shared online status so leaving on one device releases the controls on the others.
+
+## Killer: a board built for four players
+
+Killer now has a responsive, original SVG dartboard with each player's number in their own colour. Four player cards show names, target numbers, three-hit KILLER progress and three lives. The active player and target are highlighted, and each pending dart previews its effect. On phones, the board uses the space left after the player cards and touch controls, keeping entry separate from the board. Larger NUC screens show a bigger board with player cards beside it. New matches use three hits to become Killer and three lives per player. Singles count once, doubles twice and triples three times. The winning dart ends play immediately. Saved six-letter matches retain their original rules.
+
+When creating an online dart lane, choose **4 in a Row** or **Killer**, with two to four players. Invitations, the public lane list and the agreed starting player work for both games. Killer synchronizes the initial number selection and each dart, skips eliminated players and shows the winner on every device. All participants need version 1.9.38 or newer to join a Killer lane. Existing 4 in a Row lanes remain compatible.
 
 ## All games and tutorial videos
 

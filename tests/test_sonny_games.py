@@ -5,21 +5,21 @@ from playwright.sync_api import sync_playwright, expect
 
 root = Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory() as tmp:
-    server = subprocess.Popen([sys.executable, str(root/'server.py'), '--host', '127.0.0.1', '--port', '8806', '--data-file', str(Path(tmp)/'match.json')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    server = subprocess.Popen([sys.executable, str(root/'server.py'), '--host', '127.0.0.1', '--port', '8866', '--data-file', str(Path(tmp)/'match.json')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(1)
         with sync_playwright() as p:
             browser = p.chromium.launch()
             phone = browser.new_page(viewport={'width':393,'height':852}, is_mobile=True, has_touch=True)
             screen = browser.new_page(viewport={'width':1280,'height':900})
-            phone.goto('http://127.0.0.1:8806/?remote=1'); screen.goto('http://127.0.0.1:8806/')
+            phone.goto('http://127.0.0.1:8866/?remote=1'); screen.goto('http://127.0.0.1:8866/')
 
             def start(game):
                 state = phone.evaluate("""async game=>{const {newMatch}=await import('/engine.js');return newMatch(['Anna','Bert'],0,'single',1,{game})}""", game)
-                current = phone.request.get('http://127.0.0.1:8806/api/state').json()
-                assert phone.request.post('http://127.0.0.1:8806/api/state', data={'revision':current['revision'],'match':{'state':state,'undo':[]}}).ok
-                phone.reload(); screen.reload(); expect(phone.locator('#sonny-root')).to_be_visible(); expect(screen.locator('#sonny-root')).to_be_visible()
-                assert phone.locator('.sonny-target').count() == 21
+                current = phone.request.get('http://127.0.0.1:8866/api/state').json()
+                assert phone.request.post('http://127.0.0.1:8866/api/state', data={'revision':current['revision'],'match':{'state':state,'undo':[]}}).ok
+                phone.reload(); screen.reload(); phone.locator('#navigation-close').click();screen.locator('#navigation-close').click(); expect(phone.locator('#sonny-root')).to_be_visible(); expect(screen.locator('#sonny-root')).to_be_visible()
+                assert phone.locator('.killer-sector' if game=='killer' else '.sonny-target').count() == (20 if game=='killer' else 21)
                 for width,height in [(320,640),(393,852),(600,800),(852,393),(1024,600)]:
                     phone.set_viewport_size({'width':width,'height':height})
                     assert phone.evaluate('document.documentElement.scrollWidth<=innerWidth'), (game,width,height)
@@ -33,8 +33,8 @@ with tempfile.TemporaryDirectory() as tmp:
             screen.screenshot(path=str(root/'tests'/'sonny-scram.png'))
 
             start('killer')
-            phone.locator('.sonny-target[data-number="5"]').click(); phone.locator('.sonny-target[data-number="6"]').click()
-            expect(screen.locator('.sonny-target.assigned')).to_have_count(2)
+            phone.locator('.killer-sector[data-number="5"]').click(); phone.locator('.killer-sector[data-number="6"]').click()
+            expect(screen.locator('.killer-sector.owned')).to_have_count(2)
             screen.screenshot(path=str(root/'tests'/'sonny-killer.png'))
 
             start('bull41')

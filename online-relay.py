@@ -1,4 +1,4 @@
-"""Temporary 2-4 player 4-in-a-row relay for a Cloudflare Quick Tunnel."""
+"""Temporary 2-4 player Four in a Row / Killer relay for a Cloudflare Quick Tunnel."""
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from threading import Lock
 from urllib.parse import urlsplit, parse_qs
@@ -18,7 +18,7 @@ def clean_match(match, allow_finished=True):
     if not isinstance(match,dict) or not isinstance(match.get('undo',[]),list): raise ValueError('Ongeldige partij.')
     state=match.get('state') or {};players=state.get('players')
     phases=('playing','won') if allow_finished else ('playing',)
-    if state.get('version')!=2 or state.get('game')!='fourinarow' or not isinstance(players,list) or not 2<=len(players)<=4 or state.get('phase') not in phases: raise ValueError('Online test ondersteunt alleen een 4-op-een-rij-partij met twee tot vier spelers.')
+    if state.get('version')!=2 or state.get('game') not in ('fourinarow','killer') or not isinstance(players,list) or not 2<=len(players)<=4 or state.get('phase') not in phases: raise ValueError('Online ondersteunt 4 op een rij en Killer met twee tot vier spelers.')
     if not isinstance(state.get('history'),list) or len(json.dumps(match,ensure_ascii=False).encode())>2_000_000: raise ValueError('Ongeldige partijgegevens.')
     return copy.deepcopy(match)
 
@@ -79,7 +79,14 @@ class Handler(BaseHTTPRequestHandler):
                     role=room['keys'].index(key);old=room['match']['state'];match=clean_match(incoming.get('match'));new=match['state']
                     if old.get('active')!=role: return reply(self,403,{'error':'De tegenstander is aan de beurt.'})
                     if len(new['history'])!=len(old['history'])+1 or new['history'][:-1]!=old['history'] or new['history'][-1].get('player')!=role: raise ValueError('Alleen één nieuwe eigen beurt mag worden verzonden.')
-                    if new.get('fourBoard')!=old.get('fourBoard') or [p.get('name') for p in new['players']]!=[p.get('name') for p in old['players']]:raise ValueError('Bord of spelers zijn onverwacht gewijzigd.')
+                    if new.get('game')!=old.get('game') or len(new['players'])!=len(old['players']) or new.get('fourBoard')!=old.get('fourBoard') or [p.get('name') for p in new['players']]!=[p.get('name') for p in old['players']]:raise ValueError('Bord of spelers zijn onverwacht gewijzigd.')
+                    if old.get('game')=='killer' and new.get('phase')=='playing':
+                        if old.get('killerStage')=='assigning':
+                            missing=[(role+step)%len(new['players']) for step in range(1,len(new['players'])+1) if new['players'][(role+step)%len(new['players'])].get('killerNumber') is None]
+                            expected=missing[0] if missing else old.get('starter',0)
+                        else:
+                            expected=next((role+step)%len(new['players']) for step in range(1,len(new['players'])+1) if not new['players'][(role+step)%len(new['players'])].get('killerEliminated'))
+                        if new.get('active')!=expected:raise ValueError('De volgende levende speler moet aan de beurt zijn.')
                     room['match']=match;room['revision']+=1;room['updated']=now
                     return reply(self,200,public(room))
         except (ValueError,TypeError) as error:return reply(self,400,{'error':str(error)})

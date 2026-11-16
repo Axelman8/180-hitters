@@ -1,7 +1,7 @@
 # 180 Hitters Online
 
 This Cloudflare Worker provides private, temporary online dart lanes for the
-180 Hitters four-in-a-row game. Each lane is backed by a SQLite Durable Object,
+180 Hitters Four in a Row and Killer games. Each lane is backed by a SQLite Durable Object,
 uses unguessable player keys, validates turn ownership on the server and
 broadcasts state changes through hibernatable WebSockets.
 
@@ -39,12 +39,19 @@ administrator to activate the approval screen on a device.
 
 ## Verification
 
-With `ONLINE_TEST_BASE` set to the deployed endpoint, run:
+Use an isolated local Wrangler instance without production club secrets. The default test endpoint is `http://127.0.0.1:8787`. Run:
 
 ```sh
 python test/integration.py
 node test/websocket.mjs
+node test/killer.mjs
 ```
 
 The tests cover two-to-four-player lane creation, capacity enforcement, turn
 ownership, a winning turn and real-time WebSocket broadcasts.
+
+Killer turn validation replays the submitted visit with the same rule engine used
+by manual entry, AutoDarts and bots. Tests cover agreed starters, unique number
+assignment, per-dart drafts, eliminated-player skipping and the final winning dart.
+Existing six-letter saved matches remain compatible; new matches use three-hit
+activation and three lives. Joining Killer requires an updated client.

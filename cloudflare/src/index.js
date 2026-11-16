@@ -1,3 +1,4 @@
+import {applySonnyTurn} from '../../dist/sonny-games.js';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_AGE = 8 * 60 * 60 * 1000;
 const FOUR_SYMBOLS = ['○', '×', '△', '□'];
@@ -22,13 +23,18 @@ function cleanMatch(value, allowFinished = true) {
   const phases = allowFinished ? ['playing', 'won'] : ['playing'];
   const state = value?.state;
   if (!value || typeof value !== 'object' || !Array.isArray(value.undo) || state?.version !== 2 ||
-      state.game !== 'fourinarow' || !Array.isArray(state.players) || state.players.length < 2 ||
+      !['fourinarow', 'killer'].includes(state.game) || !Array.isArray(state.players) || state.players.length < 2 ||
       state.players.length > 4 || !phases.includes(state.phase) || !Array.isArray(state.history) ||
       new TextEncoder().encode(JSON.stringify(value)).length > 2_000_000) {
-    throw new Error('Ongeldige 4-op-een-rij-partij.');
+    throw new Error('Ongeldige online partij (4 op een rij of Killer, 2 tot 4 spelers).');
   }
+  if (state.game === 'killer' && (!['assigning', 'playing'].includes(state.killerStage) ||
+      !Number.isInteger(state.starter) || state.starter < 0 || state.starter >= state.players.length ||
+      state.players.some(player => !Number.isInteger(player.killerLetters) || player.killerLetters < 0 || player.killerLetters > 6))) throw new Error('Ongeldige Killer-partij.');
   return structuredClone(value);
 }
+
+const symbolField = state => state.game === 'killer' ? 'sonnySymbol' : 'fourSymbol';
 
 function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
 
@@ -62,7 +68,7 @@ export default {
     if (url.pathname === '/' && request.method === 'GET') {
       const roomCode = String(url.searchParams.get('dartbaan') || '').toUpperCase();
       if (!/^[A-Z2-9]{6}$/.test(roomCode)) return response({ error: 'Ongeldige of ontbrekende dartbaancode.' }, 400);
-      const html = `<!doctype html><html lang="nl"><meta name="viewport" content="width=device-width,initial-scale=1"><title>180 Hitters uitnodiging</title><style>body{margin:0;background:#101c23;color:#f4f7f2;font:18px system-ui;display:grid;min-height:100vh;place-items:center}.card{max-width:440px;margin:20px;padding:28px;border:1px solid #587064;border-radius:18px;background:#172a32;text-align:center}a{display:block;margin:22px 0;padding:14px;border-radius:12px;background:#80bd57;color:#102014;font-weight:800;text-decoration:none}.code{font-size:34px;letter-spacing:.14em;color:#f6bd60;font-weight:900}</style><div class="card"><h1>180 Hitters</h1><p>Je bent uitgenodigd voor online 4 op een rij.</p><p class="code">${roomCode}</p><a href="hitters180://join?dartbaan=${roomCode}">Open in 180 Hitters</a><p>Werkt de knop niet? Open 180 Hitters, kies <b>Online darten → Deelnemen</b> en gebruik de ontvangen uitnodigingslink.</p></div></html>`;
+      const html = `<!doctype html><html lang="nl"><meta name="viewport" content="width=device-width,initial-scale=1"><title>180 Hitters uitnodiging</title><style>body{margin:0;background:#101c23;color:#f4f7f2;font:18px system-ui;display:grid;min-height:100vh;place-items:center}.card{max-width:440px;margin:20px;padding:28px;border:1px solid #587064;border-radius:18px;background:#172a32;text-align:center}a{display:block;margin:22px 0;padding:14px;border-radius:12px;background:#80bd57;color:#102014;font-weight:800;text-decoration:none}.code{font-size:34px;letter-spacing:.14em;color:#f6bd60;font-weight:900}</style><div class="card"><h1>180 Hitters</h1><p>Je bent uitgenodigd voor een online dartbaan.</p><p class="code">${roomCode}</p><a href="hitters180://join?dartbaan=${roomCode}">Open in 180 Hitters</a><p>Werkt de knop niet? Open 180 Hitters, kies <b>Online darten → Deelnemen</b> en gebruik de ontvangen uitnodigingslink.</p></div></html>`;
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
     }
     if (url.pathname === '/lobby' && request.method === 'GET') {
@@ -117,7 +123,7 @@ export class DartRoom {
     await lobby.fetch('https://lobby.internal/', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: remove ? 'remove' : 'upsert', code: room.code,
         host: room.match?.state?.players?.[0]?.name || 'Onbekend', joined: room.keys.filter(Boolean).length,
-        capacity: room.keys.length, updated: room.updated, public: room.public !== false }) });
+        capacity: room.keys.length, game: room.match.state.game, updated: room.updated, public: room.public !== false }) });
   }
   async broadcast(room) {
     const message = JSON.stringify(this.public(room));
@@ -135,9 +141,11 @@ export class DartRoom {
         const name = String(incoming.name || '').trim().slice(0, 24);
         if (!name) throw new Error('Vul jouw naam in.');
         const match = cleanMatch(incoming.match, false);
+        if (match.state.history.length || match.state.game === 'killer' && (match.state.killerStage !== 'assigning' || match.state.players.some(player => player.killerNumber !== null))) throw new Error('Maak een nieuwe partij voor deze dartbaan.');
         match.state.players[0].name = name;
-        match.state.players[0].fourSymbol = FOUR_SYMBOLS.includes(incoming.symbol) ? incoming.symbol :
-          FOUR_SYMBOLS.includes(match.state.players[0].fourSymbol) ? match.state.players[0].fourSymbol : FOUR_SYMBOLS[0];
+        const field = symbolField(match.state);
+        match.state.players[0][field] = FOUR_SYMBOLS.includes(incoming.symbol) ? incoming.symbol :
+          FOUR_SYMBOLS.includes(match.state.players[0][field]) ? match.state.players[0][field] : FOUR_SYMBOLS[0];
         for (let index = 1; index < match.state.players.length; index++) match.state.players[index].name = `Wachten op speler ${index + 1}`;
         const keys = [crypto.randomUUID(), ...Array(match.state.players.length - 1).fill(null)];
         const room = { code: url.searchParams.get('code'), keys, match, revision: 1,
@@ -167,14 +175,16 @@ export class DartRoom {
         const incoming = await request.json();
         const name = String(incoming.name || '').trim().slice(0, 24);
         if (!name) throw new Error('Vul jouw naam in.');
+        if (room.match.state.game === 'killer' && !incoming.supportedGames?.includes('killer')) return response({ error: 'Werk 180 Hitters bij om online Killer te spelen.' }, 409);
         const role = room.keys.indexOf(null);
         if (role < 0) return response({ error: 'Deze dartbaan is al vol.' }, 409);
-        const occupied = room.match.state.players.filter((player, index) => room.keys[index]).map(player => player.fourSymbol);
+        const field = symbolField(room.match.state);
+        const occupied = room.match.state.players.filter((player, index) => room.keys[index]).map(player => player[field]);
         const symbol = FOUR_SYMBOLS.includes(incoming.symbol) ? incoming.symbol : FOUR_SYMBOLS.find(value => !occupied.includes(value));
         if (!symbol || occupied.includes(symbol)) return response({ error: 'Dit symbool is al gekozen. Kies een ander symbool.' }, 409);
         room.keys[role] = crypto.randomUUID();
         room.match.state.players[role].name = name;
-        room.match.state.players[role].fourSymbol = symbol;
+        room.match.state.players[role][field] = symbol;
         room.revision++;
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
         return response({ ...this.public(room), key: room.keys[role], role });
@@ -189,6 +199,7 @@ export class DartRoom {
         if (room.match.state.history.length) throw new Error('De partij is al begonnen.');
         room.starter = starter;
         room.match.state.active = starter;
+        room.match.state.starter = starter;
         room.started = true;
         room.draft = null;
         room.revision++;
@@ -205,7 +216,7 @@ export class DartRoom {
         const seq = incoming.seq, hits = incoming.hits;
         if (!Number.isSafeInteger(seq) || seq < 0 || !Array.isArray(hits) || hits.length > 3) throw new Error('Ongeldige live worp.');
         const cleanHits = hits.map(hit => {
-          const number = hit?.number, mult = hit?.mult, cell = hit?.cell;
+          const number = hit?.number, mult = hit?.mult, cell = hit?.cell ?? null;
           if (!Number.isInteger(number) || ![0, ...Array.from({ length: 20 }, (_, index) => index + 1), 25].includes(number) ||
               ![1, 2, 3].includes(mult) || (number === 25 && mult === 3) ||
               !(cell === null || Number.isInteger(cell) && cell >= 0 && cell < 25)) throw new Error('Ongeldige pijl in live worp.');
@@ -235,14 +246,21 @@ export class DartRoom {
         if (incoming.revision !== room.revision) return response(this.public(room), 409);
         const next = cleanMatch(incoming.match), old = room.match.state, state = next.state;
         if (old.active !== role) return response({ error: 'De tegenstander is aan de beurt.' }, 403);
+        if (state.game !== old.game || state.players.length !== old.players.length) throw new Error('Spel en spelersaantal mogen tijdens de partij niet wijzigen.');
         if (state.history.length !== old.history.length + 1 || !same(state.history.slice(0, -1), old.history) ||
             state.history.at(-1)?.player !== role || !same(state.fourBoard, old.fourBoard) ||
             !same(state.players.map(player => player.name), old.players.map(player => player.name))) {
           throw new Error('Alleen één nieuwe eigen beurt mag worden verzonden.');
         }
-        const expectedActive = (role + 1) % room.keys.length;
-        if (state.phase === 'playing' && state.active !== expectedActive) throw new Error('Na de beurt moet de volgende speler aan de beurt zijn.');
-        if (state.phase === 'won' && (![role, null].includes(state.winner) || state.active !== role)) throw new Error('De winnaar en actieve speler komen niet overeen.');
+        if (old.game === 'killer') {
+          const expected = applySonnyTurn(old, state.history.at(-1)?.input || {});
+          if (expected.phase === 'won' && Number.isSafeInteger(state.completedAt) && state.completedAt >= old.startedAt && state.completedAt <= Date.now() + 60_000) expected.completedAt = state.completedAt;
+          if (!same(expected, state)) throw new Error('De Killer-beurt komt niet overeen met de spelregels.');
+        } else {
+          const expectedActive = (role + 1) % room.keys.length;
+          if (state.phase === 'playing' && state.active !== expectedActive) throw new Error('Na de beurt moet de volgende speler aan de beurt zijn.');
+          if (state.phase === 'won' && (![role, null].includes(state.winner) || state.active !== role)) throw new Error('De winnaar en actieve speler komen niet overeen.');
+        }
         room.match = next; room.draft = null; room.revision++;
         await this.save(room); await this.updateLobby(room); await this.broadcast(room);
         return response(this.public(room));
@@ -288,7 +306,7 @@ export class Lobby {
       if (!/^[A-Z2-9]{6}$/.test(incoming.code || '')) return response({ error: 'Ongeldige dartbaan.' }, 400);
       if (incoming.action === 'remove' || incoming.public === false) delete rooms[incoming.code];
       else rooms[incoming.code] = { code: incoming.code, host: String(incoming.host || 'Onbekend').slice(0, 24),
-        joined: Number(incoming.joined) || 0, capacity: Number(incoming.capacity) || 2, updated: now };
+        joined: Number(incoming.joined) || 0, capacity: Number(incoming.capacity) || 2, game: incoming.game === 'killer' ? 'killer' : 'fourinarow', updated: now };
       await this.state.storage.put('rooms', rooms);
       return response({ ok: true });
     }

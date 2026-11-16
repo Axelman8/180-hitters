@@ -54,9 +54,9 @@ def run(command: list[str]) -> None:
     subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def video(game: str, screenshot: str, slides: list[tuple[str, str, str]]) -> Path:
+def video(game: str, screenshot: str, slides: list[tuple[str, str, str]], force: bool = False) -> Path:
     destination = OUT / f"180-Hitters-{game}-uitleg.mp4"
-    if destination.exists():
+    if destination.exists() and not force:
         return destination
     with tempfile.TemporaryDirectory() as temporary:
         work = Path(temporary)
@@ -120,8 +120,8 @@ def main() -> None:
         ]),
         "Killer": ("sonny-killer.png", [
             ("Killer", "Kies eerst met de verkeerde hand een uniek eigen getal.", "Bij Killer gooit iedere speler eerst één pijl met de verkeerde hand. Het geraakte unieke getal wordt zijn eigen nummer."),
-            ("Bouw KILLER op", "Iedere treffer op je eigen getal levert één letter op. Zes letters maken je Killer.", "Raak tijdens je beurt je eigen getal. Iedere raak pijl levert één letter op. Met zes letters heb je het woord Killer compleet."),
-            ("Schakel tegenstanders uit", "Als Killer verwijder je levens door het nummer van een tegenstander te raken. De laatste speler wint.", "Een actieve Killer raakt het nummer van een tegenstander om eerst letters en daarna het laatste leven te verwijderen. De laatste overgebleven speler wint."),
+            ("Word KILLER", "Drie treffers op je eigen getal maken je Killer. Single telt 1, dubbel 2 en triple 3.", "Raak je eigen getal drie keer om Killer te worden. Een single telt voor een treffer, een dubbel voor twee en een triple voor drie. Een triple maakt je dus direct Killer."),
+            ("Drie levens", "Als Killer raak je de getallen van tegenstanders. Iedere speler heeft drie levens. De laatste speler wint direct.", "Iedere speler begint met drie levens. Als je Killer bent, raak je het getal van een tegenstander om levens af te nemen. Een dubbel kost twee levens en een triple drie. De laatste speler wint direct, ook als er nog pijlen over zijn. Je kunt Killer ook online spelen met twee tot vier spelers. Kies bij dartbaan aanmaken het spel Killer en nodig je vrienden uit."),
         ]),
         "Bull-41": ("sonny-bull41.png", [
             ("Bull en 41", "Iedere speler krijgt een puntenfase. De anderen verzamelen om beurten 25 bullmarks.", "Bij Bull en eenenveertig krijgt iedere speler een eigen puntenfase. De andere spelers proberen om beurten vijfentwintig bullmarks te verzamelen."),
@@ -134,8 +134,14 @@ def main() -> None:
             ("Snelste speler wint", "De speler met de minste aangepaste pijlen wint. Bij gelijkstand geven de meeste triples de doorslag.", "Wie bull bereikt met de minste aangepaste pijlen wint. Bij een gelijke stand geven de meeste triples de doorslag."),
         ]),
     }
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--game', choices=list(games))
+    parser.add_argument('--force', action='store_true')
+    args = parser.parse_args()
     for name, (shot, slides) in games.items():
-        print(video(name, shot, slides))
+        if args.game and args.game != name: continue
+        print(video(name, shot, slides, force=args.force))
 
 
 if __name__ == "__main__":

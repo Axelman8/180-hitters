@@ -62,7 +62,7 @@ function fourInRowReport(state){
 function sonnyReport(state){
  const players=state.players.map((player,index)=>{const turns=turnsByPlayer(state,index),darts=turns.reduce((sum,turn)=>sum+(turn.darts||0),0);let stats;
   if(state.game==='scram')stats=[['Eindscore',String(player.scramScore||0)],['Darts totaal',String(darts)],['Hoogste beurt',String(Math.max(0,...turns.map(turn=>turn.score||0)))]];
-  else if(state.game==='killer')stats=[['Eigen getal',String(player.killerNumber??'—')],['KILLER-letters',String(player.killerLetters||0)],['Status',player.killerEliminated?'Uitgeschakeld':index===state.winner?'Winnaar':'Actief'],['Darts totaal',String(darts)]];
+  else if(state.game==='killer')stats=[['Eigen getal',String(player.killerNumber??'—')],[state.killerRules==='three-hit'?'KILLER-treffers':'KILLER-letters',String(player.killerLetters||0)],...(state.killerRules==='three-hit'?[['Levens over',String(player.killerLives??3)]]:[]),['Status',player.killerEliminated?'Uitgeschakeld':index===state.winner?'Winnaar':'Actief'],['Darts totaal',String(darts)]];
   else if(state.game==='bull41')stats=[['Eindscore',String(player.bull41Score||0)],['Darts totaal',String(darts)],['Hoogste scorebeurt',String(Math.max(0,...turns.map(turn=>turn.score||0)))]];
   else stats=[['Resultaat',player.twentyOneAdjusted===null?'Niet voltooid':`${player.twentyOneAdjusted} pijlen`],['Triples',String(player.twentyOneTriples||0)],['Darts totaal',String(darts)]];
   return {name:player.name,stats};});

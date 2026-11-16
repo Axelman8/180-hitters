@@ -154,8 +154,9 @@ export function chooseBotTarget(state,hits=[]){
  if(state.game==='bull41')return state.bull41Role==='bull'?aim(25,2):aim(20);
  if(state.game==='killer'){
   if(state.killerStage==='assigning')return aim(sectors.find(n=>!state.players.some(other=>other.killerNumber===n)),1);
-  if(own.killerLetters<6)return aim(own.killerNumber,1);
-  const victim=shadow.players.filter((other,i)=>i!==state.active&&!other.killerEliminated).sort((a,b)=>a.killerLetters-b.killerLetters)[0];return aim(victim?.killerNumber||p.killerNumber,1);
+  const modern=state.killerRules==='three-hit';
+  if(modern?!own.killerActivated:own.killerLetters<6)return aim(own.killerNumber,modern?3:1);
+  const victim=shadow.players.filter((other,i)=>i!==state.active&&!other.killerEliminated).sort((a,b)=>modern?a.killerLives-b.killerLives:a.killerLetters-b.killerLetters)[0];return aim(victim?.killerNumber||p.killerNumber,modern?3:1);
  }
  if(state.game==='twentyone')return aim(own.twentyOneTarget===21?25:own.twentyOneTarget,own.twentyOneTarget===21?2:3);
  throw Error('Voor dit spel ontbreekt een BOT-strategie.');
