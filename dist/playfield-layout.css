@@ -194,3 +194,12 @@ body.viewport-game[data-playfield=x01] #screen-player-history td{font-size:16px}
 body.viewport-game[data-playfield=x01] #game[data-has-history=false] #screen-player-history{display:none!important}
 html body.viewport-game[data-playfield=x01] #game #screen-overview #finish-panel{display:flex!important;height:100%!important;min-height:0!important;align-self:stretch;justify-content:center!important}
 html body.viewport-game[data-playfield=x01].remote-control #game .play-grid>aside>#finish-panel{height:100%!important;min-height:0!important;overflow:auto}
+/* Text-only scoreboards use the same available space for readable numbers. */
+html body.viewport-game[data-playfield=x01]:not(.remote-control) #players.players .remaining{font-size:clamp(48px,6vh,90px)!important}
+html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-overview .screen-visit{height:100%;min-height:0;max-height:none;justify-content:center}
+html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-overview #finish-panel{align-items:center!important;justify-content:center!important}
+html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-overview #finish-panel .eyebrow{align-self:center;text-align:center}
+html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-overview #checkout-title{font-size:clamp(28px,4vh,64px)!important}
+html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-overview #checkout b{font-size:clamp(40px,10vh,140px)!important}
+html body.viewport-game[data-playfield=x01]:not(.remote-control) #screen-visit-score{font-size:clamp(64px,12vh,160px)}
+@media(max-width:699px){body.viewport-game[data-playfield] .visual-shell[data-visual=gotcha] #total-input #entry{width:auto;flex:none}body.viewport-game[data-playfield] .visual-shell[data-visual=gotcha] .visit-value>span{flex:none;white-space:nowrap;font-size:9px}}
