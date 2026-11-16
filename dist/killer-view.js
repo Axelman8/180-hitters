@@ -1,3 +1,4 @@
+import {draftView,patchView} from './render-view.js';
 import {renderDartSlots} from './dart-editor.js';
 import {playerColors as colors,getAppearance} from './appearance-settings.js';
 
@@ -15,6 +16,7 @@ if(typeof window!=='undefined')window.addEventListener('resize',()=>requestAnima
 // Rendering uses the same rule engine as manual input, cameras and the relay.
 // A padded visit previews each dart without changing the saved match or turn.
 export function renderKillerGame(root,state,pending,actions,applyTurn){
+ const liveRoot=root;root=draftView(root);
  const modern=state.killerRules==='three-hit',threshold=modern?3:6,ready=player=>modern?player.killerActivated:player.killerLetters===6;
  const assigning=state.killerStage==='assigning',actor=state.active,limit=assigning?1:3;
  const locked=state.phase!=='playing'||(!actions.editing&&pending.length>=limit);
@@ -68,4 +70,6 @@ export function renderKillerGame(root,state,pending,actions,applyTurn){
  const darts=node('div',undefined,'sonny-darts');renderDartSlots(darts,pending,{editing:actions.editing,selected:actions.selectedDart,select:actions.select,placeholder:index=>assigning&&index>0?'—':`Pijl ${index+1}`});controls.append(darts);
  const row=node('div',undefined,'sonny-actions'),miss=button('MIS',actions.miss),remove=button('Wissen',actions.remove),confirm=button('Bevestigen',actions.confirm,'primary');miss.disabled=locked||assigning;remove.disabled=!pending.length;confirm.disabled=pending.length!==limit&&!(pending.length&&preview.phase==='won');row.append(miss,remove,confirm);controls.append(row);
  controls.append(node('p',assigning?'Elk getal van 1 tot 20 kan maar één speler hebben.':modern?'Single 1, dubbel 2, triple 3. Elke speler heeft drie levens.':'Tik op het bord of op een spelersgetal. Elke geraakte pijl telt één treffer.','killer-input-help'));root.append(controls);
+ patchView(liveRoot,root);
+ currentRoot=liveRoot;
 }

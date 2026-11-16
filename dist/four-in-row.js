@@ -1,3 +1,4 @@
+import {draftView,patchView} from './render-view.js';
 import {renderDartSlots} from './dart-editor.js';
 export const fourSymbols=['○','×','△','□'];
 const corners=new Map([[0,'sb1'],[4,'sb2'],[20,'sb3'],[24,'sb4']]);
@@ -60,6 +61,7 @@ export function fourCellLabel(id){return label(id);}
 const el=(tag,text,cls)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;};
 const playerSymbol=(state,index)=>fourSymbols.includes(state.players[index]?.fourSymbol)?state.players[index].fourSymbol:fourSymbols[index];
 export function renderFourInRow(root,state,pending,actions){
+ const liveRoot=root;root=draftView(root);
  root.replaceChildren();
  const bullChoiceIndex=pending.findIndex(hit=>hit.needsBullCorner),needsBullCorner=bullChoiceIndex>=0;
  root.classList.toggle('four-bull-selecting',needsBullCorner);
@@ -89,4 +91,5 @@ export function renderFourInRow(root,state,pending,actions){
  const buttons=el('div',undefined,'four-actions');buttons.append(miss,remove,confirm);controls.append(buttons);
  const note=el('p',state.fourBoard.some((id,index)=>(id.startsWith('sb')||id==='bb')&&pending.some(hit=>hit.cell===index))?'Bull geraakt: dit vak is direct geclaimd.':'Niet geclaimde marks vervallen na de derde pijl.','four-note');controls.append(note);
  layout.append(controls);root.append(layout);
+ patchView(liveRoot,root);
 }

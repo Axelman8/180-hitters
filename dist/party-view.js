@@ -1,9 +1,11 @@
+import {draftView,patchView} from './render-view.js';
 import {renderDartSlots} from './dart-editor.js';
 import {partyNames,previewParty,partyAutoCommit,seaSunk} from './party-rules.js';
 import {seaLog,seaShotText} from './sea-log.js';
 import {node,button,svg,playerColors,dartboard} from './graphic-board.js';
 let boardPlayer=0,boardMatch=null,boardFollow=true,scrollMatch=null;
 export function renderPartyGame(root,state,hits,actions){
+ const liveRoot=root;root=draftView(root);
  if(scrollMatch!==state.startedAt){scrollMatch=state.startedAt;document.querySelector('main').scrollTop=0;window.scrollTo(0,0);}
  root.replaceChildren();root.className='party-game';root.dataset.party=state.game;
  const actor=state.active,preview=previewParty(state,hits),sea=state.game==='seabattle',golf=state.game==='golf',p=state.players[actor];
@@ -22,10 +24,10 @@ export function renderPartyGame(root,state,hits,actions){
   }
   if(!preview.players[boardPlayer])boardPlayer=0;
   const chooser=node('div',undefined,'sea-fleet-tabs');state.players.forEach((player,index)=>{
-   const tab=button('Vloot '+player.name,()=>{boardPlayer=index;boardFollow=false;actions.refresh?actions.refresh():renderPartyGame(root,state,hits,actions);},index===boardPlayer?'selected':'');
+   const tab=button('Vloot '+player.name,()=>{boardPlayer=index;boardFollow=false;actions.refresh?actions.refresh():renderPartyGame(liveRoot,state,hits,actions);},index===boardPlayer?'selected':'');
    tab.setAttribute('aria-pressed',String(index===boardPlayer));chooser.append(tab);
   });
-  const follow=button(boardFollow?'Aanval volgen':'Volg de aanval',()=>{boardFollow=true;actions.refresh?actions.refresh():renderPartyGame(root,state,hits,actions);},boardFollow?'selected sea-follow':'sea-follow');
+  const follow=button(boardFollow?'Aanval volgen':'Volg de aanval',()=>{boardFollow=true;actions.refresh?actions.refresh():renderPartyGame(liveRoot,state,hits,actions);},boardFollow?'selected sea-follow':'sea-follow');
   follow.setAttribute('aria-pressed',String(boardFollow));chooser.append(follow);arena.append(chooser);
   const action=node('p',seaShotText(state,last),'sea-last-action');action.setAttribute('role','status');arena.append(action);
   const victim=preview.players[boardPlayer],grid=node('div',undefined,'sea-grid');grid.dataset.fleetPlayer=String(boardPlayer);grid.setAttribute('aria-label',`Vloot van ${victim.name}. Iedere pijl raakt alle tegenstanders op dit getal.`);
@@ -61,4 +63,5 @@ export function renderPartyGame(root,state,hits,actions){
  for(const [mult,label] of [[1,golf?'Single · 3':'Single'],[2,golf?'Dubbel · 1':'Dubbel'],[3,golf?'Triple · 2':'Triple']]){const b=button(label,()=>{actions.setMultiplier(mult);if(!sea)actions.hit(state.partyTarget);},sea&&actions.multiplier===mult?'selected':'');b.disabled=state.phase!=='playing'||!actions.editing&&hits.length>=3;b.setAttribute('aria-pressed',String(sea&&actions.multiplier===mult));multipliers.append(b);}controls.append(multipliers);
  const row=node('div',undefined,'sonny-actions');const miss=button(golf?'MIS · 5':'MIS',actions.miss),remove=button('Wissen',actions.remove),confirm=button(golf&&state.golfScoring==='last'?'Hole afronden':'Bevestigen',actions.confirm,'primary');miss.disabled=state.phase!=='playing'||!actions.editing&&hits.length>=3;remove.disabled=!hits.length;confirm.disabled=!partyAutoCommit(state,hits)&&!(golf&&state.golfScoring==='last'&&hits.length);row.append(miss,remove,confirm);controls.append(row);
  controls.append(node('p',sea?'De gekozen vloot bepaalt alleen wat je bekijkt. Je valt altijd alle tegenstanders aan.':golf?'Bij laatste pijl kun je na iedere pijl de hole afronden. Anders telt na drie pijlen automatisch je resultaat.':'Raak alle drie de soorten op het doelgetal in dezelfde beurt. Alleen dit rondegetal levert punten op.','party-input-help'));root.append(controls);
+ patchView(liveRoot,root);
 }

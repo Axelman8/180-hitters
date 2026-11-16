@@ -3,7 +3,7 @@
 // all use the same measured space. Only presentation dimensions are changed.
 let state=null,queued=false,watching=false,sizeObserver=null;
 const frames=new Set();
-const shown=e=>e&&!e.hidden&&getComputedStyle(e).display!=='none';
+const shown=e=>e&&!e.hidden&&getComputedStyle(e).display!=='none'&&e.getClientRects().length>0;
 function set(el,key,value){if(el.style.getPropertyValue(key)!==value)el.style.setProperty(key,value);}
 export function fitPlayfield(value){
  state=value;const game=document.getElementById('game');
@@ -27,7 +27,10 @@ export function fitPlayfield(value){
   new MutationObserver(records=>{if(records.some(r=>r.type==='attributes'?r.target.matches('#total-input,#dart-input'):[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches(boards)||n.querySelector(boards)))))queue();}).observe(game,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
   const visibility=new MutationObserver(()=>fitPlayfield(state));visibility.observe(game,{attributes:true,attributeFilter:['hidden']});visibility.observe(document.getElementById('setup'),{attributes:true,attributeFilter:['hidden']});
  }
- queue();
+ // Finish a dart's sizing in the same update, before the browser paints it.
+ // Replacing a board and fitting it two animation frames later caused a
+ // visible rectangle/square flash on folding phones and small tablets.
+ measure();
 }
 function queue(){if(!queued){queued=true;requestAnimationFrame(measure);}}
 function measure(){
@@ -43,32 +46,30 @@ function measure(){
  for(const image of game.querySelectorAll('.graphic-dartboard,.killer-dartboard,.golf-course')){
   let frame=image.parentElement;
   if(!frame.classList.contains('stage-board-frame')){const wrap=document.createElement('div');wrap.className='stage-board-frame';image.before(wrap);wrap.append(image);frame=wrap;}
-  frame.hidden=!shown(image);
+  if(frame.hidden)frame.hidden=false;
+  frame.hidden=getComputedStyle(image).display==='none'||getComputedStyle(frame).display==='none';
  }
  // A camera/BOT banner or expanded controls can resize the board cell without
  // resizing the window. Watch those cells too, releasing replaced render nodes.
  for(const frame of frames)if(!game.contains(frame)){sizeObserver.unobserve?.(frame);frames.delete(frame);}
  for(const frame of game.querySelectorAll('.stage-board-frame,.four-board-frame,.killer-arena,.party-arena,.visual-arena,.four-layout'))if(!frames.has(frame)){frames.add(frame);sizeObserver.observe(frame);}
- const match=state.startedAt;
- requestAnimationFrame(()=>{
-  if(!state||state.startedAt!==match||!document.body.classList.contains('viewport-game'))return;
-  for(const image of game.querySelectorAll('.graphic-dartboard,.killer-dartboard,.golf-course')){
-   const frame=image.parentElement;if(!shown(image)||!shown(frame))continue;
-   const parent=frame.parentElement,layout=getComputedStyle(parent),view=image.viewBox.baseVal,ratio=view.width/view.height;
-   const column=layout.display==='flex'&&layout.flexDirection==='column';
-   if(!column){frame.style.removeProperty('height');frame.style.removeProperty('flex');}
-   const bounds=frame.getBoundingClientRect();
-   // Fit against the arena, then keep the board and its caption together at
-   // the top. A tall portrait display must not add a blank gap above the board.
-   const siblings=column?[...parent.children].filter(el=>el!==frame&&shown(el)):[];
-   const available=column?parent.clientHeight-parseFloat(layout.paddingTop)-parseFloat(layout.paddingBottom)-siblings.reduce((sum,el)=>sum+el.getBoundingClientRect().height,0)-(parseFloat(layout.rowGap)||0)*siblings.length:bounds.height;
-   const width=Math.floor(Math.min(bounds.width,Math.max(1,available)*ratio)),height=Math.floor(width/ratio);
-   set(image,'--fitted-width',Math.max(1,width)+'px');set(image,'--fitted-height',Math.max(1,height)+'px');
-   if(column){set(frame,'height',Math.max(1,height)+'px');set(frame,'flex','0 0 auto');}
-  }
-  for(const frame of game.querySelectorAll('.four-board-frame')){
-   const size=Math.floor(Math.min(frame.clientWidth,frame.clientHeight));set(frame,'--four-size',Math.max(1,size)+'px');
-  }
-  game.dataset.layoutReady=String(state.startedAt);game.dispatchEvent(new Event('playfield-fitted'));
- });
+ if(!state||!document.body.classList.contains('viewport-game'))return;
+ for(const image of game.querySelectorAll('.graphic-dartboard,.killer-dartboard,.golf-course')){
+  const frame=image.parentElement;if(!shown(image)||!shown(frame))continue;
+  const parent=frame.parentElement,layout=getComputedStyle(parent),view=image.viewBox.baseVal,ratio=view.width/view.height;
+  const column=layout.display==='flex'&&layout.flexDirection==='column';
+  if(!column){frame.style.removeProperty('height');frame.style.removeProperty('flex');}
+  const bounds=frame.getBoundingClientRect();
+  // Fit against the arena, then keep the board and its caption together at
+  // the top. A tall portrait display must not add a blank gap above the board.
+  const siblings=column?[...parent.children].filter(el=>el!==frame&&shown(el)):[];
+  const available=column?parent.clientHeight-parseFloat(layout.paddingTop)-parseFloat(layout.paddingBottom)-siblings.reduce((sum,el)=>sum+el.getBoundingClientRect().height,0)-(parseFloat(layout.rowGap)||0)*siblings.length:bounds.height;
+  const width=Math.floor(Math.min(bounds.width,Math.max(1,available)*ratio)),height=Math.floor(width/ratio);
+  set(image,'--fitted-width',Math.max(1,width)+'px');set(image,'--fitted-height',Math.max(1,height)+'px');
+  if(column){set(frame,'height',Math.max(1,height)+'px');set(frame,'flex','0 0 auto');}
+ }
+ for(const frame of game.querySelectorAll('.four-board-frame')){
+  const size=Math.floor(Math.min(frame.clientWidth,frame.clientHeight));set(frame,'--four-size',Math.max(1,size)+'px');
+ }
+ game.dataset.layoutReady=String(state.startedAt);game.dispatchEvent(new Event('playfield-fitted'));
 }

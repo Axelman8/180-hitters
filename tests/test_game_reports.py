@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright, expect
 
 root = Path(__file__).resolve().parents[1]
 assert '.game-report-share' in (root/'dist'/'app.js').read_text(encoding='utf-8').split("if((!ready||busy)",1)[1].split(')){',1)[0]
-assert '.game-report-share' in (root/'dist'/'controller.js').read_text(encoding='utf-8').split("event.target.closest(",1)[1].split('))return',1)[0]
+assert '.game-report-share' in (root/'dist'/'controller.js').read_text(encoding='utf-8').split("event.target.closest('.dialog-back,",1)[1].split('))return',1)[0]
 
 with tempfile.TemporaryDirectory() as tmp:
     server = subprocess.Popen([sys.executable, str(root/'server.py'), '--host', '127.0.0.1', '--port', '8796', '--data-file', str(Path(tmp)/'match.json')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -45,9 +45,9 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator('#game-report')).to_be_visible()
             expect(page.locator('.game-report-share')).to_have_text('Delen als afbeeldingen')
             page.locator('.game-report-share').click()
-            page.wait_for_function('window.sharedReports && window.sharedReports.length === 2')
+            page.wait_for_function('window.sharedReports && window.sharedReports.length === 3')
             shared = page.evaluate('window.sharedReports')
-            assert shared[0]['name'].endswith('-overzicht.png') and shared[1]['name'].endswith('-details-01.png')
+            assert shared[0]['name'].endswith('-eindstand.png') and shared[1]['name'].endswith('-overzicht.png') and shared[2]['name'].endswith('-details-01.png')
             assert all(image['data'].startswith('iVBOR') for image in shared)
             assert page.locator('#result-dialog').evaluate('e=>e.scrollWidth<=e.clientWidth')
             browser.close()

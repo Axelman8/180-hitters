@@ -18,6 +18,8 @@ All packages and SHA-256 checksums are in [GitHub Releases](https://github.com/A
 
 Advanced packages: `180-Hitters-Linux-x64.tar.gz` and `180-Hitters-Windows-x64.zip`. Linux source installation uses `sudo bash setup-linux.sh`; manual per-user installation uses `bash install-linux.sh`. Use one dartserver installation per NUC. See [installation and recovery help](packaging/INSTALLER-HELP.txt).
 
+Game boards, player cards and dart inputs update in place after each dart. Measured board sizes, keyboard focus and touch controls remain stable while new scores arrive. The same rendering path is used on Android, the legacy tablet and NUC/desktop browsers.
+
 ## Menus
 
 The app starts at its main menu while keeping the current match. The version is centered in the top bar. **TERUG** (Back) is at the top of app menus, dialogs and the match wizard, including long reports. Back restores the immediately preceding menu, including its section and scroll position. Nested dialogs return one level at a time. Android Back follows the same app navigation on modern phones; the legacy tablet uses the same behavior for its on-screen and touch controls. Back returns to the immediately preceding screen or menu section, preserving its scroll position and form state. Nested access screens and Android Bluetooth pickers return one level at a time; Android Back and Escape follow the same navigation where available.
@@ -136,7 +138,7 @@ Hitters Challenge saves each bot dart immediately while retaining the three visi
 
 Large checkboxes select individual games or all search results. **Verwijderen** asks for confirmation and identifies whether the selected games are stored on the NUC or on this device. Deleting the current game also ends it; other games and player lists remain available. Deleted games stay deleted after a restart, including their recovery copies. Update the NUC as well as the Android app to enable deletion in shared mode.
 
-The result screen shows the winner and a game-specific report with timestamps, total darts, relevant scores, tables and charts. On Android, share readable image sections through WhatsApp or another compatible app. Long tables are split into separate images.
+The result screen shows the winner, a full-resolution picture of the final board and a game-specific report with timestamps, total darts, scores, tables and charts. Sharing includes the final-board PNG first, followed by readable statistics and detail pages. The picture is reconstructed from the saved match, so archived games and matches retrieved from a NUC work without changing the current game. In-progress reports show a clearly labelled interim board. Android opens its share sheet; browsers without image sharing download the PNG files. Long detail tables are split into separate images.
 
 **Laatste beurt herstellen** restores the recorded input. Select a dart, enter the correct hit and confirm. Other darts stay filled in. Matches recorded only as visit totals restore that total; individual darts cannot be reconstructed from a total. Undo/redo and X01 history correction preserve the later timeline where the game rules permit replay.
 
@@ -195,7 +197,7 @@ sudo calibreer-cameras
 
 The shared UI is HTML/CSS/JavaScript. The local server uses Python's standard library. The modern Android wrapper is Java; the dedicated old tablet uses a legacy browser-compatible bundle. Linux system actions use narrowly scoped helpers.
 
-Start `python3 server.py` (Windows: `python server.py`) and open <http://127.0.0.1:8765>. Rule tests are in `dist/tests/engine.test.js`; browser/integration tests are in `tests/`. Coverage includes twelve games, bots, cameras, corrections, responsive layouts, reports, shared control and update recovery. Release validation also tests migration from a user server occupying port 8765.
+Start `python3 server.py` (Windows: `python server.py`) and open <http://127.0.0.1:8765>. Rule tests are in `dist/tests/engine.test.js`; browser/integration tests are in `tests/`. Coverage includes all fifteen games, bots, cameras, corrections, responsive layouts, reports, shared control and update recovery. Release validation also tests migration from a user server occupying port 8765.
 
 Build Android with `build-android.ps1`, or use the signed GitHub release. Signing keys and passwords are excluded from version control. Use the local server on trusted networks: local input ownership coordinates devices and is not public internet authentication. Club approval controls access to the private online service.
 

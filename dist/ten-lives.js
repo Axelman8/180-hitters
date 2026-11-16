@@ -1,4 +1,6 @@
+import {draftView,patchView} from './render-view.js';
 import {livesBoard,fitLivesBoard} from './lives-board.js';
+import {appendMatchImage,createMatchImageCanvas} from './match-image.js';
 
 export const livesTargets=[20,19,18,17,16,15,14,13,12,11,10,25];
 export const livesLabel=(state,player)=>player.livesTarget===25?'Bull (50)':(state.livesMode==='triple'?'T':'D')+player.livesTarget;
@@ -95,6 +97,7 @@ export function renderLivesSummary(state,dialog){
  const meta=el('dl',undefined,'lives-summary-meta');
  for(const [label,value] of [['Begintijd',report.started],['Eindtijd',report.ended],['Darts totaal',String(report.totalDarts)]]){const item=el('div'),data=el('dd',value);if(/^\d{2}:\d{2}/.test(value))data.className='report-meta-time';item.append(el('dt',label),data);meta.append(item);}
  section.append(meta);
+ appendMatchImage(section,state);
  const one=el('div',undefined,'lives-summary-one');one.append(el('h4','Met 1 dart geraakt'));
  if(report.oneDart.length){const chart=el('div',undefined,'lives-one-dart-chart'),maximum=Math.max(...report.oneDart.map(goal=>goal.oneDart));for(const goal of report.oneDart){const row=el('div'),label=el('span',goal.label),track=el('i'),bar=el('b'),count=el('strong',`× ${goal.oneDart}`);bar.style.width=`${goal.oneDart/maximum*100}%`;track.append(bar);row.append(label,track,count);chart.append(row);}one.append(chart);}else one.append(el('p','Geen doel met de eerste dart geraakt.'));
  section.append(one);
@@ -164,7 +167,7 @@ const wrapText=(context,text,width)=>{
  for(const word of words){const next=line?line+' '+word:word;if(context.measureText(next).width<=width||!line)line=next;else{lines.push(line);line=word;}}
  if(line)lines.push(line);return lines;
 };
-const rounded=(context,x,y,width,height,radius=18)=>{context.beginPath();context.roundRect(x,y,width,height,radius);context.fill();};
+const rounded=(context,x,y,width,height,radius=18)=>{context.beginPath();if(context.roundRect)context.roundRect(x,y,width,height,radius);else{const r=Math.min(radius,width/2,height/2);context.moveTo(x+r,y);context.arcTo(x+width,y,x+width,y+height,r);context.arcTo(x+width,y+height,x,y+height,r);context.arcTo(x,y+height,x,y,r);context.arcTo(x,y,x+width,y,r);context.closePath();}context.fill();};
 function createLivesOverviewImage(state){
  const report=livesSummary(state),width=1080,margin=58,inner=width-margin*2,canvas=document.createElement('canvas'),context=canvas.getContext('2d');
  context.font='26px sans-serif';
@@ -204,7 +207,7 @@ export function createLivesSummaryImages(state){
 export function createLivesSummaryImage(state){return createLivesOverviewImage(state);}
 
 export async function shareLivesSummary(state){
- const bridge=window.DartsAndroid,date=new Date().toISOString().slice(0,10),images=createLivesSummaryImages(state);bridge?.logShare?.(`${images.length} afbeeldingen opbouwen`);
+ const bridge=window.DartsAndroid,date=new Date().toISOString().slice(0,10),images=createLivesSummaryImages(state);images.unshift({canvas:await createMatchImageCanvas(state),suffix:'eindstand'});bridge?.logShare?.(`${images.length} afbeeldingen opbouwen`);
  const parts=images.map(({canvas,suffix})=>{const data=canvas.toDataURL('image/png');if(!data.startsWith('data:image/png;base64,'))throw Error('Afbeelding kon niet worden gemaakt.');return {encoded:data.slice(data.indexOf(',')+1),filename:`hitters-challenge-${date}-${suffix}.png`,canvas};});
  bridge?.logShare?.(`${parts.length} afbeeldingen gereed`);
  const append=async encoded=>{const chunkSize=196608;for(let offset=0,index=0;offset<encoded.length;offset+=chunkSize,index++){if(!bridge.appendPngShare(encoded.slice(offset,offset+chunkSize)))throw Error('Afbeelding kon niet worden overgedragen.');if(index%8===7)await new Promise(resolve=>setTimeout(resolve,0));}};
@@ -222,6 +225,7 @@ const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefine
 export function renderLives(state,actions){
  let root=document.getElementById('lives-game');
  if(!root){root=el('section',undefined,'lives-game');root.id='lives-game';document.getElementById('game').append(root);}
+ const liveRoot=root;root=draftView(root);
  root.dataset.match=String(state.startedAt);root.replaceChildren();
  const heading=el('div',undefined,'lives-heading');heading.append(el('h2','Hitters Challenge'),el('span',state.livesMode==='triple'?'Triples · 20 t/m 10 → Bull':'Doubles · 20 t/m 10 → Bull'));root.append(heading);
  const cards=el('div',undefined,'lives-players');cards.style.setProperty('--count',state.players.length);
@@ -262,7 +266,9 @@ export function renderLives(state,actions){
  const redo=btn('Volgende pijl →','lives-redo',actions.redo);redo.disabled=!actions.canRedo;
  const history=el('div',undefined,'lives-history-actions');history.append(undo,redo);controls.append(history);
  const toggle=btn('Scherminvoer in-/uitklappen','lives-toggle',actions.toggle);controls.append(toggle);root.append(controls);
- fitLivesBoard(root,focus,boardFrame);
+
  const last=state.history.at(-1);
  const note=el('p',last?`${last.name}: ${last.target===25?'Bull':(state.livesMode==='triple'?'T':'D')+last.target} ${last.labels.toLowerCase()}${last.ended?(last.lives===0?' · uitgeschakeld':last.target===20?' · één leven kwijt':' · één doel terug'):''}`:'Raak het doel om door te gaan. Overgebleven pijlen + 3 voor het volgende doel.','lives-last');note.setAttribute('aria-live','polite');root.append(note);
+ patchView(liveRoot,root);
+ fitLivesBoard(liveRoot,liveRoot.querySelector('.lives-focus'),liveRoot.querySelector('.lives-board-frame'));
 }

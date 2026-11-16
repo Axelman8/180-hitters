@@ -1,3 +1,4 @@
+import {draftView,patchView} from './render-view.js';
 import {renderDartSlots} from './dart-editor.js';
 import {renderKillerGame} from './killer-view.js';
 import {partyIds,partyNames,initParty,applyPartyTurn,partyAutoCommit} from './party-rules.js';
@@ -116,6 +117,7 @@ function playerStatus(state,player,index){
 export function renderSonnyGame(root,state,pending,actions){
  if(partyIds.includes(state.game)){renderPartyGame(root,state,pending,actions);return;}
  if(state.game==='killer'){renderKillerGame(root,state,pending,actions,applySonnyTurn);return;}
+ const liveRoot=root;root=draftView(root);
  root.className='';
  root.replaceChildren();const heading=el('div',undefined,'sonny-heading');heading.append(el('h2',sonnyGameNames[state.game]),el('p',state.game==='scram'?`${state.scramRole==='stopper'?'Stopper':'Scoorder'} aan de beurt · ${state.scramClosed.filter(Boolean).length}/21 gestopt`:state.game==='bull41'?`${state.bull41Role==='bull'?'Bullwerper':'Puntengooier'} · ${state.bull41Marks}/25 bullmarks`:state.game==='killer'?(state.killerStage==='assigning'?'Gooi één pijl met je verkeerde hand voor een uniek eigen getal.':'Bouw KILLER op en raak daarna het getal van een tegenstander.'):state.players[state.active].twentyOneFinished?'Klaar':`Raak ${state.players[state.active].twentyOneTarget===21?'Bull':state.players[state.active].twentyOneTarget}. Single +1, dubbel +2, triple +3.`));root.append(heading);
  const players=el('div',undefined,'sonny-players');state.players.forEach((player,index)=>{const card=el('article',undefined,index===state.active?'active':'');card.style.setProperty('--sonny-color',`var(--four-p${index})`);card.append(el('b',player.sonnySymbol,'sonny-symbol'),el('strong',player.name),el('small',playerStatus(state,player,index)));players.append(card);});root.append(players);
@@ -128,4 +130,5 @@ export function renderSonnyGame(root,state,pending,actions){
  const controls=el('aside',undefined,'sonny-controls'),multipliers=el('div',undefined,'sonny-multipliers');for(const [mult,text] of [[1,'Single'],[2,'Double'],[3,'Triple']]){const button=el('button',text,mult===actions.multiplier?'selected':'');button.type='button';button.onclick=()=>actions.setMultiplier(mult);multipliers.append(button);}controls.append(multipliers);
  const darts=el('div',undefined,'sonny-darts');renderDartSlots(darts,pending,{editing:actions.editing,selected:actions.selectedDart,select:actions.select,placeholder:index=>`Pijl ${index+1}`});controls.append(darts);
  const actionRow=el('div',undefined,'sonny-actions'),miss=el('button','Mis');miss.type='button';miss.disabled=(!actions.editing&&pending.length>=3)||state.game==='killer'&&state.killerStage==='assigning';miss.onclick=actions.miss;const remove=el('button','Laatste wissen');remove.type='button';remove.disabled=!pending.length;remove.onclick=actions.remove;const confirm=el('button','Bevestigen','primary');confirm.type='button';confirm.disabled=!sonnyAutoCommit(state,pending);confirm.onclick=actions.confirm;actionRow.append(miss,remove,confirm);controls.append(actionRow);layout.append(controls);root.append(layout);
+ patchView(liveRoot,root);
 }

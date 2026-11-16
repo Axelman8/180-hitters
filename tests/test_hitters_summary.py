@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright, expect
 
 root = Path(__file__).resolve().parents[1]
 assert '.lives-summary-share' in (root/'dist'/'app.js').read_text(encoding='utf-8').split("if((!ready||busy)",1)[1].split(')){',1)[0]
-assert '.lives-summary-share' in (root/'dist'/'controller.js').read_text(encoding='utf-8').split("event.target.closest(",1)[1].split('))return',1)[0]
+assert '.lives-summary-share' in (root/'dist'/'controller.js').read_text(encoding='utf-8').split("event.target.closest('.dialog-back,",1)[1].split('))return',1)[0]
 with tempfile.TemporaryDirectory() as tmp:
     server = subprocess.Popen([sys.executable, str(root/'server.py'), '--host', '127.0.0.1', '--port', '8794', '--data-file', str(Path(tmp)/'match.json')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
@@ -44,10 +44,11 @@ with tempfile.TemporaryDirectory() as tmp:
             expect(page.locator('.lives-one-dart-chart>div')).to_have_count(2)
             expect(page.locator('.lives-one-dart-chart strong')).to_have_text(['× 1', '× 1'])
             page.locator('#lives-summary .lives-summary-share').click()
-            page.wait_for_function('window.sharedPng && window.sharedPng.images.length === 2')
+            page.wait_for_function('window.sharedPng && window.sharedPng.images.length === 3')
             shared = page.evaluate('window.sharedPng')
-            assert shared['images'][0]['name'].endswith('-overzicht.png')
-            assert shared['images'][1]['name'].endswith('-rondes-01.png')
+            assert shared['images'][0]['name'].endswith('-eindstand.png')
+            assert shared['images'][1]['name'].endswith('-overzicht.png')
+            assert shared['images'][2]['name'].endswith('-rondes-01.png')
             assert all(image['data'].startswith('iVBOR') for image in shared['images'])
             assert all(image['chunks'] >= 1 for image in shared['images'])
             assert page.locator('#result-dialog').evaluate('e=>e.scrollWidth<=e.clientWidth')

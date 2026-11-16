@@ -17,6 +17,13 @@ html body #game .sea-cell .sea-cell-credit{font-size:11px;font-size:clamp(10px,1
 @media(max-height:720px){html body #game .sea-cell .sea-cell-credit{display:none}.game-player-action{font-size:11px!important}}
 html body #game .sea-cell{gap:0}
 html body #game .game-player-action{display:block!important}
+html body #game .game-player-action{height:2.5em;min-height:2.5em;max-height:2.5em;overflow:hidden}
+.game-bot-slot{grid-column:1/-1;min-height:15px}
+.dart-slot{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Bob's live hits already appear on its player card and target board. The
+   duplicate first-dart message used to add an implicit row to the input grid. */
+.visual-shell[data-visual=bobs27] #points-preview{display:none!important}
+body[data-game=tenlives] .game-bot-slot{min-height:39px}
 html body.appearance-hide-last #game .game-player-action{display:none!important}
 html body #game #bot-status.bot-player-status{grid-area:auto;grid-column:1/-1;grid-row:auto;display:block;margin:0;padding:0;border:0;border-radius:0;background:transparent;min-height:0}
 html body #game #bot-status.bot-player-status[hidden]{display:none}
