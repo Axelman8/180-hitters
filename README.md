@@ -46,7 +46,7 @@ On connected phones and tablets, **Camera aan / herstart** and **Camera uit** ap
 
 Killer now has a responsive, original SVG dartboard with each player's number in their own colour. Four player cards show names, target numbers, three-hit KILLER progress and three lives. The active player and target are highlighted, and each pending dart previews its effect. On phones, the board uses the space left after the player cards and touch controls, keeping entry separate from the board. Larger NUC screens show a bigger board with player cards beside it. New matches use three hits to become Killer and three lives per player. Singles count once, doubles twice and triples three times. The winning dart ends play immediately. Saved six-letter matches retain their original rules.
 
-When creating an online dart lane, choose **4 in a Row** or **Killer**, with two to four players. Invitations, the public lane list and the agreed starting player work for both games. Killer synchronizes the initial number selection and each dart, skips eliminated players and shows the winner on every device. All participants need version 1.9.38 or newer to join a Killer lane. Existing 4 in a Row lanes remain compatible.
+When creating an online dart lane, choose **4 in a Row** or **Killer**, with two to four players. Invitations, the public lane list and the agreed starting player work for both games. Killer synchronizes the initial number selection and each dart, skips eliminated players and shows the winner on every device. All participants need version 1.9.39 or newer to join a Killer lane. Existing 4 in a Row lanes remain compatible.
 
 ## All games and tutorial videos
 
