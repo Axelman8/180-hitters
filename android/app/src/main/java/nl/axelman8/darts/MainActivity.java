@@ -44,6 +44,8 @@ public final class MainActivity extends Activity {
     private SharedPreferences preferences;
     private String mode;
     private boolean webPaused;
+    private Runnable bluetoothPermissionParent;
+    private Runnable bluetoothSettingsReturn;
     private final Object shareLock = new Object();
     private FileOutputStream pendingShareStream;
     private File pendingShareFile;
@@ -116,6 +118,10 @@ public final class MainActivity extends Activity {
                 }).setNegativeButton("Annuleren", null).show();
     }
 
+    void returnToPreviousMenu() {
+        if(web!=null)web.evaluateJavascript("document.dispatchEvent(new Event('native-navigation-back'))",null);
+    }
+
     private boolean hasBluetoothPermission() {
         return Build.VERSION.SDK_INT < 31 || checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
     }
@@ -140,19 +146,34 @@ public final class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
         super.onRequestPermissionsResult(requestCode,permissions,results);
         if(requestCode==NOTIFICATION_PERMISSION_REQUEST&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)ClubRequestWorker.schedule(this);
+        if(requestCode==41){
+            Runnable parent=bluetoothPermissionParent==null?this::showModeChooser:bluetoothPermissionParent;
+            bluetoothPermissionParent=null;
+            if(hasBluetoothPermission())chooseBluetooth(parent);else parent.run();
+        }
     }
 
-    private void chooseBluetooth() {
-        if (!bluetooth.isAvailable()) { Toast.makeText(this, "Deze telefoon heeft geen Bluetooth.", Toast.LENGTH_LONG).show(); return; }
+    private void chooseBluetooth() { chooseBluetooth(this::showModeChooser); }
+
+    private void chooseBluetooth(Runnable parent) {
+        if (!bluetooth.isAvailable()) { Toast.makeText(this, "Deze telefoon heeft geen Bluetooth.", Toast.LENGTH_LONG).show(); parent.run(); return; }
         if (!hasBluetoothPermission()) {
+            bluetoothPermissionParent=parent;
             requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN}, 41);
+            return;
+        }
+        if (!bluetooth.isEnabled()) {
+            new TopBackDialog(this).onBack(parent).setTitle("Bluetooth staat uit")
+                    .setMessage("Schakel Bluetooth in om je gekoppelde NUC te kiezen. Na terugkeer wordt de apparatenlijst vernieuwd.")
+                    .setPositiveButton("Bluetooth-instellingen",(d,w)->openBluetoothSettings(parent))
+                    .setNegativeButton("Annuleren",null).show();
             return;
         }
         List<BluetoothDevice> devices = bluetooth.pairedDevices();
         if (devices.isEmpty()) {
-            new TopBackDialog(this).setTitle("Koppel eerst met darten")
-                    .setMessage("Open Bluetooth-instellingen, kies de NUC ‘darten’ en bevestig de eenmalige koppeling.")
-                    .setPositiveButton("Bluetooth-instellingen", (d,w)->startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)))
+            new TopBackDialog(this).onBack(parent).setTitle("Koppel eerst met de NUC")
+                    .setMessage("Open Bluetooth-instellingen, kies jouw NUC en bevestig de eenmalige koppeling.")
+                    .setPositiveButton("Bluetooth-instellingen", (d,w)->openBluetoothSettings(parent))
                     .setNegativeButton("Annuleren", null).show();
             return;
         }
@@ -162,18 +183,31 @@ public final class MainActivity extends Activity {
             labels[i]=(name==null?"Onbekend apparaat":name)+"\n"+devices.get(i).getAddress();
         }
         labels[devices.size()]="Ander apparaat koppelen…";
-        new TopBackDialog(this).setTitle("Kies de Bluetooth-NUC").setItems(labels,(d,which)->{
-            if(which==devices.size()) { startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)); return; }
+        new TopBackDialog(this).onBack(parent).setTitle("Kies de Bluetooth-NUC").setItems(labels,(d,which)->{
+            if(which==devices.size()) { openBluetoothSettings(parent); return; }
             String address=devices.get(which).getAddress();
             bluetooth.select(address); preferences.edit().putString("bluetooth_address",address).apply();
             loadMode("bluetooth");
         }).setNegativeButton("Annuleren",null).show();
     }
 
+    private void openBluetoothSettings(Runnable parent) {
+        bluetoothSettingsReturn=()->chooseBluetooth(parent);
+        startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+    }
+
+    private void showTransferPrompt() {
+        new TopBackDialog(this).onBack(()->{preferences.edit().remove("pending_nuc_transfer").apply();returnToPreviousMenu();})
+            .setTitle("Partij overzetten naar NUC")
+            .setMessage("De partij wordt via Bluetooth overgezet. Op de NUC bevestig je het overzetten; de bestaande partij wordt eerst als herstelkopie opgeslagen.")
+            .setPositiveButton("Verbinden via Bluetooth",(d,w)->chooseBluetooth(this::showTransferPrompt))
+            .setNegativeButton("Annuleren",(d,w)->preferences.edit().remove("pending_nuc_transfer").apply()).show();
+    }
+
     private void chooseLocal() {
         String snapshot=preferences.getString("last_snapshot","");
         if("bluetooth".equals(mode)&&!snapshot.isEmpty()) {
-            new TopBackDialog(this).setTitle("Laatste NUC-stand meenemen?")
+            new TopBackDialog(this).onBack(this::showModeChooser).setTitle("Laatste NUC-stand meenemen?")
                     .setMessage("Kies Overnemen om na verlies van Bluetooth lokaal verder te spelen vanaf de laatst bevestigde stand.")
                     .setPositiveButton("Overnemen",(d,w)->{try{localServer.importSnapshot(snapshot);}catch(Exception e){Toast.makeText(this,"Stand kon niet worden overgenomen.",Toast.LENGTH_LONG).show();}loadMode("local");})
                     .setNegativeButton("Lokale partij openen",(d,w)->loadMode("local")).show();
@@ -188,7 +222,12 @@ public final class MainActivity extends Activity {
         else web.loadUrl("http://127.0.0.1:8765/?remote=1&android=1&transport=bluetooth");
     }
 
-    @Override public void onBackPressed(){if(web.canGoBack())web.goBack();else super.onBackPressed();}
+    @Override public void onBackPressed(){
+        if(web==null){super.onBackPressed();return;}
+        web.evaluateJavascript("Boolean(window.__hittersNavigation && window.__hittersNavigation.back())",handled->{
+            if(!"true".equals(handled)){if(web.canGoBack())web.goBack();else finish();}
+        });
+    }
     @Override protected void onResume(){
         super.onResume();
         if(web!=null&&webPaused){
@@ -197,6 +236,7 @@ public final class MainActivity extends Activity {
             webPaused=false;
         }
         if(updater!=null)updater.resumePendingInstall();
+        if(bluetoothSettingsReturn!=null){Runnable parent=bluetoothSettingsReturn;bluetoothSettingsReturn=null;parent.run();}
     }
     @Override protected void onPause(){
         if(web!=null&&!webPaused){
@@ -221,10 +261,7 @@ public final class MainActivity extends Activity {
             try {
                 String pending=localServer.exportTransfer();
                 if(!preferences.edit().putString("pending_nuc_transfer",pending).commit())throw new java.io.IOException("Overdracht niet opgeslagen");
-                new TopBackDialog(MainActivity.this).setTitle("Partij overzetten naar NUC")
-                    .setMessage("De partij wordt via Bluetooth overgezet. Op de NUC bevestig je het overzetten; de bestaande partij wordt eerst als herstelkopie opgeslagen.")
-                    .setPositiveButton("Verbinden via Bluetooth",(d,w)->chooseBluetooth())
-                    .setNegativeButton("Annuleren",(d,w)->preferences.edit().remove("pending_nuc_transfer").apply()).show();
+                showTransferPrompt();
             } catch(Exception e){Toast.makeText(MainActivity.this,"Geen lokale partij beschikbaar om over te zetten.",Toast.LENGTH_LONG).show();}
         });}
         @JavascriptInterface public String getPendingNucTransfer(){return "local".equals(mode)?"":preferences.getString("pending_nuc_transfer","");}

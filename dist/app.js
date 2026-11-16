@@ -112,7 +112,7 @@ function receive(data){
  if(!data.match?.historyNavigation)celebrateScore(confirmed,data.match);
  revision=data.revision;confirmed=data.match;sharedDraft=null;
  restore(data.match);cache();
- for(const d of document.querySelectorAll('dialog[open]'))if(!['new-match-dialog','connection-health-dialog','matches-dialog','matches-report-dialog','header-menu','autoscoring-dialog','players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
+ for(const d of document.querySelectorAll('dialog[open]'))if(!d.classList.contains('app-dialog')&&!['new-match-dialog','connection-health-dialog','matches-dialog','matches-report-dialog','header-menu','autoscoring-dialog','players-dialog','network-dialog','layout-dialog','transfer-dialog','desktop-update-dialog'].includes(d.id))d.close();
  resetInput();restoreTurnInput();render();
  document.dispatchEvent(new Event('match-synchronized'));
 }

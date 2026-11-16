@@ -20,7 +20,7 @@ Advanced packages: `180-Hitters-Linux-x64.tar.gz` and `180-Hitters-Windows-x64.z
 
 ## Menus
 
-The app starts at its main menu while keeping the current match. The version is centered in the top bar. **TERUG** (Back) is at the top of app menus, dialogs and the match wizard, including long reports.
+The app starts at its main menu while keeping the current match. The version is centered in the top bar. **TERUG** (Back) is at the top of app menus, dialogs and the match wizard, including long reports. Back restores the immediately preceding menu, including its section and scroll position. Nested dialogs return one level at a time. Android Back follows the same app navigation on modern phones; the legacy tablet uses the same behavior for its on-screen and touch controls. Back returns to the immediately preceding screen or menu section, preserving its scroll position and form state. Nested access screens and Android Bluetooth pickers return one level at a time; Android Back and Escape follow the same navigation where available.
 
 Every human player has a name field and a player-list selector directly inside their player card, including when another player is a BOT. Choose a NUC player, a player saved on the current phone/tablet, or an approved online friend, or type a name for the match. List synchronization preserves typing focus and the on-screen keyboard. This applies to all twelve games and the selected members of teams.
 
@@ -33,6 +33,10 @@ Every human player has a name field and a player-list selector directly inside t
 | **App-instellingen** (App settings) | Local display options, updates and application information. |
 
 **Spelers & teams** shows three separate sources with the same list layout: **NUC-spelers** (NUC players), **Mijn spelers** (personal names) and **Online vrienden** (approved online friends). The Online friends item under Online darts opens that same list. Friend names are available in match and team selectors without copying them into the NUC or personal roster. Previously fetched names remain selectable for local play during an internet outage; online access still requires approval. Online lane forms, invitations and access screens use the main menu's dark panels, lime action buttons, responsive cards and top Back control. Registration, approvals and notification preferences are under **Toegang en meldingen** (Access and notifications).
+
+**NUC & verbinding** uses the same dark panels, lime actions and top Back control throughout its connection status, NUC management, display, mouse and network screens. Native Android connection menus share this palette. NUC management groups connections separately from software and power, with the active radio state highlighted. Device settings remain open while live match revisions arrive.
+
+The NUC connection, diagnostics, mouse, display and management screens share the main menu's dark panels, lime actions and touch-sized controls. Native Android mode/Bluetooth choosers use the same palette. NUC management separates connection switches from software and power actions, and highlights the active connection state. Incoming match updates keep these settings screens open.
 
 NUC-only controls appear when connected. The connection indicator shows whether the device controls the NUC. Android system settings and installer screens use Android's own navigation.
 

@@ -1,9 +1,12 @@
 // Reuse existing close handlers, with one consistent return control at the top.
+import {navigation} from './navigation.js';
 const selector='dialog,#tablet-mode-overlay,#tablet-diagnostics-overlay,#tablet-team-overlay,#tablet-match-settings-overlay';
 const bars=new WeakMap();
 const style=document.createElement('link');style.rel='stylesheet';style.href='dialog-navigation.css';document.head.append(style);
 function enhance(root){
+ navigation.register(root);
  if(root.id==='header-menu')return;
+ if(['bluetooth-dialog','connection-health-dialog','mouse-control-dialog','network-dialog','screen-orientation-dialog','venue-dialog','transfer-dialog','desktop-update-dialog','tablet-mode-overlay','tablet-diagnostics-overlay'].includes(root.id)&&!root.classList.contains('app-dialog'))root.classList.add('app-dialog');
  const panel=root.tagName==='DIALOG'?root:root.querySelector('section')||root;
  let bar=bars.get(root);
  if(!bar||!panel.contains(bar)){
@@ -20,6 +23,7 @@ function enhance(root){
   bar.append(back);bars.set(root,bar);
  }
  if(panel.firstElementChild!==bar)panel.prepend(bar);
+ navigation.observe(root);
 }
 document.querySelectorAll(selector).forEach(enhance);
 new MutationObserver(records=>{
@@ -30,4 +34,4 @@ new MutationObserver(records=>{
   for(const node of record.addedNodes)if(node.nodeType===1){if(node.matches(selector))menus.add(node);node.querySelectorAll(selector).forEach(menu=>menus.add(menu));}
  }
  menus.forEach(enhance);
-}).observe(document.body,{childList:true,subtree:true});
+}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open','hidden','style']});

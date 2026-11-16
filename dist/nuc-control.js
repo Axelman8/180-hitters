@@ -11,20 +11,20 @@ document.getElementById('top-actions').append(open);
 const dialog = document.createElement('dialog');
 dialog.id = 'bluetooth-dialog';
 dialog.setAttribute('aria-labelledby', 'bluetooth-title');
-dialog.innerHTML = `<h2 id="bluetooth-title">${androidClient?'Bluetooth en NUC':'Wifi en Bluetooth'}</h2>` +
-  '<section id="tablet-bluetooth-controls" hidden>' +
+dialog.innerHTML = '<h2 id="bluetooth-title">NUC beheren</h2><p>Beheer de verbindingen, software en voeding van de NUC.</p>' +
+  '<section id="tablet-bluetooth-controls" class="app-settings-card" hidden><h3>Tabletverbinding</h3>' +
     '<p id="tablet-bluetooth-status" role="status">Status ophalen…</p>' +
     '<div class="nuc-control-buttons"><button id="tablet-bluetooth-connect" class="primary" type="button">Verbinden met NUC</button>' +
     '<button id="tablet-bluetooth-disconnect" type="button">Verbinding stoppen</button></div>' +
     '<p class="muted">De tablet zoekt alleen nadat je op verbinden hebt gedrukt.</p>' +
   '</section>' +
-  '<section id="nuc-controls" hidden><h3>NUC-verbindingen</h3><p id="nuc-control-status" role="status">Status ophalen…</p>' +
-    '<div class="nuc-control-buttons">' + (androidClient?'':'<button id="nuc-wifi-on" type="button">Wifi aan</button><button id="nuc-wifi-off" type="button">Wifi uit</button>') +
+  '<section id="nuc-controls" hidden><h3>Status NUC</h3><p id="nuc-control-status" role="status">Status ophalen…</p>' +
+    '<section class="app-settings-card"><h3>Verbindingen van de NUC</h3><div class="nuc-control-buttons">' + (androidClient?'':'<button id="nuc-wifi-on" type="button">Wifi aan</button><button id="nuc-wifi-off" type="button">Wifi uit</button>') +
     '<button id="nuc-bluetooth-on" type="button">Bluetooth aan</button>' +
-    '<button id="nuc-bluetooth-off" type="button">Bluetooth uit</button>' +
-    '<button id="nuc-update" type="button">NUC bijwerken</button>' +
+    '<button id="nuc-bluetooth-off" type="button">Bluetooth uit</button></div></section><section class="app-settings-card"><h3>Software en voeding</h3><div class="nuc-control-buttons">' +
+    '<button id="nuc-update" class="primary" type="button">NUC bijwerken</button>' +
     '<button id="nuc-restart" type="button">NUC herstarten</button>' +
-    '<button id="nuc-shutdown" type="button">NUC uitzetten</button></div></section>' +
+    '<button id="nuc-shutdown" class="danger" type="button">NUC uitzetten</button></div></section></section>' +
   '<button id="bluetooth-close" class="wide" type="button">Sluiten</button>';
 document.body.append(dialog);
 
@@ -72,6 +72,10 @@ async function refreshNuc() {
     const update = await request('/api/update/status', {cache: 'no-store'});
     status.textContent = `Wifi: ${data.wifi ? 'aan' : 'uit'} · Bluetooth: ${data.bluetooth ? 'aan' : 'uit'} · ${update.message}`;
     if(androidClient)status.textContent = `Bluetooth: ${data.bluetooth ? 'aan' : 'uit'} · ${update.message}`;
+    for(const kind of ['wifi','bluetooth'])for(const on of [true,false]){
+      const button=document.getElementById(`nuc-${kind}-${on?'on':'off'}`);
+      if(button&&typeof data[kind]==='boolean')button.setAttribute('aria-pressed',String(data[kind]===on));
+    }
   } catch (error) {
     status.textContent = error.message;
   }

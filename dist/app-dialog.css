@@ -1,0 +1,31 @@
+/* Shared settings surfaces use the same palette and spacing as the main menu. */
+body dialog.app-dialog{box-sizing:border-box;width:calc(100vw - 40px);width:min(760px,calc(100vw - 40px));max-width:760px!important;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);padding:22px 26px 26px;border:1px solid var(--line);border-radius:22px;background:#101c23;color:#eef4f4;overflow:auto;overscroll-behavior:contain}
+body dialog.app-dialog::backdrop{background:#050b10c9;backdrop-filter:blur(5px)}
+body .app-dialog .dialog-navigation{background:#101c23;margin-bottom:14px;padding-top:0}
+body .app-dialog h2{font-size:28px;line-height:1.2;letter-spacing:-.03em;margin:0 0 14px}
+body .app-dialog p{font-size:14px;line-height:1.5;color:#b8c9d0}
+body .app-dialog h3{font-size:13px;line-height:1.4;letter-spacing:.05em;text-transform:uppercase;color:#83d9ef;margin:0 0 12px}
+body .app-dialog label{font-size:13px;line-height:1.4;color:#b8c9d0}
+body .app-dialog input,body .app-dialog select{min-height:52px;background:#0c171e;border-color:#40545f;color:#eef4f4}
+body .app-dialog button,body .app-dialog a.primary{min-height:48px;font-size:15px;line-height:1.35;border-radius:10px;white-space:normal;overflow-wrap:anywhere}
+body .app-dialog button:not(.primary){background:#20313b;border-color:var(--line);color:#eef4f4}
+body .app-dialog button.primary,body .app-dialog button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#182416}
+body .app-dialog button:hover{border-color:var(--accent)}
+body .app-dialog button.primary:hover{background:#d9ff92}
+body .app-dialog button.danger{color:#ffad98}
+body .app-dialog .app-settings-card,body .app-dialog fieldset{min-width:0;padding:18px;margin:18px 0;border:1px solid var(--line);border-radius:14px;background:#142129}
+body .app-dialog .app-settings-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+body .app-dialog .app-settings-actions>button{width:100%;margin:0}
+body #connection-health-dialog #connection-health-details{display:grid;grid-template-columns:minmax(90px,.7fr) minmax(0,1fr);gap:0;padding:0;overflow:hidden;background:#142129;border:1px solid var(--line);border-radius:14px}
+#connection-health-dialog #connection-health-details dt,#connection-health-dialog #connection-health-details dd{padding:12px 14px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.4;margin:0}
+#connection-health-dialog #connection-health-details dt{color:#b8c9d0}#connection-health-dialog #connection-health-details dd{font-weight:650;overflow-wrap:anywhere}
+#connection-health-dialog #connection-health-details dt:last-of-type,#connection-health-dialog #connection-health-details dd:last-of-type{border-bottom:0}
+body #bluetooth-dialog #nuc-controls{margin:18px 0 0;padding:0;border:0}
+body .app-dialog #mouse-touchpad{background:#142129;border-color:var(--line)}
+body .app-dialog #mouse-touchpad.active{background:#304638;border-color:var(--accent)}
+body .app-dialog #screen-orientation-current,body .app-dialog #network-current{padding:14px;border:1px solid var(--line);border-radius:14px;background:#142129}
+body .app-dialog>button.wide{margin-top:10px}
+body .app-dialog:not(dialog){position:fixed;inset:0;background:#050b10e8!important;color:#eef4f4!important;overflow:auto;padding:20px 12px!important}
+body .app-dialog:not(dialog)>section{box-sizing:border-box;width:100%!important;max-width:760px!important;margin:0 auto!important;padding:22px 26px!important;border:1px solid var(--line)!important;border-radius:22px!important;background:#101c23!important}
+body .app-dialog:not(dialog)>section>button{margin-top:10px}
+@media(max-width:600px){body dialog.app-dialog{width:calc(100vw - 24px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:16px 18px 20px;border-radius:20px}body .app-dialog h2{font-size:24px}body .app-dialog .app-settings-actions{grid-template-columns:1fr}body .app-dialog .app-settings-card{padding:14px}body .app-dialog:not(dialog)>section{padding:16px 18px!important}.app-dialog .mouse-actions{grid-template-columns:1fr}}

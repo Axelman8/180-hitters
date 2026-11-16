@@ -105,7 +105,9 @@ with tempfile.TemporaryDirectory() as folder:
                 assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
             page.set_viewport_size({'width': 393, 'height': 852})
             page.locator('#players-close').click()
-            page.locator('#toggle-toolbar').click()
+            expect(page.locator('#header-menu')).to_be_visible()
+            expect(page.locator('#navigation-title')).to_have_text('Spelers & teams')
+            page.locator('#navigation-back').click()
             page.locator('#navigation-categories [data-menu="online"]').click()
             expect(page.locator('#club-open')).to_have_text('Online vrienden')
             page.locator('#club-open').click()
@@ -117,6 +119,8 @@ with tempfile.TemporaryDirectory() as folder:
             expect(page.locator('#club-dialog')).to_be_visible()
             expect(page.locator('#club-dialog h2')).to_have_text('Toegang tot online vrienden')
             page.locator('#club-close').click()
+            expect(page.locator('#players-dialog')).to_be_visible()
+            page.locator('#players-close').click()
             # Online forms use the same navigation and remain usable on narrow,
             # folded, tablet and desktop displays. No real lane is created.
             def open_online(button):
@@ -147,7 +151,8 @@ with tempfile.TemporaryDirectory() as folder:
             page.locator('#online-dialog details').filter(has=page.locator('#online-invite-input')).locator('summary').click()
             expect(page.locator('#online-invite-input')).to_be_visible()
             page.locator('#online-close').click()
-            page.locator('#toggle-toolbar').click()
+            expect(page.locator('#navigation-title')).to_have_text('Online darten')
+            page.locator('#navigation-back').click()
             page.locator('#navigation-categories [data-menu="play"]').click()
             page.locator('#settings').click()
             page.locator('.wizard-game').filter(has=page.get_by_text('X01', exact=True)).click()

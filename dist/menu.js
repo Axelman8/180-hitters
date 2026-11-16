@@ -1,6 +1,7 @@
 import './mouse-control.js';
 import './mobile-diagnostics.js';
 import './matches.js';
+import {navigation} from './navigation.js';
 
 const $=id=>document.getElementById(id),actions=$('top-actions'),android=window.DartsAndroid;
 const localNuc=['127.0.0.1','localhost','::1'].includes(location.hostname)&&!android;
@@ -91,21 +92,24 @@ function hide(node,value){if(node.hidden!==value)node.hidden=value;}
 function selectSection(key){
  navigationBack.hidden=false;navigationClose.hidden=true;
  const definition=definitions.find(item=>item.key===key);if(!definition)return;
+ menu.dataset.section=key;
  for(const [name,panel] of Object.entries(groups))hide(panel,name!==key);
  hide($('navigation-overview'),true);hide($('navigation-detail'),false);$('navigation-title').textContent=definition.title;$('navigation-description').textContent=definition.hint;
  $('navigation-scroll').scrollTop=0;$('navigation-back').focus();refreshSections();
 }
-function overview(){navigationBack.hidden=true;navigationClose.hidden=false;hide($('navigation-overview'),false);hide($('navigation-detail'),true);$('navigation-title').textContent='Wat wil je doen?';$('navigation-scroll').scrollTop=0;if(menu.open)$('navigation-categories').querySelector('button').focus();}
+function overview(){delete menu.dataset.section;navigationBack.hidden=true;navigationClose.hidden=false;hide($('navigation-overview'),false);hide($('navigation-detail'),true);$('navigation-title').textContent='Wat wil je doen?';$('navigation-scroll').scrollTop=0;if(menu.open)$('navigation-categories').querySelector('button').focus();}
 function refreshContext(){
  let text='Spelen op de NUC';
  if(android){try{const info=tabletConnection||JSON.parse(android.getConnectionInfo?.()||'{}');text=(info.mode||android.getConnectionMode?.())==='bluetooth'?(info.bluetoothConnected?'NUC via Bluetooth verbonden':'NUC via Bluetooth · verbinding controleren'):'Lokaal spelen op dit apparaat';}catch{text=android.isLocalMode?.()?'Lokaal spelen op dit apparaat':'Bediening van de NUC';}}
  $('navigation-context').textContent=text;$('navigation-version').textContent=versionLabel.textContent;
 }
-function openMenu(section=null){collect();refreshContext();overview();if(!menu.open)menu.showModal();menuToggle.setAttribute('aria-expanded','true');void refreshCameraNavigation(true);if(section)selectSection(section);}
+function openMenu(section=null){collect();refreshContext();overview();if(!menu.open){menu.showModal();navigation.opened(menu);}menuToggle.setAttribute('aria-expanded','true');void refreshCameraNavigation(true);if(section)selectSection(section);}
 function closeMenu(){if(menu.open)menu.close();menuToggle.setAttribute('aria-expanded','false');}
+navigation.register(menu,{capture:()=>({section:menu.dataset.section||null,scroll:$('navigation-scroll').scrollTop}),restore:saved=>{openMenu(saved?.section);$('navigation-scroll').scrollTop=saved?.scroll||0;}});
 menuToggle.onclick=()=>menu.open?closeMenu():openMenu();
 $('navigation-close').onclick=closeMenu;$('navigation-resume').onclick=closeMenu;$('navigation-back').onclick=overview;
 menu.addEventListener('close',()=>menuToggle.setAttribute('aria-expanded','false'));
+menu.addEventListener('cancel',event=>{if(menu.dataset.section){event.preventDefault();overview();}});
 // Close before an existing action opens its own dialog, including async actions.
 menu.addEventListener('click',event=>{if(event.target.closest('.navigation-action-list button,.navigation-action-list a'))closeMenu();},true);
 menu.addEventListener('click',event=>{if(event.target===menu)closeMenu();});

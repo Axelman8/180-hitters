@@ -14,9 +14,9 @@ if (phone) {
   dialog.innerHTML = `<h2>Verbindingsstatus en herstel</h2>
     <p id="connection-health-summary" role="status">Status controleren…</p>
     <dl id="connection-health-details"></dl>
-    <button id="connection-selftest" class="primary wide" type="button">Zelftest uitvoeren</button>
+    <div class="app-settings-actions"><button id="connection-selftest" class="primary wide" type="button">Zelftest uitvoeren</button>
     <button id="connection-repair" class="wide" type="button">Verbinding en bediening herstellen</button>
-    <button id="connection-change" class="wide" type="button">Verbindingsmodus wijzigen</button>
+    <button id="connection-change" class="wide" type="button">Verbindingsmodus wijzigen</button></div>
     <button id="connection-health-close" class="wide" type="button">Sluiten</button>`;
   document.body.append(dialog);
 
