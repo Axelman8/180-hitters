@@ -53,5 +53,15 @@ with tempfile.TemporaryDirectory() as temp:
     assert page.request.get(URL+'/api/state').json()['match']['state']==state,'Sharing changed the saved match'
     assert not errors,(game,errors)
     print('PASS final board preview + shared PNG + unchanged saved match:',game,'legacy' if ASSETS else 'modern',flush=True)
+   # Old tablet/browser clients can download the same PNGs without Android's
+   # native share bridge or an internet connection.
+   downloads=[];page.on('download',lambda download:downloads.append(download.suggested_filename))
+   page.evaluate("for(const key of ['beginPngShareCollection','beginPngSharePart','appendPngShare','finishPngSharePart','finishPngShareCollection'])delete window.DartsAndroid[key];Object.defineProperty(navigator,'share',{value:undefined,configurable:true})")
+   page.context.set_offline(True);page.wait_for_timeout(2300)
+   page.locator('#result-dialog .lives-summary-share').click()
+   deadline=time.monotonic()+10
+   while len(downloads)<3 and time.monotonic()<deadline:page.wait_for_timeout(100)
+   assert len(downloads)==3 and downloads[0].endswith('-eindstand.png'),downloads
+   print('PASS offline browser PNG download fallback, including final board',flush=True)
    browser.close()
  finally:server.terminate();server.wait()
