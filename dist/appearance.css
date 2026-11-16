@@ -6,8 +6,8 @@ body dialog#appearance-dialog.app-dialog{width:calc(100vw - 24px);max-width:1050
 .appearance-fields label{display:block;margin:8px 0;color:#deebee;font-size:14px}
 .appearance-fields select{display:block;width:100%;min-width:0;min-height:44px;margin-top:5px;font-size:14px;padding:9px}
 .appearance-fields p,#appearance-dialog>p{font-size:13px;line-height:1.5;color:#b9cbd2}
-.appearance-fields .appearance-check{display:flex;align-items:center;gap:10px;min-height:44px;margin:0}
-.appearance-check input{width:24px;height:24px;flex:0 0 24px;accent-color:var(--accent)}
+.appearance-fields .appearance-check{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;min-height:44px;margin:0}
+#appearance-dialog .appearance-check input{width:24px;height:24px;min-height:24px;flex:0 0 24px;accent-color:var(--accent)}
 .appearance-player-row{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px}.appearance-player-row input[type=color]{display:block;width:80px;height:44px;padding:4px;background:#14232b;border:1px solid #536975;border-radius:8px}
 .appearance-preview{position:sticky;top:10px;padding:14px;min-width:0;border:1px solid #49606b;border-radius:14px;background:#101f28}
 .appearance-preview h3{margin:0 0 12px;color:var(--accent)}
