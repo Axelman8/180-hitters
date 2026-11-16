@@ -20,8 +20,11 @@ export function botDifficulty(state,index=state?.active){
   return {average,equivalent,darts:p.darts};
  }).filter(value=>Number.isFinite(value.average)&&Number.isFinite(value.equivalent));
  const strongest=humans.sort((a,b)=>b.equivalent-a.equivalent)[0];
- const level=strongest?Math.round(clamp(base+Math.max(0,strongest.equivalent-base)/2,base,100)*10)/10:base;
- return {base,level,adaptive:!!strongest,reference:strongest?.average,metric:marks?'MPR':'gemiddelde',samples:strongest?.darts||0};
+ // Follow a clearly stronger human, staying five below their average. Do not
+ // raise the selected base for small differences or fewer than nine darts.
+ const adaptive=!!strongest&&strongest.equivalent>=base+10-1e-8;
+ const level=adaptive?Math.round(clamp(strongest.equivalent-5,base,100)*10)/10:base;
+ return {base,level,adaptive,reference:strongest?.average,metric:marks?'MPR':'gemiddelde',samples:strongest?.darts||0};
 }
 export function botSpread(level){
  const table=[[40,20],[45,17.7],[50,16],[55,14.4],[60,13.2],[70,11.1],[80,9.3],[90,7.7],[100,6.3]];

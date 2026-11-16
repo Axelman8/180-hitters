@@ -5,14 +5,24 @@ import {botMarkReferences,botSpread} from '../dist/bot-level.js';
 const fresh=(game='x01',scoring='standard',count=2)=>newMatch(['BOT','Human','Human 2','BOT 2'].slice(0,count),501,'double',1,{game,scoring,maxRounds:0,botLevels:[40,0,0,50].slice(0,count)});
 let state=fresh(),human=state.players[1];human.darts=9;human.points=150;
 assert.equal(botDifficulty(state).level,45);
-human.points=180;assert.equal(botDifficulty(state).level,50);
+human.points=180;assert.equal(botDifficulty(state).level,55);
+human.points=149.7;assert.equal(botDifficulty(state).level,40,'Below the ten-point gap, keep the base level');
+human.points=135;assert.equal(botDifficulty(state).adaptive,false);
+human.points=210;assert.equal(botDifficulty(state).level,65,'Stay five below a stronger human rather than taking half the gap');
 human.points=90;assert.equal(botDifficulty(state).level,40);
 human.darts=6;human.points=360;assert.equal(botDifficulty(state).level,40);
 human.darts=9;human.points=540;assert.equal(botDifficulty(state).level,100);
 assert.equal(botDifficulty(state,1).level,0);
+for(const options of [{game:'gotcha'},{game:'x01',training121:true}]){
+ const s=newMatch(['BOT','Human'],501,'double',1,{...options,botLevels:[40,0]});
+ s.players[1].darts=9;s.players[1].points=210;
+ assert.equal(botDifficulty(s).level,65,`${options.training121?'121':options.game} follows the human scoring average`);
+}
 state=fresh('x01','standard',4);state.players[1].darts=state.players[2].darts=9;state.players[1].points=150;state.players[2].points=210;
-assert.equal(botDifficulty(state,0).level,55);assert.equal(botDifficulty(state,3).level,60);
-state.players[3].points=540;state.players[3].darts=9;assert.equal(botDifficulty(state).level,55,'Bots must not form an escalating feedback loop');
+assert.equal(botDifficulty(state,0).level,65);assert.equal(botDifficulty(state,3).level,65);
+state.players[3].points=540;state.players[3].darts=9;assert.equal(botDifficulty(state).level,65,'Bots must not form an escalating feedback loop');
+state.players[1].points=state.players[2].points=177;assert.equal(botDifficulty(state,3).level,50,'BOT 50 stays at base against an average below 60');
+state.players[1].points=180;assert.equal(botDifficulty(state,3).level,55);
 const copy=structuredClone(state);botDifficulty(state);assert.deepEqual(state,copy);
 for(const game of ['cricket','tactics'])for(const scoring of ['standard','cut-throat','no-score']){
  const s=fresh(game,scoring),ref=botMarkReferences[game][scoring];s.players[1].darts=30;s.players[1].totalMarks=ref[1]*10;
@@ -20,7 +30,7 @@ for(const game of ['cricket','tactics'])for(const scoring of ['standard','cut-th
  s.players[1].cricketPoints=100000;assert.equal(botDifficulty(s).level,45,'Scoreboard points must not be treated as 501 average');
  s.players[1].totalMarks=ref[0]*10;assert.equal(botDifficulty(s).level,40);
 }
-console.log('PASS: half-gap adaptation, minimum sample, bounds, four players, no bot feedback, immutable stats and MPR-based skill');
+console.log('PASS: ten-point trigger, five below human, minimum sample, bounds, four players, no bot feedback, immutable stats and MPR-based skill');
 const d=makeDart;
 for(const game of ['cricket','tactics']){
  let s=fresh(game);s.players[0].marks[20]=3;
@@ -61,10 +71,10 @@ for(const game of ['cricket','tactics'])for(const scoring of ['standard','cut-th
  }
 }
 console.log('PASS: 144 complete Cricket/Tactics matches, all scoring rules, 2-4 players, no artificial round cap');
-for(const target of [45,55,75,95]){
+for(const target of [45,55,65,75,95]){
  let points=0,darts=0;
  for(let game=0;game<800;game++){
-  let s=fresh();s.players[1].darts=9;s.players[1].points=(2*target-40)*3;
+  let s=fresh();s.players[1].darts=9;s.players[1].points=(target+5)*3;
   for(let turn=0;turn<300&&s.phase==='playing';turn++){
    s.active=0;let hits=[],input;do{hits.push(botDart(s,hits,random));input=botVisit(s,hits);}while(!input);s=applyTurn(s,input);
   }

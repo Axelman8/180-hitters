@@ -154,7 +154,7 @@ function renderIndividuals(content){
  const types=el('div',undefined,'wizard-options');
  for(const [level,label] of [[0,'Speler'],[40,'BOT 40'],[50,'BOT 50']]){const choice=button(label,()=>setBotLevel(slot,level));choice.setAttribute('aria-pressed',String((Number(names()[slot]?.dataset.botLevel)||0)===level));types.append(choice);}
  type.append(types);
- const explanation=el('details',undefined,'wizard-bot-explanation');explanation.append(el('summary','Uitleg BOT-niveaus'),el('p','40 en 50 zijn basisgemiddelden per drie darts bij 501, dubbel-uit. Na negen menselijke darts volgt de BOT de helft van het hogere gemiddelde, tot niveau 100. Cricket/Tactics gebruiken marks als maatstaf. Bij andere trainingen blijft het basisniveau gelden. Een BOT neemt één spelersplek in, ook met vier spelers.','wizard-hint'));type.append(explanation);content.append(type);
+ const explanation=el('details',undefined,'wizard-bot-explanation');explanation.append(el('summary','Uitleg BOT-niveaus'),el('p','40 en 50 zijn basisgemiddelden per drie darts bij 501, dubbel-uit. Na minstens negen menselijke darts stijgt de BOT alleen als jouw gemiddelde minstens 10 boven de basis ligt. Hij richt zich dan op 5 onder jouw gemiddelde, tot niveau 100. Cricket/Tactics gebruiken marks als maatstaf. Bij andere trainingen blijft het basisniveau gelden. Een BOT neemt één spelersplek in, ook met vier spelers.','wizard-hint'));type.append(explanation);content.append(type);
  if(selected==='fourinarow')renderFourSymbols(content);
 }
 function renderTeams(content){

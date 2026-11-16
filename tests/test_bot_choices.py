@@ -50,5 +50,11 @@ with tempfile.TemporaryDirectory() as temp:
      assert not errors,(game,errors)
      assert not page.locator('#message').inner_text().startswith('BOT kon'),(game,page.locator('#message').inner_text())
     print('PASS visible BOT',level,'all fifteen games with shared live darts and saved turns','legacy tablet' if LEGACY else 'modern',flush=True)
+   if not page.locator('#header-menu').is_visible():page.locator('#toggle-toolbar').click()
+   for base,average,expected,darts in [(40,49.9,40,9),(40,50,45,9),(40,70,65,9),(50,59.9,50,9),(50,60,55,9),(50,70,65,9),(50,100,50,6)]:
+    state=seed('x01',base);state['players'][1]['darts']=darts;state['players'][1]['points']=average*darts/3
+    assert page.request.post(URL+'/api/state',data={'revision':saved()['revision'],'match':{'state':state,'undo':[]}}).ok
+    expect(page.locator('#bot-status strong small')).to_have_text(f'Niveau {expected} \u00b7 basis {base}')
+   print('PASS visible adaptive level: ten-point threshold, five below player, both bases and minimum sample',flush=True)
    browser.close()
  finally:server.terminate();server.wait()

@@ -23,7 +23,7 @@ export function paintBot(state,hits=[],correcting=false){
  panel.hidden=!playing;if(!playing)return;
  panel.replaceChildren();const label=document.createElement('strong'),name=document.createElement('b'),level=document.createElement('small'),difficulty=botDifficulty(state);
  name.textContent=`${state.players[state.active].name} gooit`;level.textContent=`Niveau ${difficulty.level.toLocaleString('nl-NL',{maximumFractionDigits:1})} · basis ${difficulty.base}`;
- label.title=difficulty.adaptive?`Bijgestuurd op ${difficulty.reference.toFixed(2)} ${difficulty.metric} van de sterkste menselijke speler (${difficulty.samples} darts).`:'Basisniveau; bijsturing start na negen darts van een menselijke speler in X01, 121, Gotcha, Cricket en Tactics.';
+ label.title=difficulty.adaptive?`Bijgestuurd op ${difficulty.reference.toFixed(2)} ${difficulty.metric} van de sterkste menselijke speler (${difficulty.samples} darts).`:'Basisniveau; na negen menselijke darts volgt bijsturing bij minimaal 10 boven de basis. De BOT blijft 5 onder dat niveau. Cricket/Tactics gebruiken marks per ronde.';
  label.append(name,level);panel.append(label);
  const plan=gotchaPlan(state,hits)||seaPlan(state,hits);
  if(plan){const strategy=document.createElement('small');strategy.className='bot-strategy';const target=plan.target.number===25?(plan.target.mult===2?'Bull':'25'):(plan.target.mult===1?'S':plan.target.mult===2?'D':'T')+plan.target.number;strategy.textContent=`Richt op ${target} · ${plan.kind==='reset'?state.players[plan.opponent].name+' op 0':plan.kind==='finish'?'Uitgooien':plan.kind==='finish-cell'?'Beschadigd scheepsvak afmaken':plan.kind==='hunt'?'Geraakt schip opsporen':plan.kind==='search'?'Onbekend scheepsvak zoeken':'Score opbouwen'}`;label.append(strategy);}

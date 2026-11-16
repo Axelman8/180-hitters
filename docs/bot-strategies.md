@@ -24,6 +24,8 @@ Comparable tactical choices vary between games, players and visits. The same vis
 
 The inner and outer bull have distinct aiming positions. Scattering uses the same geometric model on every game; strategy never converts a miss into a hit.
 
+After at least nine human darts in scoring games, an average at least 10 above the selected base raises the BOT target to 5 below the human average (within the calibrated 40 to 100 range). Smaller differences retain the base. Cricket/Tactics use their MPR-to-skill reference; positional games and fixed-target drills keep base accuracy.
+
 ## Validation
 
 - `tests/bot-audit.mjs`: varied opening distributions, public knowledge, ship hunting, single-bull corner choices and per-dart tactical invariants across all fifteen games, both levels and two to four players.
