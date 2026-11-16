@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import {newMatch,applyTurn,makeDart} from '../dist/engine.js';
 import {botDart,botVisit,chooseBotTarget,botDifficulty,botSigma} from '../dist/bot.js';
 import {botMarkReferences,botSpread} from '../dist/bot-level.js';
-const fresh=(game='x01',scoring='standard',count=2)=>newMatch(['BOT','Human','Human 2','BOT 2'].slice(0,count),501,'double',1,{game,scoring,maxRounds:0,botLevels:[40,0,0,50].slice(0,count)});
+// Match identity is part of the public tactical RNG. Seed it as well as the
+// physical darts, so an accuracy audit does not depend on the wall clock.
+let matchNumber=0;const identify=s=>({...s,startedAt:1700000000000+(++matchNumber)*2654435761});
+const fresh=(game='x01',scoring='standard',count=2)=>identify(newMatch(['BOT','Human','Human 2','BOT 2'].slice(0,count),501,'double',1,{game,scoring,maxRounds:0,botLevels:[40,0,0,50].slice(0,count)}));
 let state=fresh(),human=state.players[1];human.darts=9;human.points=150;
 assert.equal(botDifficulty(state).level,45);
 human.points=180;assert.equal(botDifficulty(state).level,55);
@@ -64,7 +67,7 @@ for(const game of ['cricket','tactics']){
 let seed=726153;const random=()=>((seed=(1664525*seed+1013904223)>>>0)/4294967296);
 for(const game of ['cricket','tactics'])for(const scoring of ['standard','cut-throat','no-score'])for(const count of [2,3,4]){
  for(let run=0;run<8;run++){
-  let s=newMatch(['A','B','C','D'].slice(0,count),501,'double',1,{game,scoring,maxRounds:0,botLevels:[40,50,40,50].slice(0,count)});
+  let s=identify(newMatch(['A','B','C','D'].slice(0,count),501,'double',1,{game,scoring,maxRounds:0,botLevels:[40,50,40,50].slice(0,count)}));
   let visits=0;
   while(s.phase==='playing'&&visits++<400){let hits=[],turn;do{hits.push(botDart(s,hits,random));turn=botVisit(s,hits);}while(!turn);s=applyTurn(s,turn);}
   assert.notEqual(s.phase,'playing',`${game}/${scoring}/${count} stalled`);
