@@ -46,7 +46,7 @@ function fourTarget(state,hits){
  for(const cell of open){
   let score=marks[cell]*8;
   const candidate=[...owners];candidate[cell]=state.active;
-  if(fourWinningLine(candidate,state.active))score+=1000;
+  const wins=!!fourWinningLine(candidate,state.active);
   for(let opponent=0;opponent<state.players.length;opponent++)if(opponent!==state.active){candidate[cell]=opponent;if(fourWinningLine(candidate,opponent))score+=500;}
   // Position inside promising four-cell lines, including both diagonals.
   const row=Math.floor(cell/5),col=cell%5;
@@ -55,11 +55,14 @@ function fourTarget(state,hits){
    if(line.some(([r,c])=>r<0||r>4||c<0||c>4))continue;
    const values=line.map(([r,c])=>owners[r*5+c]);if(values.every(owner=>owner===null||owner===state.active))score+=1+values.filter(owner=>owner===state.active).length*4;
   }
+  // Winning ourselves always outranks blocking, even with three opponents.
+  if(wins)return fourAim(state,cell,marks);
   if(score>bestScore){bestScore=score;best=cell;}
  }
  if(best===null)return aim(20);
- const id=state.fourBoard[best];return {...aim(id==='bb'||id.startsWith('sb')?25:Number(id.slice(1)),id==='bb'?2:id.startsWith('sb')?1:marks[best]>=2?1:3),cell:best};
+ return fourAim(state,best,marks);
 }
+function fourAim(state,cell,marks){const id=state.fourBoard[cell];return {...aim(id==='bb'||id.startsWith('sb')?25:Number(id.slice(1)),id==='bb'?2:id.startsWith('sb')?1:marks[cell]>=2?1:3),cell};}
 function previewSonny(state,hits){
  if(!hits.length)return state;
  // These games accept complete visits. Padding misses gives a rules-accurate
@@ -136,26 +139,62 @@ export function gotchaPlan(state,hits=[]){
  }
  return {kind:'score',target:xTarget(state,remaining,true,left)};
 }
+function seaTarget(state,hits){
+ const live=previewParty(state,hits),actor=state.active,own=live.players[actor];
+ // Read ship identities only for cells that have already been struck. Local
+ // matches store full fleets, but the BOT gets no knowledge advantage from it.
+ const enemies=live.players.filter((p,i)=>i!==actor&&!p.seaEliminated).map(p=>{
+  const known=p.seaFleet.map((ship,cell)=>p.seaShots[cell]>0?ship:0);
+  const sunk=new Set([1,2,3].filter(id=>known.filter((ship,cell)=>ship===id&&p.seaHull[cell]>=2).length>=({1:3,2:2,3:2}[id])));
+  return {player:p,known,sunk};
+ });
+ let best=null,value=-Infinity;
+ for(let cell=0;cell<20;cell++){
+  let weight=0,possible=false,wounded=false;
+  for(const {player:p,known,sunk} of enemies){
+   if(p.seaShots[cell]>0){
+    // Known water and destroyed cells add no value. The same number can still
+    // be useful against another opponent because one shot attacks every fleet.
+    if(known[cell]&&p.seaHull[cell]<2){possible=true;wounded=true;weight+=12;}
+   }else{
+    possible=true;weight+=2;
+    for(const neighbour of [cell-5,cell+5,...(cell%5?[cell-1]:[]),...(cell%5<4?[cell+1]:[])]){
+     if(neighbour>=0&&neighbour<20&&known[neighbour]&&!sunk.has(known[neighbour]))weight+=3;
+    }
+   }
+  }
+  if(!possible)continue;
+  weight-=own.seaFired[cell]*.1;
+  if(weight>value){value=weight;best=aim(cell+1,wounded?1:2);}
+ }
+ return best||aim(20);
+}
+function shanghaiTarget(state,hits,left){
+ const missing=[3,2,1].filter(mult=>!hits.some(h=>h.number===state.partyTarget&&h.mult===mult));
+ // Once a Shanghai is impossible this visit, maximize points instead.
+ return aim(state.partyTarget,missing.length<=left?missing[0]||3:3);
+}
+export function seaPlan(state,hits=[]){
+ if(state.game!=='seabattle'||state.phase!=='playing'||hits.length>=3||previewParty(state,hits).phase!=='playing')return null;
+ const target=seaTarget(state,hits);
+ return {target,kind:target.mult===1?'finish-cell':'search'};
+}
+function keepGolfStroke(state,hits){
+ const stroke=golfStroke(hits.at(-1),state.partyTarget);
+ if(stroke===1)return true;
+ if(stroke>3)return false;
+ // Bank a valid target rather than risk replacing it with five strokes.
+ // On the last hole, chase a better result if banking would definitely lose
+ // to someone who has already completed all holes.
+ const own=state.players[state.active];
+ const finished=state.players.filter((p,i)=>i!==state.active&&p.golfScores.length===state.golfHoles);
+ return !finished.length||own.golfStrokes+stroke<=Math.min(...finished.map(p=>p.golfStrokes));
+}
 export function chooseBotTarget(state,hits=[]){
  const p=state.players[state.active],left=3-hits.length;
  if(state.game==='golf')return aim(state.partyTarget,2);
- if(state.game==='shanghai')return aim(state.partyTarget,[3,2,1].find(mult=>!hits.some(h=>h.number===state.partyTarget&&h.mult===mult))||3);
- if(state.game==='seabattle'){
-  const live=previewParty(state,hits),own=live.players[state.active],enemies=live.players.filter((p,i)=>i!==state.active&&!p.seaEliminated);
-  // The BOT uses only observed shots, never the unhit positions in a fleet.
-  let best=1,value=-Infinity;
-  for(let cell=0;cell<20;cell++){
-   let weight=0;
-   for(const enemy of enemies){
-    if(enemy.seaShots[cell]>0){if(enemy.seaFleet[cell]&&enemy.seaHull[cell]<2)weight+=12;else weight-=4;}
-    else{
-     weight+=2;
-     for(const neighbour of [cell-5,cell+5,...(cell%5?[cell-1]:[]),...(cell%5<4?[cell+1]:[])])if(neighbour>=0&&neighbour<20&&enemy.seaShots[neighbour]>0&&enemy.seaFleet[neighbour])weight+=3;
-    }
-   }
-   weight-=own.seaFired[cell]*.1;if(weight>value){value=weight;best=cell+1;}
-  }return aim(best,2);
- }
+ if(state.game==='shanghai')return shanghaiTarget(state,hits,left);
+ if(state.game==='seabattle')return seaTarget(state,hits);
  if(state.game==='fourinarow')return fourTarget(state,hits);
  if(state.game==='tenlives')return aim(p.livesTarget,p.livesTarget===25?2:state.livesMode==='triple'?3:2);
  if(state.game==='bobs27')return aim(state.bobsTarget,2);
@@ -174,8 +213,8 @@ export function chooseBotTarget(state,hits=[]){
  if(state.game==='killer'){
   if(state.killerStage==='assigning')return aim(sectors.find(n=>!state.players.some(other=>other.killerNumber===n)),1);
   const modern=state.killerRules==='three-hit';
-  if(modern?!own.killerActivated:own.killerLetters<6)return aim(own.killerNumber,modern?3:1);
-  const victim=shadow.players.filter((other,i)=>i!==state.active&&!other.killerEliminated).sort((a,b)=>modern?a.killerLives-b.killerLives:a.killerLetters-b.killerLetters)[0];return aim(victim?.killerNumber||p.killerNumber,modern?3:1);
+  if(modern?!own.killerActivated:own.killerLetters<6)return aim(own.killerNumber,modern&&own.killerLetters<2?3:1);
+  const victim=shadow.players.filter((other,i)=>i!==state.active&&!other.killerEliminated).sort((a,b)=>modern?a.killerLives-b.killerLives:a.killerLetters-b.killerLetters)[0];return aim(victim?.killerNumber||p.killerNumber,modern&&victim?.killerLives>1?3:1);
  }
  if(state.game==='twentyone')return aim(own.twentyOneTarget===21?25:own.twentyOneTarget,own.twentyOneTarget===21?2:3);
  throw Error('Voor dit spel ontbreekt een BOT-strategie.');
@@ -189,7 +228,7 @@ export function botDart(state,hits=[],random=Math.random){
  return {...hit,cell,label:hit.number===25?(hit.mult===2?'BB':'sB'):hit.label};
 }
 export function botVisit(state,hits){
- if(state.game==='golf'&&state.golfScoring==='last'&&hits.length<3&&golfStroke(hits[hits.length-1],state.partyTarget)>1)return null;
+ if(state.game==='golf'&&state.golfScoring==='last'&&hits.length<3&&!keepGolfStroke(state,hits))return null;
  if(state.game==='tenlives'){const hit=hits.at(-1),p=state.players[state.active];return {trainingHit:hit.number===p.livesTarget&&hit.mult===(p.livesTarget===25?2:state.livesMode==='triple'?3:2),botDart:hit};}
  if(state.game==='killer'&&state.killerStage==='assigning'){
   const hit=hits[0];if(hit.number<1||hit.number>20||state.players.some(p=>p.killerNumber===hit.number))return null;

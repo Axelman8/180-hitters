@@ -1,4 +1,4 @@
-import {botDart,botVisit,botLevel,botDifficulty,gotchaPlan} from './bot.js';
+import {botDart,botVisit,botLevel,botDifficulty,gotchaPlan,seaPlan} from './bot.js';
 let panel;
 // Hitters Challenge commits every physical dart immediately. Reconstruct the
 // current group from that shared history so a new revision does not erase the
@@ -25,8 +25,8 @@ export function paintBot(state,hits=[],correcting=false){
  name.textContent=`${state.players[state.active].name} gooit`;level.textContent=`Niveau ${difficulty.level.toLocaleString('nl-NL',{maximumFractionDigits:1})} · basis ${difficulty.base}`;
  label.title=difficulty.adaptive?`Bijgestuurd op ${difficulty.reference.toFixed(2)} ${difficulty.metric} van de sterkste menselijke speler (${difficulty.samples} darts).`:'Basisniveau; bijsturing start na negen darts van een menselijke speler in X01, 121, Gotcha, Cricket en Tactics.';
  label.append(name,level);panel.append(label);
- const plan=gotchaPlan(state,hits);
- if(plan){const strategy=document.createElement('small');strategy.className='bot-strategy';const target=plan.target.number===25?(plan.target.mult===2?'Bull':'25'):(plan.target.mult===1?'S':plan.target.mult===2?'D':'T')+plan.target.number;strategy.textContent=`Richt op ${target} · ${plan.kind==='reset'?state.players[plan.opponent].name+' op 0':plan.kind==='finish'?'Uitgooien':'Score opbouwen'}`;label.append(strategy);}
+ const plan=gotchaPlan(state,hits)||seaPlan(state,hits);
+ if(plan){const strategy=document.createElement('small');strategy.className='bot-strategy';const target=plan.target.number===25?(plan.target.mult===2?'Bull':'25'):(plan.target.mult===1?'S':plan.target.mult===2?'D':'T')+plan.target.number;strategy.textContent=`Richt op ${target} · ${plan.kind==='reset'?state.players[plan.opponent].name+' op 0':plan.kind==='finish'?'Uitgooien':plan.kind==='finish-cell'?'Beschadigd scheepsvak afmaken':plan.kind==='search'?'Onbekend scheepsvak zoeken':'Score opbouwen'}`;label.append(strategy);}
  const shown=botDisplayDarts(state,hits);
  for(let index=0;index<3;index++){const dart=document.createElement('span');dart.textContent=shown[index]?.label||`Pijl ${index+1}`;dart.setAttribute('aria-label',`Pijl ${index+1}${shown[index]?': '+shown[index].label:''}`);dart.className=shown[index]?'thrown':index===shown.length?'aiming':'';panel.append(dart);}
 }

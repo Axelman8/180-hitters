@@ -47,6 +47,7 @@ jobs:
           node --input-type=module -e "import {runTests} from './dist/tests/engine.test.js'; console.log(runTests())"
           node tests/bot-engine.mjs
           node tests/bot-adaptive.mjs
+          node tests/bot-strategy.mjs
           node tests/solo-scoring.mjs
           node tests/camera-game-rules.mjs
           node tests/killer-rules.mjs

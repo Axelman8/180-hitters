@@ -98,6 +98,8 @@ Choose a human, BOT 40 or BOT 50 for each seat. Bots throw separate darts with v
 
 The selected level targets a three-dart average over complete 501 straight-in/double-out legs, including checkouts and busts. Individual matches vary. Each other game uses a strategy suited to its objective.
 
+Bots re-evaluate their plan after each dart. Zeeslag avoids known water and wrecks, ignores eliminated fleets and uses only observed enemy positions; its banner distinguishes a planned search from finishing a damaged cell. Shanghai switches to point scoring when a combination is no longer reachable, last-dart Golf banks useful strokes and Killer uses a single when one hit is enough. See the [strategy review for all fifteen games](docs/bot-strategies.md), including scoring variants and regression checks. Natural misses remain possible on both levels.
+
 After nine human darts in X01, 121 or Gotcha, the bot follows half of the positive gap above its base: a human averaging 50 against BOT 40 gives a target of 45. The strongest human provides the reference, without bots feeding back into one another. Cricket/Tactics use marks-per-round references and actively address point deficits, scoring opportunities and legal finishes. Other drills retain base accuracy. The live banner shows the current target and base.
 
 Bot turns are coordinated across the NUC and controllers to prevent duplicates. Camera input waits during bot turns. Online lanes currently use human participants.
