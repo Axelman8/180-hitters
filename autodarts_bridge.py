@@ -111,12 +111,20 @@ class AutoDartsBridge:
         persist()
         self.enabled = False
         self.pause('Kalibratie: score-invoer gepauzeerd; proefworpen tellen niet mee.')
-        self.calibration = {'stage': 'starting', 'message': 'Bestaande kalibratie bewaren en AutoDarts voorbereiden...',
+        self.calibration = {'stage': 'starting', 'message': 'AutoDarts voorbereiden en bestaande kalibratie bewaren...',
                             'startedAt': int(time.time()*1000), 'job': uuid.uuid4().hex}
         threading.Thread(target=self._calibrate, daemon=True, name='autodarts-calibration').start()
 
     def _calibrate(self):
         try:
+            if not (self.latest or {}).get('running'):
+                with urlopen(Request(self.base+'/api/start', method='PUT'), timeout=5) as response:
+                    response.read(1024)
+                deadline = time.monotonic()+20
+                while time.monotonic() < deadline:
+                    if json.loads(self.fetch('state', 100_000)).get('running'): break
+                    time.sleep(.5)
+                else: raise ValueError('AutoDarts start niet. Controleer de camera’s op de NUC.')
             # Save just board geometry/ellipses, never account credentials.
             folder = self.directory.parent / 'camera-calibration-backups'
             if folder.is_symlink(): raise OSError('Back-upmap mag geen koppeling zijn.')
@@ -130,14 +138,6 @@ class AutoDartsBridge:
                     data = b'null'
                 json.loads(data)
                 (job / (endpoint + '.json')).write_bytes(data)
-            if not (self.latest or {}).get('running'):
-                with urlopen(Request(self.base+'/api/start', method='PUT'), timeout=5) as response:
-                    response.read(1024)
-                deadline = time.monotonic()+20
-                while time.monotonic() < deadline:
-                    if json.loads(self.fetch('state', 100_000)).get('running'): break
-                    time.sleep(.5)
-                else: raise ValueError('AutoDarts start niet. Controleer de camera’s op de NUC.')
             with self.lock:
                 self.calibration.update(stage='calibrating', message='AutoDarts kalibreert het bord. Houd het bord leeg.')
             for attempt in range(12):

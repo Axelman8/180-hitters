@@ -13,7 +13,7 @@ class Detector(BaseHTTPRequestHandler):
  def log_message(self,*args):pass
  def do_GET(self):
   if self.failure=='backup' and self.path.endswith('/ellipses'):self.send_error(500);return
-  value=self.value if self.path=='/api/state' else {'calibrated':True,'numCams':3,'cams':[]} if self.path.endswith('/geometry') else {'0':{},'1':{},'2':{}}
+  value=self.value if self.path=='/api/state' else {'calibrated':bool(self.value['running']),'numCams':3 if self.value['running'] else 0,'cams':[]} if self.path.endswith('/geometry') else {'0':{},'1':{},'2':{}}
   self.send_response(200);self.end_headers();self.wfile.write(json.dumps(value).encode())
  def do_PUT(self):
   assert self.path=='/api/start';Detector.starts+=1;Detector.value=native([])
@@ -94,5 +94,7 @@ class CalibrationTest(unittest.TestCase):
   Detector.value={**native([]),'running':False,'status':'stopped'};self.bridge.observe(Detector.value)
   with self.bridge.lock:self.bridge.start_calibration()
   self.wait('testing');self.assertEqual(Detector.starts,1);self.assertEqual(len(Detector.posts),1);self.assertFalse(self.bridge.enabled)
+  folder=next((Path(self.temp.name)/'camera-calibration-backups').iterdir())
+  self.assertEqual(json.loads((folder/'geometry.json').read_text())['numCams'],3,'Back up the loaded saved calibration, not the stopped detector runtime')
 
 if __name__=='__main__':unittest.main()
