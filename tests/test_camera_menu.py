@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory() as tmp:
      else:
       expect(tile).to_have_count(0)
       expect(page.locator('body>header>#camera-game-controls')).to_be_visible();assert page.locator('#camera-game-controls').count()==1
-      controls=[page.locator(id).bounding_box() for id in ['#mode-status','#camera-game-on','#camera-game-off','#toggle-toolbar']]
+      controls=[page.locator(id).bounding_box() for id in ['#mode-status','#camera-game-toggle','#camera-calibration-open','#toggle-toolbar']]
       for box in controls:assert box['x']>=0 and box['x']+box['width']<=width+1,controls
       for a,b in zip(controls,controls[1:]):assert a['x']+a['width']<=b['x']+1,controls
       assert max(box['y'] for box in controls)-min(box['y'] for box in controls)<20,controls
@@ -45,12 +45,14 @@ with tempfile.TemporaryDirectory() as tmp:
       version=page.locator('#app-version').bounding_box()
       for box in controls:assert version['y']>=box['y']+box['height']-1 or version['x']+version['width']<=box['x'] or version['x']>=box['x']+box['width'],(box,version,page.locator('body>header').evaluate('e=>[e.getBoundingClientRect().toJSON(),getComputedStyle(e).padding,getComputedStyle(e).alignItems,getComputedStyle(e).minHeight]'))
       page.screenshot(path=str(root/f'.tools/header-cameras-{width}.png'))
-      page.locator('#camera-game-on').click();expect(page.locator('#camera-game-on')).to_have_attribute('aria-pressed','true')
-      page.locator('#camera-game-on').click()
-      deadline=time.monotonic()+4
-      while ('reset',True) not in writes and time.monotonic()<deadline:page.wait_for_timeout(50)
-      page.locator('#camera-game-off').click();expect(page.locator('#camera-game-off')).to_have_attribute('aria-pressed','true')
-      assert writes==[('configure',True),('reset',True),('configure',False)],writes
+      toggle=page.locator('#camera-game-toggle');calibrate=page.locator('#camera-calibration-open')
+      expect(toggle).to_have_text('Camera uit');expect(calibrate).to_be_disabled()
+      assert toggle.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(143, 48, 56)'
+      assert calibrate.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(38, 50, 59)'
+      toggle.click();expect(toggle).to_have_attribute('aria-pressed','true');expect(toggle).to_have_text('Camera aan');expect(calibrate).to_be_enabled()
+      assert toggle.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(66, 117, 46)'
+      toggle.click();expect(toggle).to_have_attribute('aria-pressed','false');expect(calibrate).to_be_disabled()
+      assert writes==[('configure',True),('configure',False)],writes
       connection['bluetoothConnected']=False;page.evaluate('window.cameraTestConnection.bluetoothConnected=false')
       expect(tile).to_be_hidden(timeout=7000);expect(page.locator('#camera-game-controls')).not_to_be_visible()
       expect(page.locator('#header-menu')).not_to_be_visible()

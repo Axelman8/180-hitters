@@ -102,7 +102,7 @@ with tempfile.TemporaryDirectory() as temp:
                         let cameras=document.getElementById('camera-game-controls');
                         if(!cameras){
                             cameras=document.createElement('div');cameras.id='camera-game-controls';cameras.className='header-camera-controls';
-                            cameras.innerHTML='<button>Camera aan / herstart</button><button>Camera uit</button>';
+                            cameras.innerHTML='<button id="camera-game-toggle">Camera aan</button><button id="camera-calibration-open">Kalibreren</button>';
                             document.querySelector('header').append(cameras);
                         }
                         cameras.hidden=false;

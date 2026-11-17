@@ -47,8 +47,8 @@ with tempfile.TemporaryDirectory() as tmp:
             menu_box = page.locator('#toggle-toolbar').bounding_box()
             assert mode_box['x'] < menu_box['x'] and abs(mode_box['y'] - menu_box['y']) < 2
             page.locator('#navigation-categories [data-menu="nuc"]').click()
-            expect(page.locator('#camera-game-on')).to_be_visible()
-            expect(page.locator('#camera-game-off')).to_be_visible()
+            expect(page.locator('#camera-game-toggle')).to_be_visible()
+            expect(page.locator('#camera-calibration-open')).to_be_visible()
             expect(page.locator('#network-open')).to_be_hidden()
             expect(page.locator('#bluetooth-open')).to_have_text('NUC beheren')
 

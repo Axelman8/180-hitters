@@ -60,8 +60,8 @@ with tempfile.TemporaryDirectory() as tmp:
             mode_box = android.locator('#mode-status').bounding_box()
             menu_box = android.locator('#toggle-toolbar').bounding_box()
             assert mode_box['x'] < menu_box['x'] and abs(mode_box['y'] - menu_box['y']) < 2
-            expect(android.locator('#camera-game-on')).to_have_count(0)
-            expect(android.locator('#camera-game-off')).to_have_count(0)
+            expect(android.locator('#camera-game-toggle')).to_have_count(0)
+            expect(android.locator('#camera-calibration-open')).to_have_count(0)
             expect(android.locator('#mouse-control-open')).to_have_count(0)
             expect(android.locator('#network-open')).to_be_hidden()
             expect(android.locator('#bluetooth-open')).to_have_text('Bluetooth en NUC')

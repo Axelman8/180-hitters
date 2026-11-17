@@ -91,7 +91,7 @@ with tempfile.TemporaryDirectory() as tmp:
                 except AssertionError:
                     print('Camera:',cam(),'Browser errors:',errors,flush=True)
                     raise
-                phone.locator('#camera-game-on').wait_for(state='attached')
+                phone.locator('#camera-game-toggle').wait_for(state='attached')
                 return s
             def open_camera_menu(view):
                 view.evaluate("document.dispatchEvent(new Event('open-main-menu'))")
@@ -101,10 +101,10 @@ with tempfile.TemporaryDirectory() as tmp:
                 open_camera_menu(view)
                 view.locator(button).click()
             setup()
-            page.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
-            phone.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
-            assert page.locator('#camera-game-on').get_attribute('aria-label')== 'Camera aan / herstart'
-            assert phone.locator('#camera-game-on').get_attribute('aria-label')== 'Camera aan / herstart'
+            page.wait_for_function("document.querySelector('#camera-game-toggle').getAttribute('aria-pressed') === 'true'")
+            phone.wait_for_function("document.querySelector('#camera-game-toggle').getAttribute('aria-pressed') === 'true'")
+            assert page.locator('#camera-game-toggle').get_attribute('aria-label')== 'Camera uitzetten'
+            assert phone.locator('#camera-game-toggle').get_attribute('aria-label')== 'Camera uitzetten'
             assert api.post(url+'/api/autoscoring/reset',data={}).ok
             Mock.value=state([]);Mock.value.update(running=False,status='Stopped',event='Manual reset')
             wait(lambda:Mock.reset_count==1 and 'gestopt' not in cam()['message'].lower())
@@ -240,35 +240,38 @@ with tempfile.TemporaryDirectory() as tmp:
             assert Mock.value['running'] is True
             # Camera controls are grouped under NUC & verbinding, without duplicates.
             assert phone.locator('#autoscoring-open').count()==0
-            click_camera(phone,'#camera-game-off')
+            click_camera(phone,'#camera-game-toggle')
             wait(lambda:not cam()['enabled'])
-            click_camera(phone,'#camera-game-on')
+            phone.wait_for_function("document.querySelector('#camera-game-toggle').getAttribute('aria-pressed') === 'false'")
+            click_camera(phone,'#camera-game-toggle')
             wait(lambda:cam()['enabled'] and cam()['armed'])
-            click_camera(phone,'#camera-game-off')
+            phone.wait_for_function("document.querySelector('#camera-game-toggle').getAttribute('aria-pressed') === 'true'")
+            click_camera(phone,'#camera-game-toggle')
             wait(lambda:not cam()['enabled'])
-            click_camera(phone,'#camera-game-on')
+            phone.wait_for_function("document.querySelector('#camera-game-toggle').getAttribute('aria-pressed') === 'false'")
+            click_camera(phone,'#camera-game-toggle')
             wait(lambda:cam()['enabled'] and cam()['armed'])
             # Menu controls remain usable at narrow widths and show the chosen state.
             for view in (page,phone):
                 open_camera_menu(view)
-                view.wait_for_function("document.querySelector('#camera-game-on').getAttribute('aria-pressed') === 'true'")
+                view.wait_for_function("document.querySelector('#camera-game-toggle').getAttribute('aria-pressed') === 'true'")
                 assert view.locator('#header-menu #camera-game-controls').count()==1
-                assert view.locator('#camera-game-off').get_attribute('aria-pressed')=='false'
+                assert not view.locator('#camera-calibration-open').is_disabled()
                 for width in (320,393,768,1080):
                     view.set_viewport_size({'width':width,'height':900})
                     view.wait_for_timeout(250)
                     view.locator('#camera-game-controls').scroll_into_view_if_needed()
-                    boxes=[view.locator(selector).bounding_box() for selector in ('#camera-game-on','#camera-game-off')]
+                    boxes=[view.locator(selector).bounding_box() for selector in ('#camera-game-toggle','#camera-calibration-open')]
                     assert all(box and box['x']>=0 and box['x']+box['width']<=width+1 for box in boxes),(width,boxes)
                     assert abs((boxes[-1]['y']+boxes[-1]['height']/2)-(boxes[-2]['y']+boxes[-2]['height']/2))<2,(width,boxes)
                 colors=view.evaluate("[...document.querySelectorAll('#camera-game-controls button')].map(b=>getComputedStyle(b).backgroundColor)")
                 assert colors[0]!=colors[1],colors
-            click_camera(phone,'#camera-game-off')
+            click_camera(phone,'#camera-game-toggle')
             wait(lambda:not cam()['enabled'])
             for view in (page,phone):
-                view.wait_for_function("document.querySelector('#camera-game-off').getAttribute('aria-pressed') === 'true'")
-                assert view.locator('#camera-game-on').get_attribute('aria-pressed')=='false'
-            click_camera(phone,'#camera-game-on')
+                view.wait_for_function("document.querySelector('#camera-game-toggle').getAttribute('aria-pressed') === 'false'")
+                assert view.locator('#camera-calibration-open').is_disabled()
+            click_camera(phone,'#camera-game-toggle')
             wait(lambda:cam()['enabled'] and cam()['armed'])
             # A service restart preserves ON and resumes from an empty board.
             proc.terminate();proc.wait()

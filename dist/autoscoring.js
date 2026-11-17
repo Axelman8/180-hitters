@@ -9,16 +9,17 @@ export function cameraControls(consume){
  document.getElementById('connection-status').after(note);note.hidden=true;
  const quick=document.createElement('div');quick.id='camera-game-controls';
  quick.setAttribute('role','group');quick.setAttribute('aria-label','Camera-invoer');
- quick.innerHTML='<button type="button" id="camera-game-on" aria-label="Camera aan / herstart" aria-pressed="false"><span class="camera-on-full">Camera aan / herstart</span><span class="camera-on-short">Aan/herstart</span></button><button type="button" id="camera-game-off" aria-pressed="false">Camera uit</button>';
+ quick.innerHTML='<button type="button" id="camera-game-toggle" aria-label="Camera aanzetten" aria-pressed="false" disabled>Camera uit</button>';
  document.getElementById('top-actions').append(quick);
  const bind=(element,handler)=>{
   if(window.DartsAndroid?.isTabletShell&&typeof window.DartsAndroid.bindAction==='function')window.DartsAndroid.bindAction(element,handler);
   else element.onclick=handler;
  };
- bind(quick.querySelector('#camera-game-on'),()=>action(true));
- bind(quick.querySelector('#camera-game-off'),()=>action(false));
- let latest=null,running=false,changing=false,actionError='',calibrationUI=null;
- const q=id=>document.getElementById(id);
+ let latest=null,running=false,changing=false,unreachable=true,actionError='',calibrationUI=null;
+ const toggle=quick.querySelector('#camera-game-toggle');
+ const cameraOn=()=>!unreachable&&!!latest?.enabled&&!!latest?.connected&&latest.calibration?.running!==false;
+ const calibrating=()=>['starting','calibrating'].includes(latest?.calibration?.stage);
+ bind(toggle,()=>{if(!toggle.disabled)action(!cameraOn());});
  async function configure(enabled){
   const r=await fetch('/api/autoscoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled,recording:latest?.recording||false}),signal:AbortSignal.timeout(requestTimeout)});
   const data=await r.json();if(!r.ok)throw Error(data.error||'Camera-instelling niet opgeslagen');paint(data);
@@ -41,22 +42,22 @@ export function cameraControls(consume){
  }
  function paint(data){
   latest=data;
-  for(const [id,active] of [['camera-game-on',data.enabled],['camera-game-off',!data.enabled]]){
-   q(id).disabled=changing||id==='camera-game-on'&&['starting','calibrating'].includes(data.calibration?.stage);
-   q(id).setAttribute('aria-pressed',String(active));
-  }
+  const active=cameraOn();
+  toggle.disabled=changing||unreachable||!data.available||calibrating();
+  toggle.setAttribute('aria-pressed',String(active));toggle.textContent=active?'Camera aan':'Camera uit';
+  toggle.setAttribute('aria-label',active?'Camera uitzetten':'Camera aanzetten');
   note.hidden=!data.available;note.textContent=actionError||'Camera: '+data.message;
   calibrationUI?.update(data);
  }
  async function poll(){
   if(running)return;running=true;
   try{
-   const r=await fetch('/api/autoscoring',{signal:AbortSignal.timeout(requestTimeout)});if(!r.ok)return;
-   const data=await r.json();paint(data);
+   const r=await fetch('/api/autoscoring',{signal:AbortSignal.timeout(requestTimeout)});if(!r.ok)throw Error('Camera-status niet beschikbaar');
+   const data=await r.json();unreachable=false;paint(data);
    if(data.enabled&&data.pending&&canControl())await consume(data.pending);
-  }catch{if(latest?.available){note.hidden=false;note.textContent='Camera: verbinding controleren…';}}
+  }catch{unreachable=true;if(latest)paint(latest);if(latest?.available){note.hidden=false;note.textContent='Camera: verbinding controleren…';}}
   finally{running=false;}
  }
- calibrationUI=calibrationControls({bind,getStatus:()=>latest,onStatus:paint,resume:()=>action(true),timeout:requestTimeout});
+ calibrationUI=calibrationControls({container:quick,bind,getStatus:()=>unreachable&&latest?{...latest,connected:false}:latest,cameraOn,changing:()=>changing||calibrating(),onStatus:paint,resume:()=>action(true),timeout:requestTimeout});
  poll();setInterval(poll,tabletShell?3000:350);
 }

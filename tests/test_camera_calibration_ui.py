@@ -64,19 +64,42 @@ with tempfile.TemporaryDirectory() as tmp:
    assert api.post(URL+'/api/draft',data={'revision':get()['revision'],'owner':'cal-test','seq':1,'hits':[{'number':1,'mult':1}],'entry':''}).ok
    assert api.post(URL+'/api/autoscoring/calibrate',data={'revision':get()['revision'],'emptyBoardConfirmed':True}).status==409
    assert api.post(URL+'/api/draft',data={'revision':get()['revision'],'owner':'cal-test','seq':2,'hits':[],'entry':''}).ok
+   page.locator('#navigation-close').click()
+   toggle=page.locator('#camera-game-toggle');calibrate=page.locator('#camera-calibration-open')
+   expect(toggle).to_have_text('Camera aan');expect(calibrate).to_be_enabled()
+   assert calibrate.evaluate('e=>e.previousElementSibling.id')=='camera-game-toggle'
+   for w,h in [(320,740),(393,852),(1024,600),(1920,1080)]:
+    page.set_viewport_size({'width':w,'height':h})
+    boxes=[page.locator(selector).bounding_box() for selector in ['#mode-status','#camera-game-toggle','#camera-calibration-open','#toggle-toolbar']]
+    assert all(box and box['x']>=0 and box['x']+box['width']<=w+1 for box in boxes),(w,boxes)
+    assert all(a['x']+a['width']<=b['x']+1 for a,b in zip(boxes,boxes[1:])),(w,boxes)
+   toggle.click();expect(toggle).to_have_text('Camera uit');expect(calibrate).to_be_disabled()
+   assert toggle.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(143, 48, 56)'
+   assert calibrate.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(38, 50, 59)'
+   # Even legacy bindAction handlers must not open a disabled calibration entry.
+   calibrate.evaluate('e=>e.dispatchEvent(new Event("click"))');expect(page.locator('#camera-calibration-dialog')).not_to_be_visible()
+   toggle.click();expect(toggle).to_have_text('Camera aan');expect(calibrate).to_be_enabled()
+   assert Detector.calibrations==0
+   # A transport error disables calibration instead of displaying stale ON.
+   page.route(URL+'/api/autoscoring',lambda route:route.fulfill(status=503,json={'error':'Offline'}))
+   expect(toggle).to_be_disabled(timeout=8000);expect(toggle).to_have_text('Camera uit');expect(calibrate).to_be_disabled()
+   page.unroute(URL+'/api/autoscoring');expect(toggle).to_be_enabled(timeout=8000);expect(toggle).to_have_text('Camera aan')
    Detector.value={**native([]),'running':False,'status':'stopped'};wait(lambda:not cam()['calibration']['running'])
-   page.locator('.navigation-category[data-menu="nuc"]').click();page.locator('#camera-calibration-open').click()
-   expect(page.locator('#camera-calibration-current')).to_contain_text('AutoDarts staat uit')
-   assert api.post(URL+'/api/autoscoring/reset',data={}).ok
+   expect(toggle).to_have_text('Camera uit',timeout=8000);expect(calibrate).to_be_disabled()
+   page.on('dialog',lambda dialog:dialog.accept());toggle.click()
    wait(lambda:cam()['calibration']['running'] and cam()['calibration']['calibrated'] is True)
    assert Detector.starts==1 and Detector.calibrations==0
-   expect(page.locator('#camera-calibration-dialog')).to_be_visible();expect(page.locator('#camera-calibration-current')).to_contain_text('3 camera')
+   expect(toggle).to_have_text('Camera aan',timeout=8000);expect(calibrate).to_be_enabled()
+   assert toggle.evaluate('e=>getComputedStyle(e).backgroundColor')=='rgb(66, 117, 46)'
+   calibrate.click();expect(page.locator('#camera-calibration-dialog')).to_be_visible();expect(page.locator('#camera-calibration-current')).to_contain_text('3 camera')
+   page.locator('#camera-calibration-restart').click();wait(lambda:Detector.resets==2);assert Detector.calibrations==0
    expect(page.locator('#camera-calibration-dialog .dialog-back')).to_have_text('TERUG')
    expect(page.locator('#camera-calibration-start')).to_be_disabled();assert Detector.calibrations==0
    before=get()['match'];draft_before=get().get('draft')
    page.locator('#camera-calibration-empty').check();page.locator('#camera-calibration-start').click()
    wait(lambda:cam()['calibration']['stage']=='testing');expect(page.locator('#camera-calibration-test')).to_be_visible();assert Detector.calibrations==1
    assert not cam()['enabled'] and not json.loads((Path(tmp)/'camera-settings.json').read_text())['enabled']
+   expect(calibrate).to_be_disabled();expect(toggle).to_have_text('Camera uit')
    expect(page.locator('#camera-calibration-resume')).to_be_disabled()
    Detector.value=native([(20,1),(19,3),(25,2)])
    expect(page.locator('#camera-calibration-darts span')).to_have_text(['20','T19','BB'],timeout=8000)
@@ -89,6 +112,7 @@ with tempfile.TemporaryDirectory() as tmp:
    out=ROOT/'.repair-check/calibration58';out.mkdir(parents=True,exist_ok=True);page.screenshot(path=str(out/('wizard-legacy.png' if ASSETS else 'wizard-modern.png')))
    page.locator('#camera-calibration-verified').check();page.locator('#camera-calibration-resume').click()
    expect(page.locator('#camera-calibration-dialog')).to_be_hidden();wait(lambda:cam()['enabled']);assert not cam()['armed']
+   expect(toggle).to_have_text('Camera aan');expect(calibrate).to_be_enabled()
    Detector.value=native([]);wait(lambda:cam()['armed']);Detector.value=native([(20,1),(19,3),(25,2)])
    wait(lambda:len(get()['match']['state']['history'])==1)
    assert get()['match']['state']['players'][0]['remaining']==374
@@ -107,6 +131,6 @@ with tempfile.TemporaryDirectory() as tmp:
     assert get()['match']==saved
     nuc.close();local.close()
    assert not errors,errors
-   print('PASS calibration menu, native/lowercase Detection input, reset separation, ownership/draft guards, backups, read-only test darts, explicit empty-board resume and responsive Back','legacy' if ASSETS else 'modern')
+   print('PASS adjacent red/green camera toggle, gray disabled calibration when off/stopped/offline, restart separation, native Detection, ownership/draft guards, read-only test darts, explicit resume and responsive header/Back','legacy' if ASSETS else 'modern')
    browser.close()
  finally:proc.terminate();proc.wait();mock.shutdown();mock.server_close()
