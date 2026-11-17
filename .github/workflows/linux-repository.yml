@@ -1,0 +1,62 @@
+name: Publish signed Linux repository
+
+on:
+  workflow_run:
+    workflows: ['Publish 180 Hitters']
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-package-repository
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download the latest completed installer and verify its checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir packages
+          gh release download --dir packages --pattern DartsApp-Ubuntu-Debian-amd64.deb --pattern DartsApp-Ubuntu-Debian-amd64.deb.sha256
+          (cd packages && sha256sum --check DartsApp-Ubuntu-Debian-amd64.deb.sha256)
+      - name: Import the private signing key into an ephemeral keyring
+        env:
+          LINUX_APT_PRIVATE_KEY: ${{ secrets.LINUX_APT_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 "$RUNNER_TEMP/180-hitters-gnupg"
+          printf '%s' "$LINUX_APT_PRIVATE_KEY" | gpg --homedir "$RUNNER_TEMP/180-hitters-gnupg" --batch --import
+      - name: Build and validate the signed package source
+        env:
+          LINUX_APT_PASSPHRASE: ${{ secrets.LINUX_APT_PASSPHRASE }}
+        run: |
+          python3 packaging/build-apt-repository.py --package packages/DartsApp-Ubuntu-Debian-amd64.deb --output _linux-site --gpg-home "$RUNNER_TEMP/180-hitters-gnupg"
+          python3 tests/test_apt_repository.py _linux-site
+      - name: Upload the package source
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _linux-site
+      - name: Clear the temporary signing keyring
+        if: always()
+        run: gpgconf --homedir "$RUNNER_TEMP/180-hitters-gnupg" --kill all
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the verified Linux package source
+        id: deployment
+        uses: actions/deploy-pages@v4

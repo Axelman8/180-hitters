@@ -95,6 +95,12 @@ else:
     subprocess.run(['sudo', 'apt-get', 'update', '-qq'], check=True)
     package = './DartsApp-Ubuntu-Debian-amd64.deb'
     subprocess.run(['sudo', 'apt-get', 'install', '--no-install-recommends', '-y', package], check=True)
+    key = Path('/usr/share/keyrings/180-hitters-archive-keyring.gpg')
+    source = Path('/etc/apt/sources.list.d/180-hitters.sources')
+    assert key.is_file() and key.stat().st_mode & 0o444 == 0o444
+    assert key.read_bytes() == Path('packaging/linux-signing/180-hitters-archive-keyring.gpg').read_bytes()
+    assert 'Signed-By: ' + str(key) in source.read_text()
+    assert 'trusted=yes' not in source.read_text() and 'allow-insecure' not in source.read_text()
     if legacy:
         legacy.wait(timeout=10)
         assert Path('/var/lib/dartsapp/legacy-backups').is_dir()
@@ -121,6 +127,7 @@ else:
     assert Path('/etc/dartsapp/camera-enabled').exists(), 'Camera autostart lost after normal update'
     assert b'Installer Test' in request('/api/players')
     subprocess.run(['sudo', 'apt-get', 'remove', '-y', 'dartsapp'], check=True)
+    assert not source.exists() and not key.exists(), 'Uninstall must not leave an unusable package source'
     subprocess.run(['sudo', 'test', '-f', '/var/lib/dartsapp/match-players.json'], check=True)
     assert subprocess.run(['systemctl', 'is-active', '--quiet', 'dartsapp']).returncode != 0
 print('Installer, server, upgrade, retained data and uninstall verified.')

@@ -16,6 +16,10 @@ Play independently on your device or control a shared Linux NUC over Bluetooth. 
 
 All packages and SHA-256 checksums are in [GitHub Releases](https://github.com/Axelman8/180-hitters/releases/latest). Linux installs dependencies through the distribution's package manager and may request your administrator password. The Windows installer does not have a publisher certificate.
 
+The Linux installer also installs the **180 Hitters signed APT source** at `https://axelman8.github.io/180-hitters/apt/`. Its public key is restricted to that source using `Signed-By`; it is not added to Linux's global trust store. APT verifies the repository signature, package index and installer checksum before accepting packages. The index is refreshed after successful releases and weekly. The signing fingerprint is `8DB3 7E73 1BD2 63FA B214 B31B 6391 D983 5B3A 1B4A`.
+
+On a new NUC, opening the official `.deb` and approving its installation with the Linux administrator password is still required once. Neither a downloaded script nor a self-issued signature can grant itself trust on an unknown computer. Signing the APT source does not make an arbitrary downloaded `.sh` or `.desktop` file executable or pre-approved. Once the package source is installed, Linux can verify subsequent packages through its normal software tools. The app's existing GitHub updater remains available. See [Linux trust and installation help](packaging/LINUX-TRUST.md).
+
 Advanced packages: `180-Hitters-Linux-x64.tar.gz` and `180-Hitters-Windows-x64.zip`. Linux source installation uses `sudo bash setup-linux.sh`; manual per-user installation uses `bash install-linux.sh`. Use one dartserver installation per NUC. See [installation and recovery help](packaging/INSTALLER-HELP.txt).
 
 Game boards, player cards and dart inputs update in place after each dart. Measured board sizes, keyboard focus and touch controls remain stable while new scores arrive. The same rendering path is used on Android, the legacy tablet and NUC/desktop browsers.

@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://axelman8.github.io/180-hitters/apt/
+Suites: ./
+Architectures: amd64
+Signed-By: /usr/share/keyrings/180-hitters-archive-keyring.gpg

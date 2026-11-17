@@ -17,6 +17,12 @@ Als jouw softwarewinkel geen lokale pakketten opent, voer in de
 Downloads-map uit:
   sudo apt install ./DartsApp-Ubuntu-Debian-amd64.deb
 Benodigde pakketten worden automatisch geinstalleerd (internet nodig).
+De installer voegt ook de ondertekende 180 Hitters-softwarebron toe.
+Linux controleert volgende pakketten met de sleutel die alleen voor
+deze bron geldt. Een nieuwe NUC vraagt eenmalig toestemming om de
+installer en de bron toe te voegen; een download kan zichzelf niet
+vertrouwd verklaren. Gebruik het .deb-pakket, niet een los .sh-script.
+Uitleg: https://github.com/Axelman8/180-hitters/blob/main/packaging/LINUX-TRUST.md
 De server start automatisch, ook na opnieuw opstarten.
 Een browser zoals Firefox of Chromium moet beschikbaar zijn.
 

@@ -19,6 +19,14 @@ with tempfile.TemporaryDirectory(prefix='dartsapp-package-') as tmp:
         path.chmod(0o755 if executable else 0o644)
 
     shutil.copytree('dist', root / 'usr/lib/dartsapp/dist')
+    # The first installation is approved through Linux's normal package UI.
+    # Later APT packages are verified against this repository-specific key.
+    (root / 'usr/share/keyrings').mkdir(parents=True, exist_ok=True)
+    shutil.copy2('packaging/linux-signing/180-hitters-archive-keyring.gpg',
+                 root / 'usr/share/keyrings/180-hitters-archive-keyring.gpg')
+    (root / 'etc/apt/sources.list.d').mkdir(parents=True, exist_ok=True)
+    shutil.copy2('packaging/linux-signing/180-hitters.sources',
+                 root / 'etc/apt/sources.list.d/180-hitters.sources')
     shutil.copy2('server.py', root / 'usr/lib/dartsapp/server.py')
     for name in ('online-relay.py', 'autodarts_bridge.py', 'camera_research.py', 'bluetooth-bridge.py', 'nuc-update.py', 'kiosk-control.py'):
         shutil.copy2(name, root / 'usr/lib/dartsapp' / name)
