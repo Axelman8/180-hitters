@@ -1,4 +1,5 @@
 import {canControl,takeControl} from './controller.js';
+import {calibrationControls} from './camera-calibration.js';
 
 export function cameraControls(consume){
  if(window.DartsAndroid?.isLocalMode?.()===true)return;
@@ -16,7 +17,7 @@ export function cameraControls(consume){
  };
  bind(quick.querySelector('#camera-game-on'),()=>action(true));
  bind(quick.querySelector('#camera-game-off'),()=>action(false));
- let latest=null,running=false,changing=false,actionError='';
+ let latest=null,running=false,changing=false,actionError='',calibrationUI=null;
  const q=id=>document.getElementById(id);
  async function configure(enabled){
   const r=await fetch('/api/autoscoring',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled,recording:latest?.recording||false}),signal:AbortSignal.timeout(requestTimeout)});
@@ -41,10 +42,11 @@ export function cameraControls(consume){
  function paint(data){
   latest=data;
   for(const [id,active] of [['camera-game-on',data.enabled],['camera-game-off',!data.enabled]]){
-   q(id).disabled=changing;
+   q(id).disabled=changing||id==='camera-game-on'&&['starting','calibrating'].includes(data.calibration?.stage);
    q(id).setAttribute('aria-pressed',String(active));
   }
   note.hidden=!data.available;note.textContent=actionError||'Camera: '+data.message;
+  calibrationUI?.update(data);
  }
  async function poll(){
   if(running)return;running=true;
@@ -55,5 +57,6 @@ export function cameraControls(consume){
   }catch{if(latest?.available){note.hidden=false;note.textContent='Camera: verbinding controleren…';}}
   finally{running=false;}
  }
+ calibrationUI=calibrationControls({bind,getStatus:()=>latest,onStatus:paint,resume:()=>action(true),timeout:requestTimeout});
  poll();setInterval(poll,tabletShell?3000:350);
 }

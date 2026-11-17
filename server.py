@@ -714,6 +714,11 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
             if route == '/api/autoscoring':
                 with lock:
                     return self.reply(200, camera.status())
+            if route == '/api/autoscoring/calibration':
+                try:
+                    return self.reply(200, camera.read_calibration())
+                except (OSError, ValueError, URLError) as error:
+                    return self.reply(503, {'error': 'Bordkalibratie kon niet worden gelezen: ' + str(error)})
             if route in ('/api/camera/status', '/api/camera/frame/0', '/api/camera/frame/2', '/api/camera/frame/4'):
                 return self.camera_proxy(route.removeprefix('/api/camera'))
             if route == '/api/desktop-installation':
@@ -876,7 +881,7 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                 if not 0 <= length <= 256: return self.reply(413, {'error':'Verzoek te groot'})
                 self.rfile.read(length)
                 return self.camera_proxy(self.path.removeprefix('/api/camera'), 'POST')
-            if self.path not in ('/api/bot/claim', '/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/matches/delete', '/api/matches/resume', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
+            if self.path not in ('/api/bot/claim', '/api/autoscoring', '/api/autoscoring/reset', '/api/autoscoring/calibrate', '/api/autoscoring/apply', '/api/match-transfer', '/api/match-restore', '/api/match/discard', '/api/matches/delete', '/api/matches/resume', '/api/controller', '/api/setup', '/api/display', '/api/display/orientation', '/api/venue', '/api/state', '/api/draft', '/api/players', '/api/mobile-players', '/api/kiosk/open', '/api/kiosk/mode', '/api/mouse', '/api/network/switch', '/api/network/add', '/api/system/action', '/api/update/check', '/api/online/tunnel', '/api/online/local'):
                 return self.reply(404, {'error': 'Onbekend verzoek'})
             origin = self.headers.get('Origin')
             if origin and urlsplit(origin).netloc != self.headers.get('Host'):
@@ -968,6 +973,22 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                         shared_setup.update(version=shared_setup['version'] + 1, value=None)
                         follow_camera()
                         return self.reply(200, {**current, 'draft': pending})
+                if self.path == '/api/autoscoring/calibrate':
+                    with lock:
+                        if not self.may_edit(incoming): return
+                        if incoming.get('emptyBoardConfirmed') is not True:
+                            return self.reply(400, {'error': 'Bevestig eerst dat het bord leeg is en de verlichting aan staat.'})
+                        if incoming.get('revision') != current['revision']:
+                            return self.reply(409, {'error': 'De partij is gewijzigd. Controleer de huidige beurt en probeer opnieuw.'})
+                        match = current.get('match') or {}
+                        value = draft['value'] or {}
+                        if value.get('hits') or value.get('entry') or match.get('editTurn') or match.get('future') or match.get('pendingTurns'):
+                            return self.reply(409, {'error': 'Rond eerst de huidige invoer of correctie af. De partij blijft bewaard.'})
+                        try:
+                            camera.start_calibration(lambda: durable_json(camera_settings, {'recording':camera.recording, 'enabled':False}))
+                            return self.reply(202, camera.status())
+                        except ValueError as error:
+                            return self.reply(409, {'error':str(error)})
                 if self.path == '/api/autoscoring/reset':
                     with lock:
                         if not self.may_edit(incoming): return
@@ -976,6 +997,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             return self.reply(200, camera.status())
                         except (OSError, TimeoutError, URLError) as error:
                             return self.reply(503, {'error': 'AutoDarts-reset mislukt: ' + str(error)})
+                        except ValueError as error:
+                            return self.reply(409, {'error': str(error)})
                 if self.path == '/api/mouse':
                     if self.client_address[0] not in ('127.0.0.1', '::1') and self.headers.get('X-Darts-Control') != CONTROL_TOKEN:
                         return self.reply(403, {'error': 'Muisbediening is alleen beschikbaar vanuit de gekoppelde app.'})
@@ -998,6 +1021,8 @@ def serve(host='0.0.0.0', port=8765, data_file=None):
                             follow_camera(allow_draft=incoming.get('recover') is not True)
                         except (OSError, URLError):
                             return self.reply(503, {'error': 'AutoDarts kon niet uit stand-by starten. Probeer opnieuw.'})
+                        except ValueError as error:
+                            return self.reply(409, {'error': str(error)})
                         durable_json(camera_settings, {'recording': camera.recording, 'enabled': camera.enabled})
                         reason = incoming.get('reason')
                         if not enabled and isinstance(reason,str): camera.message = reason[:200]

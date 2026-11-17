@@ -55,6 +55,7 @@ const routes={
  'screen-orientation':['nuc','display','Zet het NUC-scherm horizontaal of verticaal.'],
  'venue-open':['nuc','system','Naam en presentatie van de locatie op de NUC.'],
  'camera-game-controls':['nuc','camera','Zet cameradetectie aan, herstart deze of schakel haar uit.'],
+ 'camera-calibration-open':['nuc','camera','Kalibreer het dartbord en controleer proefworpen zonder je partij te veranderen.'],
  'camera-test':['nuc','camera','Controleer de camera’s van je dartbord.'],
  'fullscreen':['app','display','Toon 180 Hitters over het volledige scherm.'],
  'layout-open':['app','display','Pas de weergave op dit apparaat aan.'],
@@ -126,6 +127,7 @@ function applyCameraNavigation(connected){
  cameraConnected=!!android&&connected;
  document.body.classList.toggle('header-camera-active',cameraConnected);
  const controls=$('camera-game-controls');if(controls)hide(controls,!!android&&!cameraConnected);
+ if($('camera-calibration-open'))hide($('camera-calibration-open'),!!android&&!cameraConnected);
  refreshSections();
 }
 async function refreshCameraNavigation(force=false){
@@ -179,6 +181,7 @@ function collect(){
  if($('venue-open'))$('venue-open').textContent='Locatie & presentatie';
  if(android?.isLocalMode?.()===true)for(const id of ['bluetooth-open','open-kiosk','kiosk-mode-toggle','venue-open'])if($(id))hide($(id),true);
  const cameraControls=$('camera-game-controls');if(cameraControls&&android)hide(cameraControls,!cameraConnected);
+ if($('camera-calibration-open')&&android)hide($('camera-calibration-open'),!cameraConnected);
  refreshSections();
 }
 collect();new MutationObserver(collect).observe(actions,{childList:true});

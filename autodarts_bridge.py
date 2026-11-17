@@ -13,13 +13,20 @@ import shutil
 import threading
 import time
 import uuid
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
 def dart(value):
+    if value.get('failed') is True:
+        raise ValueError('Camerameting is mislukt; controleer de dart handmatig.')
     if value.get('bouncer'):
         return {'number': 0, 'mult': 1}
-    segment = value.get('segment', {})
+    # Native Detection 0.x sends flat segment fields; 2.x/integrations may
+    # provide the nested segment DTO. Keep both formats strict about scores.
+    segment = value.get('segment') if isinstance(value.get('segment'), dict) else {
+        'number': value.get('segmentNumber'), 'multiplier': value.get('multiplier'),
+        'name': value.get('segmentName'), 'bed': value.get('bed')}
     number, mult = segment.get('number'), segment.get('multiplier')
     if segment.get('bed') == 'Outside' and type(mult) is int and mult == 0 and type(number) is int and number in (0, *range(1,21),25):
         return {'number': 0, 'mult': 1}
@@ -52,6 +59,25 @@ class AutoDartsBridge:
         self.starting_until = 0
         self.blocked = ''
         self.resume_blocker = lambda: ''
+        self.calibration = {'stage': 'idle', 'message': 'Nog geen kalibratie gestart vanuit de app.'}
+        self.calibration_geometry = None
+
+    def calibration_busy(self):
+        return self.calibration['stage'] in ('starting', 'calibrating')
+
+    def calibration_status(self):
+        value = dict(self.calibration)
+        value['calibrated'] = self.calibration_geometry.get('calibrated') if isinstance(self.calibration_geometry, dict) else None
+        value['cameras'] = self.calibration_geometry.get('numCams') if isinstance(self.calibration_geometry, dict) else None
+        value['running'] = bool((self.latest or {}).get('running'))
+        value['detectorStatus'] = (self.latest or {}).get('status', '')
+        value['testHits'] = []
+        if value['stage'] == 'testing' and not self.enabled:
+            try:
+                value['testHits'] = [dart(hit) for hit in (self.latest or {}).get('throws', [])][:3]
+            except (ValueError, TypeError, AttributeError):
+                value['testError'] = 'Onzekere camerameting. Controleer de camera-opstelling.'
+        return value
 
     def status(self):
         return dict(available=self.available, connected=self.connected,
@@ -59,7 +85,86 @@ class AutoDartsBridge:
                     armed=self.armed, message=self.message,
                     pending=self.pending[0] if self.pending else None,
                     droppedCaptures=self.dropped, captureError=self.capture_error,
-                    analysis=self.analysis_status, waiting=self.enabled and not self.armed)
+                    analysis=self.analysis_status, waiting=self.enabled and not self.armed,
+                    calibration=self.calibration_status())
+
+    def read_calibration(self):
+        geometry = json.loads(self.fetch('config/calibration/geometry'))
+        if not isinstance(geometry, dict):
+            raise ValueError('AutoDarts geeft geen geldige bordkalibratie terug.')
+        with self.lock:
+            self.calibration_geometry = geometry
+            return self.calibration_status()
+
+    def start_calibration(self, persist=lambda: None):
+        """Called with the match lock held; score input stays off until requested.
+
+        The slow hardware operation runs outside the match lock. Test darts are
+        read-only and never enter the scoring queue, even if the dialog closes.
+        """
+        if self.calibration_busy():
+            raise ValueError('De kalibratie is al bezig. Wacht tot deze klaar is.')
+        if not self.connected or not self.latest:
+            raise ValueError('Geen verbinding met AutoDarts op de NUC.')
+        if self.pending or self.latest.get('numThrows') != 0:
+            raise ValueError('Maak het bord leeg en verwerk eerst de huidige worp.')
+        persist()
+        self.enabled = False
+        self.pause('Kalibratie: score-invoer gepauzeerd; proefworpen tellen niet mee.')
+        self.calibration = {'stage': 'starting', 'message': 'Bestaande kalibratie bewaren en AutoDarts voorbereiden...',
+                            'startedAt': int(time.time()*1000), 'job': uuid.uuid4().hex}
+        threading.Thread(target=self._calibrate, daemon=True, name='autodarts-calibration').start()
+
+    def _calibrate(self):
+        try:
+            # Save just board geometry/ellipses, never account credentials.
+            folder = self.directory.parent / 'camera-calibration-backups'
+            if folder.is_symlink(): raise OSError('Back-upmap mag geen koppeling zijn.')
+            folder.mkdir(parents=True, exist_ok=True, mode=0o700)
+            job = folder / self.calibration['job']
+            job.mkdir(mode=0o700)
+            for endpoint in ['geometry', 'ellipses']:
+                try: data = self.fetch('config/calibration/' + endpoint)
+                except HTTPError as error:
+                    if error.code != 404: raise
+                    data = b'null'
+                json.loads(data)
+                (job / (endpoint + '.json')).write_bytes(data)
+            if not (self.latest or {}).get('running'):
+                with urlopen(Request(self.base+'/api/start', method='PUT'), timeout=5) as response:
+                    response.read(1024)
+                deadline = time.monotonic()+20
+                while time.monotonic() < deadline:
+                    if json.loads(self.fetch('state', 100_000)).get('running'): break
+                    time.sleep(.5)
+                else: raise ValueError('AutoDarts start niet. Controleer de camera’s op de NUC.')
+            with self.lock:
+                self.calibration.update(stage='calibrating', message='AutoDarts kalibreert het bord. Houd het bord leeg.')
+            for attempt in range(12):
+                try:
+                    # Detection rejects an empty form/JSON body (HTTP400).
+                    with urlopen(Request(self.base+'/api/config/calibration/auto', method='POST'), timeout=30) as response:
+                        response.read(100_000)
+                    break
+                except HTTPError as error:
+                    if error.code not in (400,409,425,503) or attempt == 11: raise
+                    time.sleep(1)
+            # Accepted does not mean independently verified accuracy. Require
+            # human test throws and an explicit resume with an empty board.
+            deadline = time.monotonic()+60
+            while True:
+                geometry = json.loads(self.fetch('config/calibration/geometry'))
+                if isinstance(geometry, dict) and geometry.get('calibrated') is True: break
+                if time.monotonic() >= deadline:
+                    raise ValueError('AutoDarts bevestigt nog geen geldige bordkalibratie. Controleer het camerabeeld op de NUC.')
+                time.sleep(1)
+            with self.lock:
+                self.calibration_geometry = geometry
+                self.calibration.update(stage='testing', message='Kalibratieverzoek uitgevoerd. Wacht tot AutoDarts klaar is en controleer drie proefworpen. Deze tellen niet mee voor je partij.')
+        except Exception as error:
+            with self.lock:
+                self.calibration.update(stage='error', message='Kalibratie niet bevestigd: ' + str(error))
+                self.message = 'Score-invoer blijft uit. Controleer de camera’s en probeer de kalibratie opnieuw.'
 
     def pause(self, reason='Camera-invoer gepauzeerd; controleer de beurt en hervat met leeg bord.'):
         self.armed = False
@@ -93,6 +198,8 @@ class AutoDartsBridge:
                 pass
 
     def configure(self, enabled, recording, revision):
+        if enabled and self.calibration_busy():
+            raise ValueError('Wacht tot de camerakalibratie klaar is.')
         if enabled and self.latest and not self.latest.get('running'):
             # Official local lifecycle endpoint, verified against Detection 2.0.2.
             # Wake only on explicit user request; never alter calibration/account.
@@ -108,9 +215,13 @@ class AutoDartsBridge:
         self.expected_revision = revision
         self.blocked = ''
         self.message = 'Haal alle darts uit het bord om te beginnen.' if enabled else 'Handmatige invoer'
+        if enabled and self.calibration['stage'] == 'testing':
+            self.calibration.update(stage='complete', message='Proefworpen gecontroleerd. Score-invoer hervat zodra het bord leeg is.')
 
     def reset_detector(self):
         """Clear Detection's current visit without changing calibration or cameras."""
+        if self.calibration_busy():
+            raise ValueError('Wacht tot de camerakalibratie klaar is.')
         with urlopen(Request(self.base + '/api/reset', method='POST'), timeout=4) as response:
             response.read(1024)
         # Detection reports running=false very briefly while the reset settles.
@@ -143,9 +254,11 @@ class AutoDartsBridge:
 
     def observe(self, value):
         self.available = self.connected = True
-        self.latest = value
-        n = value.get('numThrows')
         throws = value.get('throws', [])
+        n = value.get('numThrows', len(throws) if isinstance(throws, list) else None)
+        status = value.get('status', '')
+        status = {'throw':'Throw', 'takeout':'Takeout'}.get(status.lower(), status) if isinstance(status,str) else ''
+        self.latest = {**value, 'numThrows': n, 'status': status}
         if type(n) is not int or not 0 <= n <= 3 or not isinstance(throws, list) or len(throws) != n:
             if self.enabled: self.pause('Onvolledige camerameting. Controleer de beurt.')
             return
@@ -156,7 +269,7 @@ class AutoDartsBridge:
             if self.enabled: self.pause('AutoDarts is gestopt. Hervat na controle.')
             return
         self.starting_until = 0
-        empty = n == 0 and value.get('status') == 'Throw'
+        empty = n == 0 and status == 'Throw'
         if not self.enabled:
             return
         if self.blocked:

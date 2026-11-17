@@ -1,0 +1,4 @@
+#camera-calibration-dialog .camera-calibration-check{display:flex;flex-direction:row;align-items:center;text-align:left;gap:12px;margin:14px 0;cursor:pointer}
+#camera-calibration-dialog .camera-calibration-check input{flex:0 0 28px;width:28px;height:28px;min-height:28px;margin:0;accent-color:var(--accent)}
+#camera-calibration-darts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#camera-calibration-darts span{padding:16px 6px;border:1px solid var(--line);border-radius:12px;background:#0c171e;color:var(--accent);text-align:center;font-size:clamp(20px,4vw,32px);font-weight:900}

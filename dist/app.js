@@ -187,7 +187,7 @@ document.addEventListener('prepare-phone-transfer',async()=>{
 });
 for(const type of ['click','submit','keydown'])document.addEventListener(type,e=>{
  if(e.target.closest('.dialog-back'))return;
- if(e.target.closest('#appearance-open,#appearance-dialog,#camera-game-controls,#new-match-dialog,#nuc-recovery'))return;
+ if(e.target.closest('#camera-calibration-open,#camera-calibration-dialog,#appearance-open,#appearance-dialog,#camera-game-controls,#new-match-dialog,#nuc-recovery'))return;
  if((!ready||busy)&&!e.target.closest('#result-later, .result-local-continue, .lives-summary-share, .game-report-share, #matches-dialog,#matches-report-dialog,#archive-report-dialog, #connection-health, #connection-health-dialog, #mouse-control-open, #mouse-control-dialog, #team-manager-dialog, #team-manager, #edit-match, #tablet-mode-overlay, #desktop-update-action, #desktop-update-dialog, #transfer-dialog, #take-control, #header-menu, #layout-open, #layout-dialog, #toggle-toolbar, #mobile-dock, #fullscreen, #open-kiosk, #network-open, #network-dialog, #players-list, #players-dialog, #android-app-action, #android-update-action, #android-download-dialog, .wizard-video-link, #game-video-dialog, #online-video-dialog, #club-open, #club-dialog, #online-host-open, #online-new-open, #online-join-open, #online-leave-open, #online-invitations-open, #online-club-invite-dialog, #online-invitations-dialog, #online-dialog, #online-starter')){e.preventDefault();e.stopImmediatePropagation();}
 },true);
 function message(text=''){$('message').textContent=text;}

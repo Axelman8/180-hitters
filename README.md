@@ -184,6 +184,10 @@ Data locations: `/var/lib/dartsapp` for Linux system installs, `~/.local/share/o
 
 Use **Camera aan / herstart** to start/restart detection and **Camera uit** to stop it. Camera input follows each game's rules, including misses and early winning darts. A single bull in 4 in a Row asks the controller which free corner to claim.
 
+**Camera aan / herstart reuses the saved board calibration.** A restart clears the current detection visit; it does not recalibrate the board. Under **NUC & verbinding > Camera’s > Camera’s kalibreren**, check the saved calibration and request AutoDarts automatic board calibration explicitly. Empty the board and turn on its lighting first. The app saves a copy of the existing geometry and ellipses on the NUC, pauses score input and provides a read-only view of test darts. Confirm that three known test throws were detected correctly, then resume camera input with an empty board. Closing the dialog does not resume scoring automatically. USB mapping and anti-flicker frequency remain unchanged; use the desktop helper below when those need repair. Phone/tablet calibration controls appear only when using the NUC connection.
+
+Both native Detection messages with flat segment fields/lowercase visit states and nested segment messages are supported. When the detector omits a throw counter, the app derives it from the validated throw list; conflicting explicit counters and failed detections remain blocked for manual review.
+
 The camera installer provides graphical setup and **Camera's 50 Hz + kalibreren**. The helper expects three USB capture cameras, backs up configuration, repairs stale device locations, applies anti-flicker settings and requests calibration. Keep identical cameras in marked hub ports; software cannot reliably identify physically swapped devices with identical serial numbers.
 
 An existing compatible NUC can install the standalone helper with:
