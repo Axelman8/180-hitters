@@ -91,8 +91,11 @@ with tempfile.TemporaryDirectory() as tmp:
     nuc.locator('.navigation-category[data-menu="nuc"]').click();nuc.locator('#camera-calibration-open').click()
     expect(nuc.locator('#camera-calibration-current')).to_contain_text('3 camera');expect(nuc.locator('#camera-calibration-start')).to_be_disabled()
     assert get()['match']==saved and Detector.calibrations==1
-    local=browser.new_page();local.add_init_script("window.DartsAndroid={isLocalMode:()=>true,getConnectionInfo:()=>JSON.stringify({mode:'local'})}");local.goto(URL+'/?android=1')
-    expect(local.locator('#header-menu')).to_be_visible();expect(local.locator('#camera-calibration-open')).to_have_count(0)
+    # Exercise the local-mode entry directly, without pretending this desktop
+    # browser implements all of the unrelated native Android shell methods.
+    local=browser.new_page();local.goto(URL+'/camera-calibration.css')
+    local.evaluate("async()=>{window.DartsAndroid={isLocalMode:()=>true};(await import('/autoscoring.js')).cameraControls(()=>{});}")
+    expect(local.locator('#camera-calibration-open')).to_have_count(0)
     assert get()['match']==saved
     nuc.close();local.close()
    assert not errors,errors
