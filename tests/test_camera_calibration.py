@@ -9,12 +9,15 @@ def native(hits):
  return {'connected':True,'running':True,'status':'takeout' if len(hits)==3 else 'throw','throws':[{'segmentNumber':n,'multiplier':m,'segmentName':'S'+str(n),'bed':'SingleInner','failed':False} for n,m in hits]}
 
 class Detector(BaseHTTPRequestHandler):
- posts=[];failure='';release=threading.Event();transient=False;value=native([])
+ posts=[];starts=0;failure='';release=threading.Event();transient=False;value=native([])
  def log_message(self,*args):pass
  def do_GET(self):
   if self.failure=='backup' and self.path.endswith('/ellipses'):self.send_error(500);return
   value=self.value if self.path=='/api/state' else {'calibrated':True,'numCams':3,'cams':[]} if self.path.endswith('/geometry') else {'0':{},'1':{},'2':{}}
   self.send_response(200);self.end_headers();self.wfile.write(json.dumps(value).encode())
+ def do_PUT(self):
+  assert self.path=='/api/start';Detector.starts+=1;Detector.value=native([])
+  self.send_response(204);self.end_headers()
  def do_POST(self):
   Detector.posts.append((self.path,self.headers.get('Content-Type'),self.rfile.read(int(self.headers.get('Content-Length','0')))))
   self.release.wait(3)
@@ -30,7 +33,7 @@ class CalibrationTest(unittest.TestCase):
  def tearDownClass(cls):cls.server.shutdown();cls.server.server_close()
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
-  Detector.posts=[];Detector.failure='';Detector.transient=False;Detector.release=threading.Event();Detector.release.set()
+  Detector.posts=[];Detector.starts=0;Detector.value=native([]);Detector.failure='';Detector.transient=False;Detector.release=threading.Event();Detector.release.set()
   self.bridge=AutoDartsBridge(threading.Lock(),Path(self.temp.name)/'observations','http://127.0.0.1:'+str(self.server.server_port))
   self.bridge.observe(native([]));self.bridge.configure(True,False,7);self.bridge.observe(native([]))
  def wait(self,stage):
@@ -82,5 +85,14 @@ class CalibrationTest(unittest.TestCase):
   Detector.failure='post'
   with self.bridge.lock:self.bridge.start_calibration()
   self.wait('error');self.assertFalse(self.bridge.enabled);self.assertIn('500',self.bridge.calibration['message'])
+ def test_restart_resumes_stopped_detector_without_calibrating(self):
+  self.bridge.observe({**native([]),'running':False,'status':'stopped'})
+  self.bridge.reset_detector();self.assertEqual(Detector.starts,1);self.assertFalse(Detector.posts)
+  self.assertEqual(self.bridge.calibration['stage'],'idle');self.assertFalse(self.bridge.armed)
+  self.bridge.observe(native([]));self.assertTrue(self.bridge.armed)
+ def test_calibration_can_wake_stopped_detector(self):
+  Detector.value={**native([]),'running':False,'status':'stopped'};self.bridge.observe(Detector.value)
+  with self.bridge.lock:self.bridge.start_calibration()
+  self.wait('testing');self.assertEqual(Detector.starts,1);self.assertEqual(len(Detector.posts),1);self.assertFalse(self.bridge.enabled)
 
 if __name__=='__main__':unittest.main()

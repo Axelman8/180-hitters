@@ -34,7 +34,7 @@ export function calibrationControls({bind,getStatus,onStatus,resume,timeout}){
   q('empty').disabled=busy||running;
   q('test').hidden=stage?.stage!=='testing';
   q('resume').disabled=busy||running||!q('verified').checked||stage?.calibrated===false||!!stage?.testError||!stage?.running||!getStatus()?.connected;
-  if(stage){q('status').textContent=errorText||stage.message;q('current').textContent=stage.calibrated===true?`Opgeslagen bordkalibratie${stage.cameras?' · '+stage.cameras+' camera’s':''}`:stage.calibrated===false?'AutoDarts meldt dat het bord nog niet is gekalibreerd.':'Bordkalibratie nog niet bevestigd.';}else if(errorText)q('status').textContent=errorText;
+  if(stage){q('status').textContent=errorText||stage.message;q('current').textContent=!stage.running?'AutoDarts staat uit. Camera aan / herstart laadt de bestaande kalibratie. Je kunt hieronder ook bewust opnieuw kalibreren.':stage.calibrated===true?`Opgeslagen bordkalibratie${stage.cameras?' · '+stage.cameras+' camera’s':''}`:stage.calibrated===false?'AutoDarts meldt dat het bord nog niet is gekalibreerd.':'Bordkalibratie nog niet bevestigd.';}else if(errorText)q('status').textContent=errorText;
   const hits=stage?.testHits||[],label=hit=>hit.number===0?'MIS':hit.number===25?(hit.mult===2?'BB':'sB'):(hit.mult===3?'T':hit.mult===2?'D':'')+hit.number;
   const darts=q('darts');for(let i=0;i<3;i++){let item=darts.children[i];if(!item){item=document.createElement('span');darts.append(item);}item.textContent=hits[i]?label(hits[i]):'Pijl '+(i+1);}
   q('test-status').textContent=stage?.testError||(!stage?.running?'AutoDarts is nog niet actief; houd het bord leeg.':hits.length?'Vergelijk deze metingen met de darts in het bord.':'Houd het bord leeg totdat de kalibratie klaar is.');

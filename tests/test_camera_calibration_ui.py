@@ -10,10 +10,10 @@ sys.path.insert(0,str(ROOT))
 from test_camera_calibration import native
 
 class Detector(BaseHTTPRequestHandler):
- value=native([]);calibrations=0;resets=0
+ value=native([]);calibrations=0;resets=0;starts=0
  def log_message(self,*args):pass
  def do_GET(self):
-  value=self.value if self.path=='/api/state' else {'calibrated':True,'numCams':3,'cams':[]} if self.path.endswith('/geometry') else {'0':{},'1':{},'2':{}}
+  value=self.value if self.path=='/api/state' else {'calibrated':bool(self.value['running']),'numCams':3 if self.value['running'] else 0,'cams':[]} if self.path.endswith('/geometry') else {'0':{},'1':{},'2':{}}
   self.send_response(200);self.end_headers();self.wfile.write(json.dumps(value).encode())
  def do_POST(self):
   if self.path=='/api/reset':Detector.resets+=1
@@ -21,6 +21,9 @@ class Detector(BaseHTTPRequestHandler):
    assert self.path=='/api/config/calibration/auto' and self.headers.get('Content-Type') is None
    assert not self.rfile.read(int(self.headers.get('Content-Length','0')))
    Detector.calibrations+=1;time.sleep(.3)
+  self.send_response(204);self.end_headers()
+ def do_PUT(self):
+  assert self.path=='/api/start';Detector.starts+=1;Detector.value=native([])
   self.send_response(204);self.end_headers()
 
 def wait(fn):
@@ -61,7 +64,12 @@ with tempfile.TemporaryDirectory() as tmp:
    assert api.post(URL+'/api/draft',data={'revision':get()['revision'],'owner':'cal-test','seq':1,'hits':[{'number':1,'mult':1}],'entry':''}).ok
    assert api.post(URL+'/api/autoscoring/calibrate',data={'revision':get()['revision'],'emptyBoardConfirmed':True}).status==409
    assert api.post(URL+'/api/draft',data={'revision':get()['revision'],'owner':'cal-test','seq':2,'hits':[],'entry':''}).ok
+   Detector.value={**native([]),'running':False,'status':'stopped'};wait(lambda:not cam()['calibration']['running'])
    page.locator('.navigation-category[data-menu="nuc"]').click();page.locator('#camera-calibration-open').click()
+   expect(page.locator('#camera-calibration-current')).to_contain_text('AutoDarts staat uit')
+   assert api.post(URL+'/api/autoscoring/reset',data={}).ok
+   wait(lambda:cam()['calibration']['running'] and cam()['calibration']['calibrated'] is True)
+   assert Detector.starts==1 and Detector.calibrations==0
    expect(page.locator('#camera-calibration-dialog')).to_be_visible();expect(page.locator('#camera-calibration-current')).to_contain_text('3 camera')
    expect(page.locator('#camera-calibration-dialog .dialog-back')).to_have_text('TERUG')
    expect(page.locator('#camera-calibration-start')).to_be_disabled();assert Detector.calibrations==0

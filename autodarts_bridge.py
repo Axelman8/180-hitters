@@ -219,10 +219,12 @@ class AutoDartsBridge:
             self.calibration.update(stage='complete', message='Proefworpen gecontroleerd. Score-invoer hervat zodra het bord leeg is.')
 
     def reset_detector(self):
-        """Clear Detection's current visit without changing calibration or cameras."""
+        """Resume or clear Detection, preserving calibration and camera settings."""
         if self.calibration_busy():
             raise ValueError('Wacht tot de camerakalibratie klaar is.')
-        with urlopen(Request(self.base + '/api/reset', method='POST'), timeout=4) as response:
+        stopped = self.latest is not None and not self.latest.get('running')
+        endpoint, method = ('/api/start', 'PUT') if stopped else ('/api/reset', 'POST')
+        with urlopen(Request(self.base + endpoint, method=method), timeout=3 if stopped else 4) as response:
             response.read(1024)
         # Detection reports running=false very briefly while the reset settles.
         # Treat that as part of this requested restart, not as a camera fault.
@@ -232,7 +234,7 @@ class AutoDartsBridge:
         self.closed = False
         self.seen = []
         self.blocked = ''
-        self.message = "Camera's gereset; wacht op een leeg bord."
+        self.message = "AutoDarts start; wacht op een leeg bord." if stopped else "Camera's gereset; wacht op een leeg bord."
 
     def push(self, kind, hit=None):
         if len(self.pending) >= 8:
@@ -324,8 +326,14 @@ class AutoDartsBridge:
                 value = json.loads(raw)
                 if not isinstance(value, dict): raise ValueError('Ongeldige camerastatus')
                 with self.lock:
+                    started_detection = bool(value.get('running')) and not bool((self.latest or {}).get('running'))
                     self.observe(value)
                     capture = self.recording and raw != previous
+                if started_detection:
+                    # A stopped detector may report empty runtime geometry even
+                    # though a saved calibration exists. Refresh once it starts.
+                    try: self.read_calibration()
+                    except (OSError, ValueError): pass
                 if capture:
                     try: self.jobs.put_nowait((time.time(), value))
                     except queue.Full: self.dropped += 1
